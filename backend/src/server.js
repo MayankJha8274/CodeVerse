@@ -1,17 +1,20 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/database');
-const { startCronJobs } = require('./services/cronService');
+const { startAllCronJobs } = require('./services/cronService');
 
 const PORT = process.env.PORT || 5000;
 
 // Connect to database
 connectDB();
 
-// Start cron jobs for auto-sync
+// Start cron jobs for auto-sync and weekly reports
 if (process.env.NODE_ENV === 'production') {
-  startCronJobs();
-  console.log('✅ Auto-sync cron jobs enabled');
+  startAllCronJobs();
+  console.log('✅ Auto-sync and weekly report cron jobs enabled');
+} else {
+  console.log('ℹ️  Cron jobs disabled in development mode');
+  console.log('   Use POST /api/platforms/sync to manually sync data');
 }
 
 // Start server

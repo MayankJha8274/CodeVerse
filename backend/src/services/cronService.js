@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const User = require('../models/User');
 const { fetchAllPlatformStats, calculateAggregatedStats } = require('./aggregationService');
+const { generateInsightsSummary } = require('./insightsService');
 
 /**
  * Cron Job Service
@@ -100,10 +101,84 @@ const manualSyncAll = async () => {
   await syncAllUsers();
 };
 
+/**
+ * Generate weekly report for a user
+ */
+const generateWeeklyReport = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) return;
+
+    console.log(`📊 Generating weekly report for: ${user.username}`);
+
+    const insights = await generateInsightsSummary(userId);
+    
+    // Store report or send notification
+    // For now, just log it
+    console.log(`✅ Weekly report generated for ${user.username}:`, {
+      achievements: insights.recentAchievements.length,
+      weakAreas: insights.weakAreas.length,
+      suggestedGoals: insights.suggestedGoals
+    });
+
+    return insights;
+  } catch (error) {
+    console.error(`❌ Error generating weekly report for ${userId}:`, error.message);
+  }
+};
+
+/**
+ * Generate weekly reports for all users
+ */
+const generateAllWeeklyReports = async () => {
+  try {
+    console.log('📈 Starting weekly report generation...');
+    
+    const users = await User.find({ isActive: true });
+    console.log(`Generating reports for ${users.length} users`);
+
+    for (const user of users) {
+      await generateWeeklyReport(user._id);
+      // Small delay between reports
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    console.log('✅ Completed weekly report generation');
+  } catch (error) {
+    console.error('❌ Error in weekly report generation:', error.message);
+  }
+};
+
+/**
+ * Start all cron jobs (daily sync + weekly reports)
+ */
+const startAllCronJobs = () => {
+  // Daily sync at 2 AM UTC
+  const dailySyncJob = cron.schedule('0 2 * * *', syncAllUsers, {
+    scheduled: true,
+    timezone: 'UTC'
+  });
+
+  // Weekly reports on Sunday at 4 AM UTC
+  const weeklyReportJob = cron.schedule('0 4 * * 0', generateAllWeeklyReports, {
+    scheduled: true,
+    timezone: 'UTC'
+  });
+
+  console.log('⏰ Cron jobs started:');
+  console.log('   - Daily sync: Every day at 2:00 AM UTC');
+  console.log('   - Weekly reports: Sundays at 4:00 AM UTC');
+
+  return { dailySyncJob, weeklyReportJob };
+};
+
 module.exports = {
   startCronJobs,
   stopCronJobs,
   syncUserStats,
   syncAllUsers,
-  manualSyncAll
+  manualSyncAll,
+  generateWeeklyReport,
+  generateAllWeeklyReports,
+  startAllCronJobs
 };

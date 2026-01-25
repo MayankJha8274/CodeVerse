@@ -268,9 +268,155 @@ const getProgressHistory = async (userId, period = 'daily', limit = 30) => {
     .limit(limit);
 };
 
+/**
+ * Calculate user's activity streaks
+ * @param {string} userId - User ID
+ * @returns {Object} Streak information
+ */
+const calculateStreaks = async (userId) => {
+  const allProgress = await DailyProgress.find({ userId })
+    .sort({ date: -1 })
+    .limit(365); // Last year
+
+  if (allProgress.length === 0) {
+    return {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastActiveDate: null
+    };
+  }
+
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 0;
+  let yesterday = new Date();
+  yesterday.setHours(0, 0, 0, 0);
+
+  // Calculate current streak (consecutive days from today/yesterday)
+  for (let i = 0; i < allProgress.length; i++) {
+    const progressDate = new Date(allProgress[i].date);
+    progressDate.setHours(0, 0, 0, 0);
+    
+    const changes = allProgress[i].changes;
+    const isActive = (changes.problemsDelta > 0 || changes.commitsDelta > 0);
+
+    if (i === 0) {
+      // Check if active today or yesterday
+      const diffDays = Math.floor((yesterday - progressDate) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 1 && isActive) {
+        currentStreak = 1;
+        tempStreak = 1;
+      }
+    } else {
+      const prevDate = new Date(allProgress[i - 1].date);
+      prevDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((prevDate - progressDate) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1 && isActive) {
+        if (i < 10) currentStreak++; // Only count current streak for recent days
+        tempStreak++;
+      } else {
+        if (tempStreak > longestStreak) {
+          longestStreak = tempStreak;
+        }
+        tempStreak = isActive ? 1 : 0;
+      }
+    }
+  }
+
+  if (tempStreak > longestStreak) {
+    longestStreak = tempStreak;
+  }
+
+  return {
+    currentStreak,
+    longestStreak,
+    lastActiveDate: allProgress[0]?.date || null
+  };
+};
+
+/**
+ * Calculate language breakdown from GitHub stats
+ * @param {string} userId - User ID
+ * @returns {Object} Language percentages
+ */
+const calculateLanguageBreakdown = async (userId) => {
+  const githubStats = await PlatformStats.findOne({
+    userId,
+    platform: 'github',
+    fetchStatus: 'success'
+  });
+
+  if (!githubStats || !githubStats.stats.languages) {
+    return {};
+  }
+
+  return githubStats.stats.languages;
+};
+
+/**
+ * Calculate weekly progress comparison
+ * @param {string} userId - User ID
+ * @returns {Object} Week-over-week comparison
+ */
+const calculateWeeklyProgress = async (userId) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // This week (last 7 days)
+  const weekStart = new Date(today);
+  weekStart.setDate(weekStart.getDate() - 7);
+
+  // Previous week (7-14 days ago)
+  const prevWeekStart = new Date(today);
+  prevWeekStart.setDate(prevWeekStart.getDate() - 14);
+  const prevWeekEnd = new Date(weekStart);
+
+  const thisWeekProgress = await DailyProgress.find({
+    userId,
+    date: { $gte: weekStart, $lte: today }
+  });
+
+  const prevWeekProgress = await DailyProgress.find({
+    userId,
+    date: { $gte: prevWeekStart, $lt: prevWeekEnd }
+  });
+
+  const calculateWeekTotals = (progressArray) => {
+    return progressArray.reduce((acc, day) => {
+      acc.problems += day.changes.problemsDelta || 0;
+      acc.commits += day.changes.commitsDelta || 0;
+      acc.activeDays += (day.changes.problemsDelta > 0 || day.changes.commitsDelta > 0) ? 1 : 0;
+      return acc;
+    }, { problems: 0, commits: 0, activeDays: 0 });
+  };
+
+  const thisWeek = calculateWeekTotals(thisWeekProgress);
+  const prevWeek = calculateWeekTotals(prevWeekProgress);
+
+  const calculateChange = (current, previous) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  };
+
+  return {
+    thisWeek,
+    prevWeek,
+    improvement: {
+      problems: calculateChange(thisWeek.problems, prevWeek.problems),
+      commits: calculateChange(thisWeek.commits, prevWeek.commits),
+      activeDays: calculateChange(thisWeek.activeDays, prevWeek.activeDays)
+    },
+    trend: (thisWeek.problems + thisWeek.commits) > (prevWeek.problems + prevWeek.commits) ? 'up' : 'down'
+  };
+};
+
 module.exports = {
   fetchPlatformData,
   fetchAllPlatformStats,
   calculateAggregatedStats,
-  getProgressHistory
+  getProgressHistory,
+  calculateStreaks,
+  calculateLanguageBreakdown,
+  calculateWeeklyProgress
 };
