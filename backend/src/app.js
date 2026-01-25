@@ -28,6 +28,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/platforms', require('./routes/platformRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/compare', require('./routes/comparisonRoutes'));
 
 // 404 handler
 app.use(notFound);
