@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -62,10 +62,14 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  const updateUserData = (newUserData) => {
-    setUser(prev => ({ ...prev, ...newUserData }));
-    localStorage.setItem('user', JSON.stringify({ ...user, ...newUserData }));
-  };
+  const updateUserData = useCallback((newUserData) => {
+    setUser(prev => {
+      const updatedUser = { ...prev, ...newUserData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+    setIsAuthenticated(true);
+  }, []);
 
   const value = {
     user,

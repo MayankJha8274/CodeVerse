@@ -36,13 +36,21 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             // User exists, update OAuth info
             user.oauthProvider = 'google';
             user.oauthId = profile.id;
+            // Ensure fullName exists
+            if (!user.fullName) {
+              user.fullName = profile.displayName || `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || profile.emails[0].value.split('@')[0];
+            }
             await user.save();
             return done(null, user);
           }
 
+          // Derive a full name from the profile if available
+          const derivedFullName = profile.displayName || `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || profile.emails[0].value.split('@')[0];
+
           // Create new user
           user = await User.create({
             username: profile.displayName || profile.emails[0].value.split('@')[0],
+            fullName: derivedFullName,
             email: profile.emails[0].value,
             password: Math.random().toString(36).slice(-8), // Random password (won't be used)
             oauthProvider: 'google',
@@ -84,13 +92,21 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
             if (!user.platforms.github) {
               user.platforms.github = profile.username;
             }
+            // Ensure fullName exists
+            if (!user.fullName) {
+              user.fullName = profile.displayName || profile.username || email.split('@')[0];
+            }
             await user.save();
             return done(null, user);
           }
 
+          // Derive a full name for GitHub profile
+          const ghFullName = profile.displayName || profile.username || email.split('@')[0];
+
           // Create new user
           user = await User.create({
             username: profile.username || profile.displayName || email.split('@')[0],
+            fullName: ghFullName,
             email,
             password: Math.random().toString(36).slice(-8), // Random password (won't be used)
             oauthProvider: 'github',

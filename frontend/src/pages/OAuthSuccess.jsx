@@ -24,12 +24,13 @@ const OAuthSuccess = () => {
         };
         localStorage.setItem('user', JSON.stringify(user));
         updateUserData(user);
+        
+        // Redirect to dashboard
+        setTimeout(() => navigate('/dashboard'), 500);
       } catch (error) {
         console.error('Error decoding token:', error);
+        navigate('/login?error=oauth_failed');
       }
-      
-      // Redirect to dashboard
-      setTimeout(() => navigate('/dashboard'), 500);
     } else {
       // No token, redirect to login
       navigate('/login?error=oauth_failed');
