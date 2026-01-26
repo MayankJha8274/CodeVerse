@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ChartCard from '../components/ChartCard';
 import SkeletonLoader from '../components/SkeletonLoader';
+import PlatformLinkModal from '../components/PlatformLinkModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { ExternalLink, TrendingUp, Calendar, Award } from 'lucide-react';
+import { ExternalLink, TrendingUp, Calendar, Award, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import api from '../services/api';
 
 const PlatformDetailPage = () => {
@@ -11,15 +12,37 @@ const PlatformDetailPage = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leetcode');
   const [platformData, setPlatformData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [linkedPlatforms, setLinkedPlatforms] = useState({});
+  const [notification, setNotification] = useState(null);
 
   const tabs = [
-    { id: 'leetcode', label: 'LeetCode', color: 'from-yellow-500 to-orange-500' },
-    { id: 'codeforces', label: 'Codeforces', color: 'from-blue-500 to-indigo-600' },
-    { id: 'codechef', label: 'CodeChef', color: 'from-brown-500 to-amber-600' },
-    { id: 'github', label: 'GitHub', color: 'from-gray-700 to-gray-900' },
-    { id: 'geeksforgeeks', label: 'GeeksforGeeks', color: 'from-green-500 to-emerald-600' },
-    { id: 'hackerrank', label: 'HackerRank', color: 'from-green-600 to-teal-600' }
+    { id: 'leetcode', label: 'LeetCode', color: 'from-yellow-500 to-orange-500', name: 'LeetCode' },
+    { id: 'codeforces', label: 'Codeforces', color: 'from-blue-500 to-indigo-600', name: 'Codeforces' },
+    { id: 'codechef', label: 'CodeChef', color: 'from-brown-500 to-amber-600', name: 'CodeChef' },
+    { id: 'github', label: 'GitHub', color: 'from-gray-700 to-gray-900', name: 'GitHub' },
+    { id: 'geeksforgeeks', label: 'GeeksforGeeks', color: 'from-green-500 to-emerald-600', name: 'GeeksForGeeks' },
+    { id: 'hackerrank', label: 'HackerRank', color: 'from-green-600 to-teal-600', name: 'HackerRank' }
   ];
+
+  useEffect(() => {
+    const fetchLinkedPlatforms = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user && user.platforms) {
+          const linked = {};
+          user.platforms.forEach(p => {
+            linked[p.platform] = p.username;
+          });
+          setLinkedPlatforms(linked);
+        }
+      } catch (error) {
+        console.error('Failed to fetch linked platforms:', error);
+      }
+    };
+    fetchLinkedPlatforms();
+  }, []);
 
   useEffect(() => {
     const fetchPlatformData = async () => {
@@ -40,6 +63,44 @@ const PlatformDetailPage = () => {
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setSearchParams({ tab: tabId });
+  };
+
+  const handleLinkPlatform = (platform) => {
+    setSelectedPlatform(platform);
+    setModalOpen(true);
+  };
+
+  const handleLinkSubmit = async (platformId, username) => {
+    try {
+      await api.linkPlatform(platformId, username);
+      
+      // Update linked platforms state
+      setLinkedPlatforms(prev => ({ ...prev, [platformId]: username }));
+      
+      // Update localStorage
+      const user = JSON.parse(localStorage.getItem('user'));
+      const existingPlatformIndex = user.platforms.findIndex(p => p.platform === platformId);
+      if (existingPlatformIndex >= 0) {
+        user.platforms[existingPlatformIndex].username = username;
+      } else {
+        user.platforms.push({ platform: platformId, username });
+      }
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Show success notification
+      setNotification({ type: 'success', message: `Successfully linked ${platformId}!` });
+      setTimeout(() => setNotification(null), 3000);
+      
+      // Sync platform data
+      await api.syncPlatform(platformId);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -340,14 +401,76 @@ const PlatformDetailPage = () => {
 
   return (
     <div className="space-y-6">
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${
+          notification.type === 'success' 
+            ? 'bg-green-500 text-white' 
+            : 'bg-red-500 text-white'
+        }`}>
+          {notification.message}
+        </div>
+      )}
+
+      {/* Platform Link Modal */}
+      {selectedPlatform && (
+        <PlatformLinkModal
+          platform={selectedPlatform}
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onLink={handleLinkSubmit}
+        />
+      )}
+
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Platform Details
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          View detailed statistics for each platform
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Platform Details
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            View detailed statistics for each platform
+          </p>
+        </div>
+      </div>
+
+      {/* Platform Cards with Link Button */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {tabs.map((tab) => (
+          <div
+            key={tab.id}
+            className={`card p-4 cursor-pointer transition-all ${
+              activeTab === tab.id 
+                ? 'ring-2 ring-primary-500 border-primary-500' 
+                : 'hover:shadow-lg'
+            }`}
+            onClick={() => handleTabChange(tab.id)}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-semibold text-gray-900 dark:text-white">{tab.label}</h3>
+              {linkedPlatforms[tab.id] ? (
+                <div className="flex items-center gap-1 text-green-500 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Linked</span>
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLinkPlatform(tab);
+                  }}
+                  className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  Link
+                </button>
+              )}
+            </div>
+            {linkedPlatforms[tab.id] && (
+              <p className="text-sm text-gray-500">@{linkedPlatforms[tab.id]}</p>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}

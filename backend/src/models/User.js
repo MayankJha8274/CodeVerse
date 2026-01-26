@@ -49,6 +49,16 @@ const userSchema = new mongoose.Schema({
     hackerrank: { type: String, default: null },
     codingninjas: { type: String, default: null }
   },
+  // OAuth fields
+  oauthProvider: {
+    type: String,
+    enum: ['local', 'google', 'github'],
+    default: 'local'
+  },
+  oauthId: {
+    type: String,
+    default: null
+  },
   // Rooms/Societies the user is part of
   rooms: [{
     type: mongoose.Schema.Types.ObjectId,

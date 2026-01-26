@@ -26,7 +26,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      await api.login(formData.email, formData.password);
+      await api.login({ email: formData.email, password: formData.password });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
@@ -36,9 +36,9 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider) => {
-    // Simulate OAuth login
-    console.log(`OAuth login with ${provider}`);
-    setTimeout(() => navigate('/dashboard'), 1000);
+    // Redirect to backend OAuth route
+    const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    window.location.href = `${API_URL}/api/auth/${provider}`;
   };
 
   return (

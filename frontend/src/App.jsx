@@ -5,6 +5,7 @@ import PrivateRoute from './components/PrivateRoute';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OAuthSuccess from './pages/OAuthSuccess';
 import Dashboard from './pages/Dashboard';
 import PlatformDetailPage from './pages/PlatformDetailPage';
 import RoomsPage from './pages/RoomsPage';
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/oauth-success" element={<OAuthSuccess />} />
 
           {/* Protected Routes with Dashboard Layout */}
           <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>

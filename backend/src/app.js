@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const passport = require('./config/passport');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
@@ -7,6 +8,9 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // CORS configuration
 app.use(cors({
