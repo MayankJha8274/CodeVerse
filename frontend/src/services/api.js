@@ -156,9 +156,17 @@ export const api = {
   },
 
   async linkPlatform(platform, username) {
-    const data = await authFetch('/platforms/link', {
-      method: 'POST',
+    const data = await authFetch('/platforms/connect', {
+      method: 'PUT',
       body: JSON.stringify({ platform, username })
+    });
+    return data;
+  },
+
+  async syncPlatform(platform) {
+    const data = await authFetch('/platforms/sync', {
+      method: 'POST',
+      body: JSON.stringify({ platform })
     });
     return data;
   },
