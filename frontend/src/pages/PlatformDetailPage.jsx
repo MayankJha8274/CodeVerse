@@ -52,13 +52,21 @@ const PlatformDetailPage = () => {
         setPlatformData(data);
       } catch (error) {
         console.error('Failed to fetch platform data:', error);
+        // Set empty platform data so we don't show blank page
+        setPlatformData(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPlatformData();
-  }, [activeTab]);
+    // Only fetch if platform is linked
+    if (linkedPlatforms[activeTab]) {
+      fetchPlatformData();
+    } else {
+      setLoading(false);
+      setPlatformData(null);
+    }
+  }, [activeTab, linkedPlatforms]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -66,19 +74,25 @@ const PlatformDetailPage = () => {
   };
 
   const handleLinkPlatform = (platform) => {
+    console.log('Opening modal for platform:', platform);
     setSelectedPlatform(platform);
     setModalOpen(true);
   };
 
   const handleLinkSubmit = async (platformId, username) => {
+    console.log('Linking platform:', platformId, 'with username:', username);
     try {
-      await api.linkPlatform(platformId, username);
+      const response = await api.linkPlatform(platformId, username);
+      console.log('Link response:', response);
       
       // Update linked platforms state
       setLinkedPlatforms(prev => ({ ...prev, [platformId]: username }));
       
       // Update localStorage
-      const user = JSON.parse(localStorage.getItem('user'));
+      const user = JSON.parse(localStorage.getItem('user')) || {};
+      if (!user.platforms) {
+        user.platforms = [];
+      }
       const existingPlatformIndex = user.platforms.findIndex(p => p.platform === platformId);
       if (existingPlatformIndex >= 0) {
         user.platforms[existingPlatformIndex].username = username;
@@ -92,8 +106,22 @@ const PlatformDetailPage = () => {
       setTimeout(() => setNotification(null), 3000);
       
       // Sync platform data
-      await api.syncPlatform(platformId);
+      try {
+        await api.syncPlatform(platformId);
+        console.log('Platform synced successfully');
+        // Refresh data after sync
+        if (activeTab === platformId) {
+          const data = await api.getPlatformStats(platformId);
+          setPlatformData(data);
+        }
+      } catch (syncError) {
+        console.error('Sync error:', syncError);
+        setNotification({ type: 'error', message: 'Linked but sync failed. Try refreshing.' });
+      }
     } catch (error) {
+      console.error('Link error:', error);
+      setNotification({ type: 'error', message: error.response?.data?.message || 'Failed to link platform' });
+      setTimeout(() => setNotification(null), 3000);
       throw error;
     }
   };
@@ -116,27 +144,31 @@ const PlatformDetailPage = () => {
     return 'text-red-500';
   };
 
-  const renderLeetCodeContent = () => (
+  const renderLeetCodeContent = () => {
+    if (!platformData) return null;
+    
+    return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card p-6">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Solved</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData.totalSolved}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.totalSolved || 0}</div>
         </div>
         <div className="card p-6">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Easy</div>
-          <div className="text-3xl font-bold text-green-500">{platformData.easy}</div>
+          <div className="text-3xl font-bold text-green-500">{platformData?.easy || 0}</div>
         </div>
         <div className="card p-6">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Medium</div>
-          <div className="text-3xl font-bold text-yellow-500">{platformData.medium}</div>
+          <div className="text-3xl font-bold text-yellow-500">{platformData?.medium || 0}</div>
         </div>
         <div className="card p-6">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Hard</div>
-          <div className="text-3xl font-bold text-red-500">{platformData.hard}</div>
+          <div className="text-3xl font-bold text-red-500">{platformData?.hard || 0}</div>
         </div>
       </div>
 
+      {platformData?.submissions?.length > 0 && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Submission Activity" subtitle="Last 6 days">
           <ResponsiveContainer width="100%" height={250}>
@@ -190,8 +222,10 @@ const PlatformDetailPage = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
-  );
+    );
+  };
 
   const renderCodeforcesContent = () => (
     <div className="space-y-6">
@@ -413,11 +447,15 @@ const PlatformDetailPage = () => {
       )}
 
       {/* Platform Link Modal */}
-      {selectedPlatform && (
+      {selectedPlatform && modalOpen && (
         <PlatformLinkModal
           platform={selectedPlatform}
           isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
+          onClose={() => {
+            console.log('Closing modal');
+            setModalOpen(false);
+            setSelectedPlatform(null);
+          }}
           onLink={handleLinkSubmit}
         />
       )}
@@ -497,6 +535,42 @@ const PlatformDetailPage = () => {
             {[1, 2, 3, 4].map(i => <SkeletonLoader key={i} type="card" />)}
           </div>
           <SkeletonLoader type="chart" />
+        </div>
+      ) : !linkedPlatforms[activeTab] ? (
+        <div className="card p-12 text-center">
+          <div className="max-w-md mx-auto">
+            <LinkIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Platform Not Linked
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Link your {tabs.find(t => t.id === activeTab)?.label} account to view detailed statistics
+            </p>
+            <button
+              onClick={() => handleLinkPlatform(tabs.find(t => t.id === activeTab))}
+              className="btn-primary px-6 py-3"
+            >
+              Link {tabs.find(t => t.id === activeTab)?.label} Account
+            </button>
+          </div>
+        </div>
+      ) : !platformData ? (
+        <div className="card p-12 text-center">
+          <div className="max-w-md mx-auto">
+            <Award className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              No Data Available
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              We couldn't fetch data for this platform. This might be because your profile is private or the username is incorrect.
+            </p>
+            <button
+              onClick={() => handleLinkPlatform(tabs.find(t => t.id === activeTab))}
+              className="btn-secondary px-6 py-3"
+            >
+              Update Username
+            </button>
+          </div>
         </div>
       ) : (
         <>
