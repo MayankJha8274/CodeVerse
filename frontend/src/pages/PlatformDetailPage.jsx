@@ -270,7 +270,7 @@ const PlatformDetailPage = () => {
                   color: '#fff'
                 }}
               />
-              <Area type="monotone" dataKey="count" stroke="#FFA116" fill="#FFA116" fillOpacity={0.2} />
+              <Area type="natural" dataKey="count" stroke="#FFA116" fill="#FFA116" fillOpacity={0.2} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -354,7 +354,7 @@ const PlatformDetailPage = () => {
                   color: '#fff'
                 }}
               />
-              <Line type="monotone" dataKey="rating" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="natural" dataKey="rating" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -441,7 +441,7 @@ const PlatformDetailPage = () => {
                   color: '#fff'
                 }}
               />
-              <Area type="monotone" dataKey="count" stroke="#6B7280" fill="#6B7280" fillOpacity={0.2} />
+              <Area type="natural" dataKey="count" stroke="#6B7280" fill="#6B7280" fillOpacity={0.2} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
