@@ -1,7 +1,10 @@
 const cron = require('node-cron');
 const User = require('../models/User');
+const ContestReminder = require('../models/ContestReminder');
 const { fetchAllPlatformStats, calculateAggregatedStats } = require('./aggregationService');
 const { generateInsightsSummary } = require('./insightsService');
+const { fetchAllContests } = require('./contestService');
+const { sendContestReminder } = require('./emailService');
 
 /**
  * Cron Job Service
@@ -150,7 +153,7 @@ const generateAllWeeklyReports = async () => {
 };
 
 /**
- * Start all cron jobs (daily sync + weekly reports)
+ * Start all cron jobs (daily sync + weekly reports + contest reminders)
  */
 const startAllCronJobs = () => {
   // Daily sync at 2 AM UTC
@@ -165,11 +168,74 @@ const startAllCronJobs = () => {
     timezone: 'UTC'
   });
 
+  // Fetch contests every 6 hours
+  const contestFetchJob = cron.schedule('0 */6 * * *', async () => {
+    console.log('🔄 Fetching contests from all platforms...');
+    await fetchAllContests();
+  }, {
+    scheduled: true,
+    timezone: 'UTC'
+  });
+
+  // Check and send contest reminders every 5 minutes
+  const reminderJob = cron.schedule('*/5 * * * *', processContestReminders, {
+    scheduled: true,
+    timezone: 'UTC'
+  });
+
   console.log('⏰ Cron jobs started:');
   console.log('   - Daily sync: Every day at 2:00 AM UTC');
   console.log('   - Weekly reports: Sundays at 4:00 AM UTC');
+  console.log('   - Contest fetch: Every 6 hours');
+  console.log('   - Reminder check: Every 5 minutes');
 
-  return { dailySyncJob, weeklyReportJob };
+  return { dailySyncJob, weeklyReportJob, contestFetchJob, reminderJob };
+};
+
+/**
+ * Process and send contest reminders
+ */
+const processContestReminders = async () => {
+  try {
+    const now = new Date();
+    
+    // Find reminders that should be sent now
+    const reminders = await ContestReminder.find({
+      reminderSent: false,
+      reminderTime: { $lte: now }
+    });
+
+    if (reminders.length === 0) {
+      return;
+    }
+
+    console.log(`📧 Processing ${reminders.length} contest reminders...`);
+
+    for (const reminder of reminders) {
+      try {
+        // Send email
+        const result = await sendContestReminder({
+          to: reminder.email,
+          contest: reminder.contestDetails
+        });
+
+        if (result.success) {
+          // Mark as sent
+          reminder.reminderSent = true;
+          await reminder.save();
+          console.log(`✅ Reminder sent for: ${reminder.contestDetails.name}`);
+        } else {
+          console.error(`❌ Failed to send reminder: ${result.error}`);
+        }
+      } catch (err) {
+        console.error(`❌ Error processing reminder ${reminder._id}:`, err.message);
+      }
+    }
+
+    console.log(`✅ Finished processing contest reminders`);
+  } catch (error) {
+    console.error('❌ Error in processContestReminders:', error.message);
+  }
 };
 
 module.exports = {
@@ -180,5 +246,6 @@ module.exports = {
   manualSyncAll,
   generateWeeklyReport,
   generateAllWeeklyReports,
-  startAllCronJobs
+  startAllCronJobs,
+  processContestReminders
 };

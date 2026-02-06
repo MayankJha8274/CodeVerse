@@ -6,7 +6,10 @@ const {
   syncAllPlatforms,
   getAggregatedStats,
   getPlatformStats,
-  getProgress
+  getProgress,
+  getTopicAnalysis,
+  getBadges,
+  getAchievements
 } = require('../controllers/platformController');
 const { protect } = require('../middleware/auth');
 
@@ -24,5 +27,10 @@ router.get('/stats/:platform', getPlatformStats);
 
 // Progress tracking
 router.get('/progress', getProgress);
+
+// Topic analysis, badges, and achievements
+router.get('/topics', getTopicAnalysis);
+router.get('/badges', getBadges);
+router.get('/achievements', getAchievements);
 
 module.exports = router;

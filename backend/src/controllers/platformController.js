@@ -5,6 +5,8 @@ const {
   calculateAggregatedStats,
   getProgressHistory
 } = require('../services/aggregationService');
+const { fetchLeetCodeSkillStats, fetchLeetCodeBadges, getLeetCodeRankTitle } = require('../services/platforms/leetcodeService');
+const { fetchCodeforcesTopicStats, getCodeforcesRankInfo } = require('../services/platforms/codeforcesService');
 
 /**
  * @desc    Connect/Update platform username
@@ -262,11 +264,192 @@ const getProgress = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get DSA topic analysis from all platforms
+ * @route   GET /api/platforms/topics
+ * @access  Private
+ */
+const getTopicAnalysis = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const topicMap = {};
+
+    // Fetch LeetCode topics
+    if (user.platforms?.leetcode) {
+      const lcResult = await fetchLeetCodeSkillStats(user.platforms.leetcode);
+      if (lcResult.success) {
+        lcResult.data.forEach(topic => {
+          const name = topic.name;
+          if (!topicMap[name]) {
+            topicMap[name] = { total: 0, platforms: {} };
+          }
+          topicMap[name].total += topic.count;
+          topicMap[name].platforms.leetcode = topic.count;
+        });
+      }
+    }
+
+    // Fetch Codeforces topics
+    if (user.platforms?.codeforces) {
+      const cfResult = await fetchCodeforcesTopicStats(user.platforms.codeforces);
+      if (cfResult.success) {
+        cfResult.data.forEach(topic => {
+          const name = topic.name;
+          if (!topicMap[name]) {
+            topicMap[name] = { total: 0, platforms: {} };
+          }
+          topicMap[name].total += topic.count;
+          topicMap[name].platforms.codeforces = topic.count;
+        });
+      }
+    }
+
+    // Convert to sorted array
+    const topics = Object.entries(topicMap)
+      .map(([name, data]) => ({
+        name,
+        total: data.total,
+        platforms: data.platforms
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 20); // Top 20 topics
+
+    res.status(200).json({
+      success: true,
+      data: topics
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get badges from all platforms
+ * @route   GET /api/platforms/badges
+ * @access  Private
+ */
+const getBadges = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const allBadges = [];
+
+    // Fetch LeetCode badges
+    if (user.platforms?.leetcode) {
+      const lcResult = await fetchLeetCodeBadges(user.platforms.leetcode);
+      if (lcResult.success) {
+        lcResult.data.badges.forEach(badge => {
+          allBadges.push({
+            platform: 'leetcode',
+            name: badge.name,
+            icon: badge.icon,
+            earnedDate: badge.earnedDate
+          });
+        });
+      }
+    }
+
+    // Note: Codeforces doesn't have a badge API, but we could add more platforms here
+
+    res.status(200).json({
+      success: true,
+      data: allBadges
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get achievements/titles from all platforms
+ * @route   GET /api/platforms/achievements
+ * @access  Private
+ */
+const getAchievements = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const achievements = [];
+
+    // Get LeetCode rank
+    const lcStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'leetcode'
+    });
+    
+    if (lcStats?.stats?.rating) {
+      const lcRank = getLeetCodeRankTitle(lcStats.stats.rating);
+      achievements.push({
+        platform: 'leetcode',
+        title: lcRank.title,
+        color: lcRank.color,
+        rating: lcStats.stats.rating,
+        icon: '🏆'
+      });
+    }
+
+    // Get Codeforces rank
+    const cfStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'codeforces'
+    });
+    
+    if (cfStats?.stats?.rank) {
+      const cfRank = getCodeforcesRankInfo(cfStats.stats.rank, cfStats.stats.rating);
+      achievements.push({
+        platform: 'codeforces',
+        title: cfRank.title,
+        color: cfRank.color,
+        rating: cfRank.rating,
+        maxRating: cfStats.stats.maxRating,
+        icon: '⚔️'
+      });
+    }
+
+    // Get CodeChef stars (if available)
+    const ccStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'codechef'
+    });
+    
+    if (ccStats?.stats?.rating) {
+      const rating = ccStats.stats.rating;
+      let stars = 1;
+      let title = '1★';
+      let color = '#666666';
+      
+      if (rating >= 2000) { stars = 7; title = '7★'; color = '#FF7F00'; }
+      else if (rating >= 1800) { stars = 6; title = '6★'; color = '#FF7F00'; }
+      else if (rating >= 1600) { stars = 5; title = '5★'; color = '#FFDF00'; }
+      else if (rating >= 1400) { stars = 4; title = '4★'; color = '#7F00FF'; }
+      else if (rating >= 1200) { stars = 3; title = '3★'; color = '#0073E6'; }
+      else if (rating >= 1000) { stars = 2; title = '2★'; color = '#1E7D22'; }
+      
+      achievements.push({
+        platform: 'codechef',
+        title,
+        stars,
+        color,
+        rating: ccStats.stats.rating,
+        icon: '⭐'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: achievements
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   connectPlatform,
   disconnectPlatform,
   syncAllPlatforms,
   getAggregatedStats,
   getPlatformStats,
-  getProgress
+  getProgress,
+  getTopicAnalysis,
+  getBadges,
+  getAchievements
 };
