@@ -97,6 +97,41 @@ const fetchCodeforcesStats = async (handle) => {
   }
 };
 
+/**
+ * Fetch Codeforces rating history (real data from API)
+ * @param {string} handle - Codeforces handle
+ * @returns {Array} Rating history with dates
+ */
+const fetchCodeforcesRatingHistory = async (handle) => {
+  try {
+    const response = await axios.get(`${CODEFORCES_API}/user.rating`, {
+      params: { handle },
+      timeout: 15000
+    });
+
+    if (response.data.status !== 'OK') {
+      throw new Error('Could not fetch rating history');
+    }
+
+    // Transform to chart-friendly format
+    const history = response.data.result.map(contest => ({
+      date: new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString().split('T')[0],
+      rating: contest.newRating,
+      contestName: contest.contestName,
+      rank: contest.rank,
+      oldRating: contest.oldRating,
+      change: contest.newRating - contest.oldRating
+    }));
+
+    console.log(`✅ Codeforces rating history: ${handle} - ${history.length} contests`);
+    return { success: true, data: history };
+  } catch (error) {
+    console.error(`❌ Codeforces rating history error for ${handle}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
 module.exports = {
-  fetchCodeforcesStats
+  fetchCodeforcesStats,
+  fetchCodeforcesRatingHistory
 };

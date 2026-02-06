@@ -12,6 +12,7 @@ import RoomsPage from './pages/RoomsPage';
 import ComparisonPage from './pages/ComparisonPage';
 import SettingsPage from './pages/SettingsPage';
 import SheetsPage from './pages/SheetsPage';
+import LeaderboardPage from './pages/LeaderboardPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
             <Route path="rooms" element={<RoomsPage />} />
             <Route path="compare" element={<ComparisonPage />} />
             <Route path="sheets" element={<SheetsPage />} />
+            <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

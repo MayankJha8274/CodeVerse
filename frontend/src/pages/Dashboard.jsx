@@ -15,7 +15,9 @@ import {
   BookOpen,
   ChevronDown
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -118,8 +120,18 @@ const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [platformStats, setPlatformStats] = useState({});
   const [ratingHistory, setRatingHistory] = useState([]);
+  const [allRatingHistory, setAllRatingHistory] = useState({ chartData: [], platforms: [] });
   const [refreshTimer, setRefreshTimer] = useState(null);
   const [showPlatformStats, setShowPlatformStats] = useState(false);
+  const [selectedRatingPlatform, setSelectedRatingPlatform] = useState('all'); // 'all' or specific platform
+
+  // Platform colors for rating graph
+  const platformRatingColors = {
+    leetcode: '#FFA116',  // Orange
+    codeforces: '#1F8ACB', // Blue
+    codechef: '#5B4638',   // Brown
+    codingninjas: '#F96D00' // Orange-red
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -128,15 +140,17 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [summaryData, allStats, ratingsData] = await Promise.all([
+      const [summaryData, allStats, ratingsData, allRatingsData] = await Promise.all([
         api.getStats().catch(() => null),
         api.getAllPlatformStats().catch(() => ({})),
-        api.getRatingGrowth().catch(() => [])
+        api.getRatingGrowth().catch(() => []),
+        api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] }))
       ]);
 
       setUserData(summaryData);
       setPlatformStats(allStats || {});
       setRatingHistory(ratingsData || []);
+      setAllRatingHistory(allRatingsData || { chartData: [], platforms: [] });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -474,37 +488,189 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Rating Chart */}
+            {/* Rating Chart - Multi-Platform (Codolio Style) */}
             <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <div className="flex items-center justify-between mb-4">
+              {/* Header with current rating */}
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-2xl font-bold text-white">Rating</p>
-                  <p className="text-4xl font-bold text-amber-500">{platformStats.leetcode?.rating || platformStats.codeforces?.rating || 0}</p>
+                  <p className="text-sm text-gray-400">Rating</p>
+                  <p className="text-3xl font-bold text-white">
+                    {selectedRatingPlatform === 'all' 
+                      ? (platformStats.leetcode?.rating || platformStats.codeforces?.rating || platformStats.codechef?.rating || 0)
+                      : (platformStats[selectedRatingPlatform]?.rating || 0)
+                    }
+                  </p>
                 </div>
                 <div className="text-right text-sm text-gray-400">
                   <p>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  <p>Latest Update</p>
+                  <p className="text-xs">Latest Update</p>
                 </div>
               </div>
-              <div className="h-48">
+
+              {/* Platform Toggle Tabs */}
+              <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+                <button
+                  onClick={() => setSelectedRatingPlatform('all')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                    selectedRatingPlatform === 'all' 
+                      ? 'bg-amber-500 text-black' 
+                      : 'bg-[#1a1a2e] text-gray-400 hover:bg-[#252536] border border-gray-700'
+                  }`}
+                >
+                  All Platforms
+                </button>
+                {['leetcode', 'codeforces', 'codechef'].map(platform => {
+                  const hasData = allRatingHistory.byPlatform?.[platform]?.length > 0;
+                  const platformName = platformConfig[platform]?.name || platform;
+                  return (
+                    <button
+                      key={platform}
+                      onClick={() => setSelectedRatingPlatform(platform)}
+                      disabled={!hasData}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                        selectedRatingPlatform === platform 
+                          ? 'text-black' 
+                          : hasData 
+                            ? 'bg-[#1a1a2e] text-gray-400 hover:bg-[#252536] border border-gray-700'
+                            : 'bg-[#1a1a2e] text-gray-600 cursor-not-allowed opacity-50'
+                      }`}
+                      style={selectedRatingPlatform === platform ? { backgroundColor: platformRatingColors[platform] } : {}}
+                    >
+                      {platformConfig[platform]?.icon} {platformName}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legend for All Platforms view */}
+              {selectedRatingPlatform === 'all' && allRatingHistory.platforms?.length > 0 && (
+                <div className="flex flex-wrap gap-4 mb-3">
+                  {allRatingHistory.platforms.map(platform => (
+                    <div key={platform} className="flex items-center gap-2">
+                      <div 
+                        className="w-2.5 h-2.5 rounded-full" 
+                        style={{ backgroundColor: platformRatingColors[platform] }}
+                      />
+                      <span className="text-xs text-gray-400">{platformConfig[platform]?.name || platform}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Chart */}
+              <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={ratingHistory.length ? ratingHistory : generateDemoRatingData()}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
-                    <XAxis dataKey="date" stroke="#666" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#666" tick={{ fontSize: 12 }} domain={['dataMin - 50', 'dataMax + 50']} />
+                  <AreaChart data={allRatingHistory.chartData?.length ? allRatingHistory.chartData : (ratingHistory.length ? ratingHistory : generateDemoRatingData())}>
+                    <defs>
+                      {/* Gradient definitions for each platform */}
+                      <linearGradient id="gradientLeetcode" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#FFA116" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#FFA116" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="gradientCodeforces" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#1F8ACB" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#1F8ACB" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="gradientCodechef" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#5B4638" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#5B4638" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="gradientDefault" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666" 
+                      tick={{ fontSize: 10 }} 
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                      }}
+                    />
+                    <YAxis stroke="#666" tick={{ fontSize: 10 }} domain={['dataMin - 100', 'dataMax + 100']} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333', borderRadius: '8px' }}
-                      labelStyle={{ color: '#fff' }}
+                      contentStyle={{ 
+                        backgroundColor: '#1a1a2e', 
+                        border: '1px solid #333', 
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                      }}
+                      labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: 4 }}
+                      formatter={(value, name) => {
+                        if (value === null) return ['-', platformConfig[name]?.name || name];
+                        return [value, platformConfig[name]?.name || name];
+                      }}
+                      labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { 
+                        day: 'numeric', month: 'short', year: 'numeric' 
+                      })}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="rating" 
-                      stroke="#f59e0b" 
-                      strokeWidth={2} 
-                      dot={{ fill: '#f59e0b', strokeWidth: 2 }}
-                    />
-                  </LineChart>
+                    
+                    {/* Render areas for each platform */}
+                    {selectedRatingPlatform === 'all' ? (
+                      (allRatingHistory.platforms || []).map(platform => (
+                        <Area 
+                          key={platform}
+                          type="monotone" 
+                          dataKey={platform}
+                          name={platform}
+                          stroke={platformRatingColors[platform]}
+                          strokeWidth={2} 
+                          fill={`url(#gradient${platform.charAt(0).toUpperCase() + platform.slice(1)})`}
+                          dot={false}
+                          activeDot={{ r: 4, fill: platformRatingColors[platform] }}
+                          connectNulls
+                        />
+                      ))
+                    ) : allRatingHistory.byPlatform?.[selectedRatingPlatform]?.length > 0 ? (
+                      <Area 
+                        type="monotone" 
+                        dataKey={selectedRatingPlatform}
+                        name={selectedRatingPlatform}
+                        stroke={platformRatingColors[selectedRatingPlatform]}
+                        strokeWidth={2.5} 
+                        fill={`url(#gradient${selectedRatingPlatform.charAt(0).toUpperCase() + selectedRatingPlatform.slice(1)})`}
+                        dot={false}
+                        activeDot={{ r: 5, fill: platformRatingColors[selectedRatingPlatform] }}
+                        connectNulls
+                      />
+                    ) : (
+                      <Area 
+                        type="monotone" 
+                        dataKey="rating" 
+                        stroke="#f59e0b" 
+                        strokeWidth={2} 
+                        fill="url(#gradientDefault)"
+                        dot={false}
+                        activeDot={{ r: 4, fill: '#f59e0b' }}
+                      />
+                    )}
+                  </AreaChart>
                 </ResponsiveContainer>
+              </div>
+              
+              {/* Current Ratings Summary */}
+              <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-gray-800">
+                {platformStats.leetcode?.rating > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold" style={{ color: platformRatingColors.leetcode }}>{platformStats.leetcode.rating}</div>
+                    <div className="text-xs text-gray-500">LeetCode</div>
+                  </div>
+                )}
+                {platformStats.codeforces?.rating > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold" style={{ color: platformRatingColors.codeforces }}>{platformStats.codeforces.rating}</div>
+                    <div className="text-xs text-gray-500">Codeforces</div>
+                  </div>
+                )}
+                {platformStats.codechef?.rating > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold" style={{ color: platformRatingColors.codechef }}>{platformStats.codechef.rating}</div>
+                    <div className="text-xs text-gray-500">CodeChef</div>
+                  </div>
+                )}
               </div>
             </div>
 

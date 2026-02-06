@@ -1,15 +1,32 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('../config/passport');
+const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const {
   register,
   login,
   getMe,
   updateProfile,
-  updatePassword
+  updatePassword,
+  uploadAvatar,
+  updateSettings
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+
+// Multer configuration for avatar uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Public routes
 router.post('/register', register);
@@ -49,5 +66,7 @@ router.get('/github/callback',
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.put('/password', protect, updatePassword);
+router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
+router.put('/settings', protect, updateSettings);
 
 module.exports = router;

@@ -15,6 +15,7 @@ router.get('/weekly-progress', protect, analyticsController.getWeeklyProgress);
 
 // Rating Analytics
 router.get('/rating-history/:platform', protect, analyticsController.getRatingHistory);
+router.get('/all-rating-history', protect, analyticsController.getAllRatingHistory);
 router.get('/rating-changes', protect, analyticsController.getRatingChanges);
 router.get('/rating-prediction/:platform', protect, analyticsController.getRatingPrediction);
 router.get('/contest-performance', protect, analyticsController.getContestPerformance);

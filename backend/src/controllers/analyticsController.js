@@ -18,6 +18,12 @@ const {
   generateInsightsSummary 
 } = require('../services/insightsService');
 
+// Import platform-specific rating history functions
+const { fetchLeetCodeRatingHistory } = require('../services/platforms/leetcodeService');
+const { fetchCodeforcesRatingHistory } = require('../services/platforms/codeforcesService');
+const { fetchCodeChefRatingHistory } = require('../services/platforms/codechefService');
+const User = require('../models/User');
+
 /**
  * Analytics Controller
  * Handles Phase 4 analytics endpoints
@@ -283,6 +289,111 @@ exports.getInsightsSummary = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error generating insights summary',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get all platforms rating history (REAL DATA from platform APIs)
+ * GET /api/analytics/all-rating-history
+ */
+exports.getAllRatingHistory = async (req, res) => {
+  try {
+    // Get user's linked platform usernames
+    const user = await User.findById(req.user.id).select('platforms');
+    if (!user || !user.platforms) {
+      return res.json({
+        success: true,
+        data: { chartData: [], byPlatform: {}, platforms: [] }
+      });
+    }
+
+    const { leetcode, codeforces, codechef } = user.platforms;
+    
+    // Fetch real rating history from each platform API in parallel
+    const fetchPromises = [];
+    const platformNames = [];
+
+    if (leetcode) {
+      platformNames.push('leetcode');
+      fetchPromises.push(fetchLeetCodeRatingHistory(leetcode));
+    }
+    if (codeforces) {
+      platformNames.push('codeforces');
+      fetchPromises.push(fetchCodeforcesRatingHistory(codeforces));
+    }
+    if (codechef) {
+      platformNames.push('codechef');
+      fetchPromises.push(fetchCodeChefRatingHistory(codechef));
+    }
+
+    const results = await Promise.all(fetchPromises);
+
+    // Build platform history map
+    const byPlatform = {};
+    const allDates = new Set();
+    const platformData = {};
+
+    results.forEach((result, index) => {
+      const platform = platformNames[index];
+      const history = result.success ? result.data : [];
+      byPlatform[platform] = history;
+      platformData[platform] = {};
+      
+      history.forEach(entry => {
+        allDates.add(entry.date);
+        platformData[platform][entry.date] = entry.rating;
+      });
+    });
+
+    // Sort dates chronologically
+    const sortedDates = Array.from(allDates).sort();
+
+    // Build unified chart data with all platforms
+    const chartData = sortedDates.map(date => {
+      const entry = { date };
+      platformNames.forEach(platform => {
+        entry[platform] = platformData[platform][date] || null;
+      });
+      return entry;
+    });
+
+    // Fill in gaps with previous known rating (for smoother chart)
+    const filledChartData = chartData.map((entry, idx) => {
+      const filledEntry = { ...entry };
+      platformNames.forEach(platform => {
+        if (filledEntry[platform] === null && idx > 0) {
+          // Look back for last known rating
+          for (let i = idx - 1; i >= 0; i--) {
+            if (chartData[i][platform] !== null) {
+              filledEntry[platform] = chartData[i][platform];
+              break;
+            }
+          }
+        }
+      });
+      return filledEntry;
+    });
+
+    // Get active platforms (those with data)
+    const activePlatforms = platformNames.filter(p => byPlatform[p]?.length > 0);
+
+    console.log(`✅ Rating history fetched: ${activePlatforms.join(', ')} with ${sortedDates.length} data points`);
+
+    res.json({
+      success: true,
+      data: {
+        chartData: filledChartData,
+        byPlatform,
+        platforms: activePlatforms
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching all rating history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching rating history',
       error: error.message
     });
   }

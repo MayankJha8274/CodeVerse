@@ -11,8 +11,18 @@ import {
   TrendingUp,
   Award,
   Clock,
-  Target
+  Target,
+  CheckCircle2,
+  CircleDot
 } from 'lucide-react';
+import { 
+  striverA2ZProblems, 
+  neetcode150Problems, 
+  blind75Problems, 
+  striverSDEProblems, 
+  loveBabbarProblems, 
+  frazSdeProblems 
+} from '../data/sheetsData';
 
 // Popular DSA Sheets Data
 const dsaSheets = [
@@ -533,6 +543,289 @@ const SheetsPage = () => {
                     </div>
                     {expandedTopics[topic.name] && (
                       <div className="p-4 pt-0 border-t border-gray-700">
+                        {/* Real Problems List */}
+                        {selectedSheet.id === 'striver-a2z' && striverA2ZProblems[topic.name] && (
+                          <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
+                            {striverA2ZProblems[topic.name].map((problem, idx) => {
+                              const isCompleted = idx < topic.completed;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-[#16161f] rounded-lg hover:bg-[#252538] transition-colors group">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTopicProgress(selectedSheet.id, topic.name, isCompleted ? -1 : 1);
+                                      }}
+                                      className="transition-all"
+                                    >
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-500 group-hover:text-amber-500" />
+                                      )}
+                                    </button>
+                                    <span className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                      {problem.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-500' :
+                                      problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {problem.difficulty}
+                                    </span>
+                                    <a
+                                      href={problem.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-amber-500 hover:text-amber-400 transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {selectedSheet.id === 'neetcode-150' && neetcode150Problems[topic.name] && (
+                          <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
+                            {neetcode150Problems[topic.name].map((problem, idx) => {
+                              const isCompleted = idx < topic.completed;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-[#16161f] rounded-lg hover:bg-[#252538] transition-colors group">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTopicProgress(selectedSheet.id, topic.name, isCompleted ? -1 : 1);
+                                      }}
+                                      className="transition-all"
+                                    >
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-500 group-hover:text-amber-500" />
+                                      )}
+                                    </button>
+                                    <span className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                      {problem.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-500' :
+                                      problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {problem.difficulty}
+                                    </span>
+                                    <a
+                                      href={problem.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-amber-500 hover:text-amber-400 transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {selectedSheet.id === 'blind-75' && blind75Problems[topic.name] && (
+                          <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
+                            {blind75Problems[topic.name].map((problem, idx) => {
+                              const isCompleted = idx < topic.completed;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-[#16161f] rounded-lg hover:bg-[#252538] transition-colors group">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTopicProgress(selectedSheet.id, topic.name, isCompleted ? -1 : 1);
+                                      }}
+                                      className="transition-all"
+                                    >
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-500 group-hover:text-amber-500" />
+                                      )}
+                                    </button>
+                                    <span className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                      {problem.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-500' :
+                                      problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {problem.difficulty}
+                                    </span>
+                                    <a
+                                      href={problem.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-amber-500 hover:text-amber-400 transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {selectedSheet.id === 'striver-sde' && striverSDEProblems[topic.name] && (
+                          <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
+                            {striverSDEProblems[topic.name].map((problem, idx) => {
+                              const isCompleted = idx < topic.completed;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-[#16161f] rounded-lg hover:bg-[#252538] transition-colors group">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTopicProgress(selectedSheet.id, topic.name, isCompleted ? -1 : 1);
+                                      }}
+                                      className="transition-all"
+                                    >
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-500 group-hover:text-amber-500" />
+                                      )}
+                                    </button>
+                                    <span className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                      {problem.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-500' :
+                                      problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {problem.difficulty}
+                                    </span>
+                                    <a
+                                      href={problem.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-amber-500 hover:text-amber-400 transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {selectedSheet.id === 'love-babbar' && loveBabbarProblems[topic.name] && (
+                          <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
+                            {loveBabbarProblems[topic.name].map((problem, idx) => {
+                              const isCompleted = idx < topic.completed;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-[#16161f] rounded-lg hover:bg-[#252538] transition-colors group">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTopicProgress(selectedSheet.id, topic.name, isCompleted ? -1 : 1);
+                                      }}
+                                      className="transition-all"
+                                    >
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-500 group-hover:text-amber-500" />
+                                      )}
+                                    </button>
+                                    <span className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                      {problem.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-500' :
+                                      problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {problem.difficulty}
+                                    </span>
+                                    <a
+                                      href={problem.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-amber-500 hover:text-amber-400 transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {selectedSheet.id === 'fraz-sde' && frazSdeProblems[topic.name] && (
+                          <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
+                            {frazSdeProblems[topic.name].map((problem, idx) => {
+                              const isCompleted = idx < topic.completed;
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-[#16161f] rounded-lg hover:bg-[#252538] transition-colors group">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateTopicProgress(selectedSheet.id, topic.name, isCompleted ? -1 : 1);
+                                      }}
+                                      className="transition-all"
+                                    >
+                                      {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-500 group-hover:text-amber-500" />
+                                      )}
+                                    </button>
+                                    <span className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                      {problem.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-500' :
+                                      problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {problem.difficulty}
+                                    </span>
+                                    <a
+                                      href={problem.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-amber-500 hover:text-amber-400 transition-colors"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-gray-400">Track your progress for this topic</p>
                           <div className="flex items-center gap-2">

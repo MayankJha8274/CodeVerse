@@ -173,6 +173,11 @@ export const api = {
     return data.data;
   },
 
+  async getAllRatingHistory(days = 90) {
+    const data = await authFetch(`/analytics/all-rating-history?days=${days}`);
+    return data.data;
+  },
+
   async getTopicHeatmap() {
     const data = await authFetch('/analytics/languages');
     return data.data;
@@ -321,6 +326,43 @@ export const api = {
       ? `/compare/top?limit=${limit}&roomId=${roomId}`
       : `/compare/top?limit=${limit}`;
     const data = await authFetch(url);
+    return data.data;
+  },
+
+  // Leaderboard APIs
+  async getGlobalLeaderboard(page = 1, sortBy = 'cScore', limit = 100) {
+    const data = await authFetch(`/leaderboard?page=${page}&limit=${limit}&sortBy=${sortBy}`);
+    return data.data;
+  },
+
+  async getUserRank() {
+    const data = await authFetch('/leaderboard/rank');
+    return data.data;
+  },
+
+  async getInstitutionLeaderboard(institution, page = 1, sortBy = 'cScore', limit = 50) {
+    const data = await authFetch(`/leaderboard/institution/${encodeURIComponent(institution)}?page=${page}&limit=${limit}&sortBy=${sortBy}`);
+    return data.data;
+  },
+
+  // Avatar upload
+  async uploadAvatar(file) {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/api/auth/upload-avatar`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to upload avatar');
+    }
     return data.data;
   }
 };

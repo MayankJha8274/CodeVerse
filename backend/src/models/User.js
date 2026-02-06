@@ -39,6 +39,21 @@ const userSchema = new mongoose.Schema({
     maxlength: [500, 'Bio cannot exceed 500 characters'],
     default: ''
   },
+  location: {
+    type: String,
+    maxlength: [100, 'Location cannot exceed 100 characters'],
+    default: ''
+  },
+  institution: {
+    type: String,
+    maxlength: [200, 'Institution name cannot exceed 200 characters'],
+    default: ''
+  },
+  country: {
+    type: String,
+    maxlength: [50, 'Country cannot exceed 50 characters'],
+    default: 'IN'
+  },
   // Platform connections - store usernames/handles
   platforms: {
     leetcode: { type: String, default: null },

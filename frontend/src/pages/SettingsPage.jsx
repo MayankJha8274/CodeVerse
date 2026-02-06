@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Save, RefreshCw, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, RefreshCw, Eye, EyeOff, CheckCircle, Camera, Upload, AlertCircle } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 const SettingsPage = () => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, login: updateAuthUser } = useAuth();
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [refreshing, setRefreshing] = useState(null);
   const [user, setUser] = useState({
     name: '',
@@ -15,6 +18,8 @@ const SettingsPage = () => {
     email: '',
     bio: '',
     location: '',
+    institution: '',
+    country: '',
     avatar: ''
   });
 
@@ -39,27 +44,63 @@ const SettingsPage = () => {
   useEffect(() => {
     if (authUser) {
       setUser({
-        name: authUser.name || '',
+        name: authUser.name || authUser.fullName || '',
         username: authUser.username || '',
         email: authUser.email || '',
         bio: authUser.bio || '',
         location: authUser.location || '',
+        institution: authUser.institution || '',
+        country: authUser.country || 'IN',
         avatar: authUser.avatar || authUser.avatarUrl || ''
       });
       
       // Load platform usernames if available
       if (authUser.platforms) {
         setPlatforms({
-          leetcode: authUser.platforms.leetcode?.username || '',
-          codeforces: authUser.platforms.codeforces?.username || '',
-          codechef: authUser.platforms.codechef?.username || '',
-          github: authUser.platforms.github?.username || '',
-          geeksforgeeks: authUser.platforms.geeksforgeeks?.username || '',
-          hackerrank: authUser.platforms.hackerrank?.username || ''
+          leetcode: authUser.platforms.leetcode?.username || authUser.platforms.leetcode || '',
+          codeforces: authUser.platforms.codeforces?.username || authUser.platforms.codeforces || '',
+          codechef: authUser.platforms.codechef?.username || authUser.platforms.codechef || '',
+          github: authUser.platforms.github?.username || authUser.platforms.github || '',
+          geeksforgeeks: authUser.platforms.geeksforgeeks?.username || authUser.platforms.geeksforgeeks || '',
+          hackerrank: authUser.platforms.hackerrank?.username || authUser.platforms.hackerrank || ''
         });
       }
     }
   }, [authUser]);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be less than 2MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const result = await api.uploadAvatar(file);
+      setUser(prev => ({ ...prev, avatar: result.avatar }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      setError(error.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleUserChange = (e) => {
     setUser({
@@ -85,12 +126,29 @@ const SettingsPage = () => {
   const handleSave = async () => {
     setLoading(true);
     setSaved(false);
+    setError(null);
     
     try {
-      await api.updateUser({ ...user, platforms, settings });
+      const response = await api.updateUser({ 
+        ...user, 
+        fullName: user.name,
+        platforms, 
+        settings 
+      });
+      
+      // Update auth context with new user data
+      if (response && updateAuthUser) {
+        // Refresh user data
+        const userData = await api.getUser();
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+      }
+      
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
+      setError(error.message || 'Failed to save settings');
       console.error('Failed to save settings:', error);
     } finally {
       setLoading(false);
@@ -127,11 +185,53 @@ const SettingsPage = () => {
           Profile Information
         </h2>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-400">
+            <AlertCircle className="w-5 h-5" />
+            {error}
+          </div>
+        )}
+
         <div className="flex items-center gap-6 mb-6">
-          <UserAvatar user={user} size="2xl" />
+          <div className="relative">
+            <UserAvatar user={{ avatar: user.avatar, name: user.name }} size="2xl" />
+            <button
+              onClick={handleAvatarClick}
+              disabled={uploadingAvatar}
+              className="absolute bottom-0 right-0 p-2 bg-amber-500 hover:bg-amber-600 rounded-full text-black transition-colors disabled:opacity-50"
+            >
+              {uploadingAvatar ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
           <div>
-            <button className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg mb-2 transition-colors">
-              Change Avatar
+            <button 
+              onClick={handleAvatarClick}
+              disabled={uploadingAvatar}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg mb-2 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {uploadingAvatar ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Change Avatar
+                </>
+              )}
             </button>
             <p className="text-sm text-gray-500">
               JPG, PNG or GIF. Max size 2MB.
@@ -203,8 +303,49 @@ const SettingsPage = () => {
               name="location"
               value={user.location}
               onChange={handleUserChange}
+              placeholder="e.g., Mumbai, India"
               className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Institution / College
+              </label>
+              <input
+                type="text"
+                name="institution"
+                value={user.institution}
+                onChange={handleUserChange}
+                placeholder="e.g., IIT Delhi"
+                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Country
+              </label>
+              <select
+                name="country"
+                value={user.country}
+                onChange={handleUserChange}
+                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              >
+                <option value="IN">India</option>
+                <option value="US">United States</option>
+                <option value="UK">United Kingdom</option>
+                <option value="CA">Canada</option>
+                <option value="AU">Australia</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="SG">Singapore</option>
+                <option value="JP">Japan</option>
+                <option value="CN">China</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
