@@ -10,16 +10,18 @@ const submissionController = require('../controllers/submissionController');
 
 // Public routes
 router.get('/public', hostedContestController.getPublicContests);
-router.get('/:slug', optionalAuth, hostedContestController.getContest);
-router.get('/:slug/notifications', hostedContestController.getNotifications);
-router.get('/:slug/leaderboard', optionalAuth, submissionController.getLeaderboard);
 
-// Protected routes
+// Protected routes (must come BEFORE :slug to prevent capture)
 router.use(protect);
+
+// My contests - MUST be before /:slug
+router.get('/my-contests', hostedContestController.getMyContests);
 
 // Contest management
 router.post('/', hostedContestController.createContest);
-router.get('/my-contests', hostedContestController.getMyContests);
+router.get('/:slug', optionalAuth, hostedContestController.getContest);
+router.get('/:slug/notifications', hostedContestController.getNotifications);
+router.get('/:slug/leaderboard', optionalAuth, submissionController.getLeaderboard);
 router.put('/:slug', hostedContestController.updateContest);
 router.delete('/:slug', hostedContestController.deleteContest);
 

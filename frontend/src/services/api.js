@@ -653,6 +653,94 @@ export const api = {
       body: JSON.stringify({ code, language, input })
     });
     return data;
+  },
+
+  // ============== PROBLEM SET APIs ==============
+
+  // Get public problems
+  async getPublicProblems(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const data = await publicFetch(`/problem-set/public${queryString ? `?${queryString}` : ''}`);
+    return data;
+  },
+
+  // Get my problems
+  async getMyProblems() {
+    const data = await authFetch('/problem-set/my-problems');
+    return data;
+  },
+
+  // Get single problem
+  async getProblem(slug) {
+    const data = await authFetch(`/problem-set/${slug}`);
+    return data;
+  },
+
+  // Create problem
+  async createProblem(problemData) {
+    const data = await authFetch('/problem-set', {
+      method: 'POST',
+      body: JSON.stringify(problemData)
+    });
+    return data;
+  },
+
+  // Update problem
+  async updateProblem(slug, problemData) {
+    const data = await authFetch(`/problem-set/${slug}`, {
+      method: 'PUT',
+      body: JSON.stringify(problemData)
+    });
+    return data;
+  },
+
+  // Delete problem
+  async deleteProblem(slug) {
+    const data = await authFetch(`/problem-set/${slug}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // Add moderator
+  async addProblemModerator(slug, userIdentifier, role = 'editor') {
+    const data = await authFetch(`/problem-set/${slug}/moderators`, {
+      method: 'POST',
+      body: JSON.stringify({ userIdentifier, role })
+    });
+    return data;
+  },
+
+  // Remove moderator
+  async removeProblemModerator(slug, userId) {
+    const data = await authFetch(`/problem-set/${slug}/moderators/${userId}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // Add test case
+  async addProblemTestCase(slug, testCaseData) {
+    const data = await authFetch(`/problem-set/${slug}/testcases`, {
+      method: 'POST',
+      body: JSON.stringify(testCaseData)
+    });
+    return data;
+  },
+
+  // Delete test case
+  async deleteProblemTestCase(slug, testCaseId) {
+    const data = await authFetch(`/problem-set/${slug}/testcases/${testCaseId}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // Search problems for contest
+  async searchProblems(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const data = await authFetch(`/problem-set/search${queryString ? `?${queryString}` : ''}`);
+    return data;
   }
 };
 

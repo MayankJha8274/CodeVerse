@@ -11,7 +11,8 @@ import {
   X,
   Zap,
   Calendar,
-  PlusCircle
+  PlusCircle,
+  FileCode2
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -37,6 +38,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { to: '/daily-challenge', icon: Zap, label: 'Daily Challenge' },
     { to: '/contests', icon: Calendar, label: 'Contests' },
     { to: '/contests/admin', icon: PlusCircle, label: 'Host Contest' },
+    { to: '/problem-set', icon: FileCode2, label: 'Problem Set' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/rooms', icon: Users, label: 'Societies' },
     { to: '/compare', icon: GitCompare, label: 'Compare' },
@@ -55,25 +57,25 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-[#16161f] border-r border-gray-800
+        fixed top-0 left-0 h-full w-64 bg-white dark:bg-[#16161f] border-r border-gray-200 dark:border-gray-800
         transform transition-transform duration-300 ease-in-out z-50
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-800">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
                 <Code2 className="w-5 h-5 text-black" />
               </div>
-              <span className="text-xl font-bold text-white">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
                 CodeVerse
               </span>
             </div>
             <button
               onClick={onClose}
-              className="lg:hidden text-gray-400 hover:text-white"
+              className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
@@ -89,8 +91,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 className={({ isActive }) => `
                   flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
                   ${isActive 
-                    ? 'bg-amber-500/20 text-amber-500' 
-                    : 'text-gray-400 hover:bg-[#1a1a2e] hover:text-white'
+                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-500' 
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1a2e] hover:text-gray-900 dark:hover:text-white'
                   }
                 `}
               >
@@ -101,21 +103,21 @@ const Sidebar = ({ isOpen, onClose }) => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-800">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <NavLink
               to="/leaderboard"
               className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 hover:from-amber-500/20 hover:to-orange-500/20 transition-colors"
             >
               <Trophy className="w-5 h-5 text-amber-500" />
               <div className="flex-1">
-                <div className="text-xs text-gray-400">Your Rank</div>
-                <div className="text-sm font-bold text-white">
+                <div className="text-xs text-gray-500 dark:text-gray-400">Your Rank</div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white">
                   {userRank ? `#${userRank.rank.toLocaleString()}` : 'Loading...'}
                 </div>
               </div>
               {userRank && (
                 <div className="text-right">
-                  <div className="text-xs text-gray-400">C-Score</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">C-Score</div>
                   <div className="text-sm font-bold text-amber-500">{userRank.cScore}</div>
                 </div>
               )}

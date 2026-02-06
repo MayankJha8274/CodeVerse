@@ -162,9 +162,12 @@ const ContestEditPage = () => {
       };
 
       if (isNewContest) {
-        const newContest = await api.createHostedContest(contestData);
+        const response = await api.createHostedContest(contestData);
+        const createdSlug = response.slug || response.data?.slug;
         setSuccess('Contest created successfully!');
-        setTimeout(() => navigate(`/contests/${newContest.slug}/edit`), 1000);
+        if (createdSlug) {
+          setTimeout(() => window.location.href = `/contests/${createdSlug}/edit`, 1000);
+        }
       } else {
         await api.updateHostedContest(slug, contestData);
         setSuccess('Contest saved successfully!');
@@ -279,20 +282,24 @@ const ContestEditPage = () => {
 
           {/* Tabs */}
           <div className="flex gap-1 overflow-x-auto">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                disabled={isNewContest && tab.id !== 'details'}
-                className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-[#1a1a24] text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                } ${isNewContest && tab.id !== 'details' ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {TABS.map(tab => {
+              const isDisabled = isNewContest && tab.id !== 'details';
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => !isDisabled && setActiveTab(tab.id)}
+                  disabled={isDisabled}
+                  className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-[#1a1a24] text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={isDisabled ? 'Save the contest first to access this tab' : ''}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
