@@ -199,10 +199,95 @@ const updatePassword = async (req, res, next) => {
   }
 };
 
+// @desc    Upload avatar
+// @route   POST /api/auth/upload-avatar
+// @access  Private
+const uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload an image file'
+      });
+    }
+
+    // Store avatar as base64 or file path
+    // For simplicity, we'll use base64 for now
+    const avatarData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { avatar: avatarData },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      data: {
+        avatar: user.avatar
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update user settings (profile + platforms + preferences)
+// @route   PUT /api/auth/settings
+// @access  Private
+const updateSettings = async (req, res, next) => {
+  try {
+    const { name, username, email, bio, location, platforms, settings } = req.body;
+
+    const updateData = {};
+    if (name) updateData.fullName = name;
+    if (username) updateData.username = username;
+    if (email) updateData.email = email;
+    if (bio !== undefined) updateData.bio = bio;
+    if (location !== undefined) updateData.location = location;
+    if (settings) updateData.settings = settings;
+    
+    // Handle platforms - merge with existing
+    if (platforms) {
+      const user = await User.findById(req.user.id);
+      const updatedPlatforms = { ...user.platforms };
+      
+      for (const [platform, platformUsername] of Object.entries(platforms)) {
+        if (platformUsername) {
+          updatedPlatforms[platform] = {
+            ...updatedPlatforms[platform],
+            username: platformUsername,
+            connected: true,
+            lastSync: new Date()
+          };
+        }
+      }
+      updateData.platforms = updatedPlatforms;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Settings updated successfully',
+      data: { user: updatedUser }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
   updateProfile,
-  updatePassword
+  updatePassword,
+  uploadAvatar,
+  updateSettings
 };

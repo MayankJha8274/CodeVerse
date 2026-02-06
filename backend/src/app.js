@@ -51,6 +51,7 @@ try {
   app.use('/api/analytics', require('./routes/analyticsRoutes'));
   app.use('/api/dashboard', require('./routes/dashboardRoutes'));
   app.use('/api/compare', require('./routes/comparisonRoutes'));
+  app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
   console.log('✅ All routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading routes:', error.message);

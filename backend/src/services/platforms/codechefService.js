@@ -118,6 +118,78 @@ const fetchCodeChefStats = async (username) => {
   }
 };
 
+/**
+ * Fetch CodeChef rating history
+ * @param {string} username - CodeChef username
+ * @returns {Array} Rating history with dates
+ */
+const fetchCodeChefRatingHistory = async (username) => {
+  try {
+    // CodeChef embeds rating data in the profile page
+    const response = await axios.get(`https://www.codechef.com/users/${username}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml'
+      },
+      timeout: 15000
+    });
+
+    const $ = cheerio.load(response.data);
+    const history = [];
+
+    // Try to extract rating graph data from script tags
+    const scripts = $('script').toArray();
+    for (const script of scripts) {
+      const content = $(script).html() || '';
+      
+      // Look for rating data in script content
+      const ratingMatch = content.match(/all_rating\s*=\s*(\[[\s\S]*?\])/);
+      if (ratingMatch) {
+        try {
+          const ratingData = JSON.parse(ratingMatch[1]);
+          ratingData.forEach(item => {
+            history.push({
+              date: item.end_date || item.gettime || new Date().toISOString().split('T')[0],
+              rating: parseInt(item.rating) || 0,
+              contestName: item.name || item.code || 'Contest',
+              rank: item.rank || 0
+            });
+          });
+        } catch (parseError) {
+          // Continue if parsing fails
+        }
+      }
+
+      // Alternative: Look for graph data
+      const graphMatch = content.match(/date_versus_rating\s*=\s*({[\s\S]*?})\s*;/);
+      if (graphMatch && history.length === 0) {
+        try {
+          const graphData = JSON.parse(graphMatch[1]);
+          Object.entries(graphData).forEach(([date, rating]) => {
+            history.push({
+              date,
+              rating: parseInt(rating) || 0,
+              contestName: 'Contest'
+            });
+          });
+        } catch (parseError) {
+          // Continue if parsing fails
+        }
+      }
+    }
+
+    // Sort by date
+    history.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    console.log(`✅ CodeChef rating history: ${username} - ${history.length} entries`);
+    return { success: true, data: history };
+  } catch (error) {
+    console.error(`❌ CodeChef rating history error for ${username}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
 module.exports = {
-  fetchCodeChefStats
+  fetchCodeChefStats,
+  fetchCodeChefRatingHistory
 };

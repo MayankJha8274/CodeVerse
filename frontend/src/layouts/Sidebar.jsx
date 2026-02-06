@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -10,12 +10,28 @@ import {
   BookOpen,
   X
 } from 'lucide-react';
+import api from '../services/api';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const [userRank, setUserRank] = useState(null);
+
+  useEffect(() => {
+    const fetchUserRank = async () => {
+      try {
+        const data = await api.getUserRank();
+        setUserRank(data);
+      } catch (error) {
+        console.error('Failed to fetch user rank:', error);
+      }
+    };
+    fetchUserRank();
+  }, []);
+
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/platforms', icon: Code2, label: 'Platforms' },
     { to: '/sheets', icon: BookOpen, label: 'DSA Sheets' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/rooms', icon: Users, label: 'Societies' },
     { to: '/compare', icon: GitCompare, label: 'Compare' },
     { to: '/settings', icon: Settings, label: 'Settings' }
@@ -80,13 +96,24 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-800">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30">
+            <NavLink
+              to="/leaderboard"
+              className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 hover:from-amber-500/20 hover:to-orange-500/20 transition-colors"
+            >
               <Trophy className="w-5 h-5 text-amber-500" />
               <div className="flex-1">
                 <div className="text-xs text-gray-400">Your Rank</div>
-                <div className="text-sm font-bold text-white">#2,456</div>
+                <div className="text-sm font-bold text-white">
+                  {userRank ? `#${userRank.rank.toLocaleString()}` : 'Loading...'}
+                </div>
               </div>
-            </div>
+              {userRank && (
+                <div className="text-right">
+                  <div className="text-xs text-gray-400">C-Score</div>
+                  <div className="text-sm font-bold text-amber-500">{userRank.cScore}</div>
+                </div>
+              )}
+            </NavLink>
           </div>
         </div>
       </aside>

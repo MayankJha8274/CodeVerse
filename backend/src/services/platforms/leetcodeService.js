@@ -209,6 +209,70 @@ const fetchLeetCodeStats = async (username) => {
   }
 };
 
+/**
+ * Fetch LeetCode contest rating history (real data)
+ * @param {string} username - LeetCode username
+ * @returns {Array} Rating history with dates
+ */
+const fetchLeetCodeRatingHistory = async (username) => {
+  try {
+    const query = `
+      query userContestRankingHistory($username: String!) {
+        userContestRankingHistory(username: $username) {
+          attended
+          rating
+          ranking
+          trendDirection
+          problemsSolved
+          totalProblems
+          finishTimeInSeconds
+          contest {
+            title
+            startTime
+          }
+        }
+      }
+    `;
+
+    const response = await axios.post(LEETCODE_API_ENDPOINT, {
+      query,
+      variables: { username }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 15000
+    });
+
+    const historyData = response.data?.data?.userContestRankingHistory;
+    
+    if (!historyData || !Array.isArray(historyData)) {
+      return { success: false, data: [] };
+    }
+
+    // Filter only attended contests and transform data
+    const history = historyData
+      .filter(contest => contest.attended)
+      .map(contest => ({
+        date: new Date(contest.contest.startTime * 1000).toISOString().split('T')[0],
+        rating: Math.round(contest.rating),
+        contestName: contest.contest.title,
+        rank: contest.ranking,
+        problemsSolved: contest.problemsSolved,
+        totalProblems: contest.totalProblems
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    console.log(`✅ LeetCode rating history: ${username} - ${history.length} contests`);
+    return { success: true, data: history };
+  } catch (error) {
+    console.error(`❌ LeetCode rating history error for ${username}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
 module.exports = {
-  fetchLeetCodeStats
+  fetchLeetCodeStats,
+  fetchLeetCodeRatingHistory
 };

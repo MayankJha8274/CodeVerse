@@ -26,6 +26,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.4",
+    "multer": "^2.0.2",
     "node-cron": "^3.0.3",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
