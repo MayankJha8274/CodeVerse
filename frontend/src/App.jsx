@@ -13,6 +13,8 @@ import ComparisonPage from './pages/ComparisonPage';
 import SettingsPage from './pages/SettingsPage';
 import SheetsPage from './pages/SheetsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import DailyChallengePage from './pages/DailyChallengePage';
+import ContestsPage from './pages/ContestsPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -34,6 +36,8 @@ function App() {
             <Route path="compare" element={<ComparisonPage />} />
             <Route path="sheets" element={<SheetsPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
+            <Route path="daily-challenge" element={<DailyChallengePage />} />
+            <Route path="contests" element={<ContestsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

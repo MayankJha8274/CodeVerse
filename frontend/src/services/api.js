@@ -194,7 +194,17 @@ export const api = {
   },
 
   async getAchievements() {
-    const data = await authFetch('/analytics/achievements');
+    const data = await authFetch('/platforms/achievements');
+    return data.data;
+  },
+
+  async getTopicAnalysis() {
+    const data = await authFetch('/platforms/topics');
+    return data.data;
+  },
+
+  async getBadges() {
+    const data = await authFetch('/platforms/badges');
     return data.data;
   },
 
@@ -203,13 +213,46 @@ export const api = {
     return data.data;
   },
 
-  // Daily Challenge API (placeholder)
+  // Daily Challenge APIs
   async getDailyChallenge() {
-    return {
-      title: "Two Sum Problem",
-      difficulty: "Easy",
-      description: "Find two numbers that add up to target"
-    };
+    const data = await authFetch('/daily-challenge/today');
+    return data;
+  },
+
+  async completeDailyChallenge() {
+    const data = await authFetch('/daily-challenge/complete', {
+      method: 'POST'
+    });
+    return data;
+  },
+
+  async verifyDailyChallenge() {
+    const data = await authFetch('/daily-challenge/verify', {
+      method: 'POST'
+    });
+    return data;
+  },
+
+  async skipDailyChallenge() {
+    const data = await authFetch('/daily-challenge/skip', {
+      method: 'POST'
+    });
+    return data;
+  },
+
+  async getDailyChallengeStreak() {
+    const data = await authFetch('/daily-challenge/streak');
+    return data;
+  },
+
+  async getDailyChallengeHistory(limit = 30) {
+    const data = await authFetch(`/daily-challenge/history?limit=${limit}`);
+    return data;
+  },
+
+  async getDailyChallengeTopics() {
+    const data = await authFetch('/daily-challenge/topics');
+    return data;
   },
 
   // Platform sync APIs
@@ -363,6 +406,43 @@ export const api = {
     if (!response.ok) {
       throw new Error(data.message || 'Failed to upload avatar');
     }
+    return data.data;
+  },
+
+  // Contest APIs
+  async getContests(platform = 'all', limit = 50) {
+    const data = await authFetch(`/contests?platform=${platform}&limit=${limit}`);
+    return data.data;
+  },
+
+  async getContestsCalendar(month, year) {
+    const data = await authFetch(`/contests/calendar?month=${month}&year=${year}`);
+    return data;
+  },
+
+  async refreshContests() {
+    const data = await authFetch('/contests/refresh', {
+      method: 'POST'
+    });
+    return data;
+  },
+
+  async setContestReminder(contestId) {
+    const data = await authFetch(`/contests/${contestId}/reminder`, {
+      method: 'POST'
+    });
+    return data;
+  },
+
+  async removeContestReminder(contestId) {
+    const data = await authFetch(`/contests/${contestId}/reminder`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  async getUserReminders() {
+    const data = await authFetch('/contests/reminders');
     return data.data;
   }
 };

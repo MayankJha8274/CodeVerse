@@ -124,6 +124,9 @@ const Dashboard = () => {
   const [refreshTimer, setRefreshTimer] = useState(null);
   const [showPlatformStats, setShowPlatformStats] = useState(false);
   const [selectedRatingPlatform, setSelectedRatingPlatform] = useState('all'); // 'all' or specific platform
+  const [topicAnalysis, setTopicAnalysis] = useState([]);
+  const [badges, setBadges] = useState([]);
+  const [achievements, setAchievements] = useState([]);
 
   // Platform colors for rating graph
   const platformRatingColors = {
@@ -140,17 +143,23 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [summaryData, allStats, ratingsData, allRatingsData] = await Promise.all([
+      const [summaryData, allStats, ratingsData, allRatingsData, topicsData, badgesData, achievementsData] = await Promise.all([
         api.getStats().catch(() => null),
         api.getAllPlatformStats().catch(() => ({})),
         api.getRatingGrowth().catch(() => []),
-        api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] }))
+        api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] })),
+        api.getTopicAnalysis().catch(() => []),
+        api.getBadges().catch(() => []),
+        api.getAchievements().catch(() => [])
       ]);
 
       setUserData(summaryData);
       setPlatformStats(allStats || {});
       setRatingHistory(ratingsData || []);
       setAllRatingHistory(allRatingsData || { chartData: [], platforms: [] });
+      setTopicAnalysis(topicsData || []);
+      setBadges(badgesData || []);
+      setAchievements(achievementsData || []);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -613,7 +622,7 @@ const Dashboard = () => {
                       (allRatingHistory.platforms || []).map(platform => (
                         <Area 
                           key={platform}
-                          type="monotone" 
+                          type="natural" 
                           dataKey={platform}
                           name={platform}
                           stroke={platformRatingColors[platform]}
@@ -626,7 +635,7 @@ const Dashboard = () => {
                       ))
                     ) : allRatingHistory.byPlatform?.[selectedRatingPlatform]?.length > 0 ? (
                       <Area 
-                        type="monotone" 
+                        type="natural" 
                         dataKey={selectedRatingPlatform}
                         name={selectedRatingPlatform}
                         stroke={platformRatingColors[selectedRatingPlatform]}
@@ -638,7 +647,7 @@ const Dashboard = () => {
                       />
                     ) : (
                       <Area 
-                        type="monotone" 
+                        type="natural" 
                         dataKey="rating" 
                         stroke="#f59e0b" 
                         strokeWidth={2} 
@@ -690,6 +699,198 @@ const Dashboard = () => {
                 <ChevronRight className="w-6 h-6 text-amber-500" />
               </div>
             </div>
+
+            {/* Contest Achievements/Titles */}
+            {achievements.length > 0 ? (
+              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span className="text-xl">🏆</span> Contest Rankings
+                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span className="text-xs text-green-400">Live</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {achievements.map((achievement, idx) => {
+                    const platformIcons = {
+                      leetcode: '📊',
+                      codeforces: '🔵',
+                      codechef: '👨‍🍳'
+                    };
+                    const platformNames = {
+                      leetcode: 'LeetCode',
+                      codeforces: 'Codeforces',
+                      codechef: 'CodeChef'
+                    };
+                    return (
+                      <div 
+                        key={idx}
+                        className="relative bg-gradient-to-br from-[#1a1a2e] to-[#12121a] rounded-xl p-5 border border-gray-700/50 text-center hover:border-gray-600 transition-all group overflow-hidden"
+                      >
+                        {/* Glow effect */}
+                        <div 
+                          className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
+                          style={{ 
+                            background: `radial-gradient(circle at 50% 0%, ${achievement.color}40, transparent 70%)` 
+                          }}
+                        />
+                        
+                        <div className="relative z-10">
+                          {/* Platform icon */}
+                          <div className="text-3xl mb-3">{achievement.icon}</div>
+                          
+                          {/* Title/Rank */}
+                          <div 
+                            className="text-xl font-bold mb-1"
+                            style={{ color: achievement.color }}
+                          >
+                            {achievement.title}
+                          </div>
+                          
+                          {/* Platform name */}
+                          <div className="text-sm text-gray-400 mb-2 flex items-center justify-center gap-1">
+                            <span>{platformIcons[achievement.platform]}</span>
+                            {platformNames[achievement.platform]}
+                          </div>
+                          
+                          {/* Rating */}
+                          <div className="bg-[#0d0d14] rounded-lg py-2 px-3 inline-block">
+                            <span className="text-xs text-gray-500">Rating</span>
+                            <div className="text-lg font-semibold text-white">{achievement.rating}</div>
+                            {achievement.maxRating && (
+                              <span className="text-xs text-gray-500">Max: {achievement.maxRating}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <span className="text-xl">🏆</span> Contest Rankings
+                </h3>
+                <div className="text-center py-6">
+                  <div className="text-4xl mb-3">🎯</div>
+                  <p className="text-gray-400 text-sm mb-2">No contest ratings yet</p>
+                  <p className="text-gray-500 text-xs">Participate in LeetCode, Codeforces, or CodeChef contests to see your rankings</p>
+                </div>
+              </div>
+            )}
+
+            {/* DSA Topic Analysis */}
+            {topicAnalysis.length > 0 ? (
+              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span className="text-xl">📊</span> DSA Topic Analysis
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">{topicAnalysis.length} topics</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      <span className="text-[10px] text-green-400">Live</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar-thin">
+                  {topicAnalysis.slice(0, 15).map((topic, idx) => {
+                    const maxCount = topicAnalysis[0]?.total || 1;
+                    const percentage = (topic.total / maxCount) * 100;
+                    // Different colors based on ranking
+                    const barColors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+                    const barColor = barColors[idx % barColors.length];
+                    return (
+                      <div key={idx} className="group">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                            {idx < 3 && <span className="mr-1">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>}
+                            {topic.name}
+                          </span>
+                          <span className="text-sm font-semibold" style={{ color: barColor }}>{topic.total}</span>
+                        </div>
+                        <div className="h-2.5 bg-[#1a1a2e] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-700 ease-out"
+                            style={{ 
+                              width: `${percentage}%`,
+                              backgroundColor: barColor,
+                              boxShadow: `0 0 8px ${barColor}40`
+                            }}
+                          />
+                        </div>
+                        {Object.keys(topic.platforms || {}).length > 1 && (
+                          <div className="flex gap-3 mt-1">
+                            {topic.platforms?.leetcode && (
+                              <span className="text-xs text-orange-400 flex items-center gap-1">
+                                📊 {topic.platforms.leetcode}
+                              </span>
+                            )}
+                            {topic.platforms?.codeforces && (
+                              <span className="text-xs text-blue-400 flex items-center gap-1">
+                                🔵 {topic.platforms.codeforces}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <span className="text-xl">📊</span> DSA Topic Analysis
+                </h3>
+                <div className="text-center py-6">
+                  <div className="text-4xl mb-3">📚</div>
+                  <p className="text-gray-400 text-sm mb-2">No topic data available</p>
+                  <p className="text-gray-500 text-xs">Connect LeetCode or Codeforces and sync to see your topic-wise progress</p>
+                </div>
+              </div>
+            )}
+
+            {/* Badges/Awards */}
+            {badges.length > 0 && (
+              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span className="text-xl">🎖️</span> Badges & Awards
+                  </h3>
+                  <span className="text-xs text-gray-500">{badges.length} earned</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {badges.slice(0, 9).map((badge, idx) => (
+                    <div 
+                      key={idx}
+                      className="group relative bg-gradient-to-br from-[#1a1a2e] to-[#12121a] rounded-xl p-4 border border-gray-700/50 text-center hover:border-amber-500/30 transition-all cursor-pointer"
+                    >
+                      <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity" />
+                      <div className="relative z-10">
+                        {badge.icon ? (
+                          <img 
+                            src={badge.icon} 
+                            alt={badge.name}
+                            className="w-12 h-12 mx-auto mb-2 drop-shadow-lg"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-amber-500/30 to-orange-600/20 rounded-full flex items-center justify-center border border-amber-500/30">
+                            <span className="text-2xl">🏅</span>
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-300 truncate font-medium">{badge.name}</div>
+                        <div className="text-[10px] text-gray-500 capitalize mt-0.5">{badge.platform}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Problem Breakdown */}

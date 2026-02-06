@@ -50,6 +50,24 @@
     @apply bg-gray-400 dark:bg-dark-500;
   }
 
+  /* Thin scrollbar for compact areas */
+  .custom-scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .custom-scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+  
+  .custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+
   /* Card styles */
   .card {
     @apply bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-700;
