@@ -25,6 +25,10 @@ import ContestLandingPage from './pages/ContestLandingPage';
 import ContestParticipationPage from './pages/ContestParticipationPage';
 import ContestLeaderboardPage from './pages/ContestLeaderboardPage';
 
+// Problem Set Pages
+import ProblemSetPage from './pages/ProblemSetPage';
+import ProblemSetEditorPage from './pages/ProblemSetEditorPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -66,6 +70,12 @@ function App() {
             <Route path="contests/:slug/edit" element={<ContestEditPage />} />
             <Route path="contests/:contestSlug/problems/create" element={<ChallengeEditorPage />} />
             <Route path="contests/:contestSlug/problems/:problemSlug/edit" element={<ChallengeEditorPage />} />
+            
+            {/* Problem Set Routes */}
+            <Route path="problem-set" element={<ProblemSetPage />} />
+            <Route path="problem-set/create" element={<ProblemSetEditorPage />} />
+            <Route path="problem-set/:slug" element={<ProblemSetEditorPage />} />
+            <Route path="problem-set/:slug/edit" element={<ProblemSetEditorPage />} />
           </Route>
 
           {/* Fallback Route */}

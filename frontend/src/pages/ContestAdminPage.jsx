@@ -87,7 +87,7 @@ const ContestAdminPage = () => {
               <p className="text-gray-400">Manage your coding contests and challenges</p>
             </div>
             <button
-              onClick={() => navigate('/contests/create')}
+              onClick={() => window.open('/contests/create', '_blank')}
               className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg transition-colors"
             >
               <Plus className="w-5 h-5" />
@@ -101,7 +101,7 @@ const ContestAdminPage = () => {
               Manage Contests
             </button>
             <button 
-              onClick={() => navigate('/contests/challenges')}
+              onClick={() => navigate('/problem-set')}
               className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
               Manage Challenges

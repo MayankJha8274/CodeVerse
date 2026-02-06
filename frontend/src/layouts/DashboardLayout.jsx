@@ -14,7 +14,7 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#0d0d14]">
+    <div className="flex h-screen bg-gray-50 dark:bg-[#0d0d14]">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -24,7 +24,7 @@ const DashboardLayout = () => {
           onLogout={handleLogout}
         />
         
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#0d0d14]">
+        <main className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#0d0d14]">
           <Outlet />
         </main>
       </div>
