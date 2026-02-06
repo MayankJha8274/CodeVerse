@@ -55,6 +55,16 @@ try {
   app.use('/api/sheets', require('./routes/sheetRoutes'));
   app.use('/api/daily-challenge', require('./routes/dailyChallengeRoutes'));
   app.use('/api/contests', require('./routes/contestRoutes'));
+  app.use('/api/hosted-contests', require('./routes/hostedContestRoutes'));
+  
+  // Run code endpoint (live compiler)
+  const { protect } = require('./middleware/auth');
+  const submissionController = require('./controllers/submissionController');
+  app.post('/api/run-code', protect, submissionController.runCode);
+  
+  // Submission status endpoint
+  app.get('/api/submissions/:submissionId', protect, submissionController.getSubmission);
+  
   console.log('✅ All routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading routes:', error.message);
