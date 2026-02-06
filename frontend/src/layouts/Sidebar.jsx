@@ -10,7 +10,8 @@ import {
   BookOpen,
   X,
   Zap,
-  Calendar
+  Calendar,
+  PlusCircle
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -35,6 +36,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { to: '/sheets', icon: BookOpen, label: 'DSA Sheets' },
     { to: '/daily-challenge', icon: Zap, label: 'Daily Challenge' },
     { to: '/contests', icon: Calendar, label: 'Contests' },
+    { to: '/contests/admin', icon: PlusCircle, label: 'Host Contest' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/rooms', icon: Users, label: 'Societies' },
     { to: '/compare', icon: GitCompare, label: 'Compare' },

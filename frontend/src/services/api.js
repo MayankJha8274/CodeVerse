@@ -444,6 +444,215 @@ export const api = {
   async getUserReminders() {
     const data = await authFetch('/contests/reminders');
     return data.data;
+  },
+
+  // ============== HOSTED CONTEST APIs ==============
+
+  // Create a new contest
+  async createHostedContest(contestData) {
+    const data = await authFetch('/hosted-contests', {
+      method: 'POST',
+      body: JSON.stringify(contestData)
+    });
+    return data.data;
+  },
+
+  // Get all my contests (owned + moderated)
+  async getMyHostedContests() {
+    const data = await authFetch('/hosted-contests/my-contests');
+    return data;
+  },
+
+  // Get public contests
+  async getPublicHostedContests(status = null) {
+    const query = status ? `?status=${status}` : '';
+    const data = await authFetch(`/hosted-contests/public${query}`);
+    return data;
+  },
+
+  // Get single contest by slug
+  async getHostedContest(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}`);
+    return data;
+  },
+
+  // Update contest
+  async updateHostedContest(slug, contestData) {
+    const data = await authFetch(`/hosted-contests/${slug}`, {
+      method: 'PUT',
+      body: JSON.stringify(contestData)
+    });
+    return data.data;
+  },
+
+  // Delete contest
+  async deleteHostedContest(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // Add moderator
+  async addContestModerator(slug, userIdentifier, role = 'moderator') {
+    const data = await authFetch(`/hosted-contests/${slug}/moderators`, {
+      method: 'POST',
+      body: JSON.stringify({ userIdentifier, role })
+    });
+    return data;
+  },
+
+  // Remove moderator
+  async removeContestModerator(slug, userId) {
+    const data = await authFetch(`/hosted-contests/${slug}/moderators/${userId}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // Send notification
+  async sendContestNotification(slug, message, type = 'info') {
+    const data = await authFetch(`/hosted-contests/${slug}/notifications`, {
+      method: 'POST',
+      body: JSON.stringify({ message, type })
+    });
+    return data;
+  },
+
+  // Get notifications
+  async getContestNotifications(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/notifications`);
+    return data.data;
+  },
+
+  // Sign up for contest
+  async signUpForContest(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/signup`, {
+      method: 'POST'
+    });
+    return data;
+  },
+
+  // Get signups
+  async getContestSignups(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/signups`);
+    return data;
+  },
+
+  // Get statistics
+  async getContestStatistics(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/statistics`);
+    return data.data;
+  },
+
+  // Get leaderboard
+  async getContestLeaderboard(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/leaderboard`);
+    return data;
+  },
+
+  // ============== PROBLEM APIs ==============
+
+  // Get all problems for a contest
+  async getContestProblems(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems`);
+    return data;
+  },
+
+  // Get single problem
+  async getContestProblem(slug, problemSlug) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}`);
+    return data;
+  },
+
+  // Create problem
+  async createContestProblem(slug, problemData) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems`, {
+      method: 'POST',
+      body: JSON.stringify(problemData)
+    });
+    return data.data;
+  },
+
+  // Update problem
+  async updateContestProblem(slug, problemSlug, problemData) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}`, {
+      method: 'PUT',
+      body: JSON.stringify(problemData)
+    });
+    return data.data;
+  },
+
+  // Delete problem
+  async deleteContestProblem(slug, problemSlug) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // Reorder problems
+  async reorderContestProblems(slug, problemOrders) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ problemOrders })
+    });
+    return data;
+  },
+
+  // Add test case
+  async addTestCase(slug, problemSlug, testCaseData) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}/testcases`, {
+      method: 'POST',
+      body: JSON.stringify(testCaseData)
+    });
+    return data.data;
+  },
+
+  // Delete test case
+  async deleteTestCase(slug, problemSlug, testCaseId) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}/testcases/${testCaseId}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  // ============== SUBMISSION APIs ==============
+
+  // Submit solution
+  async submitSolution(slug, problemSlug, code, language) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ code, language })
+    });
+    return data;
+  },
+
+  // Get submission status
+  async getSubmissionStatus(submissionId) {
+    const data = await authFetch(`/submissions/${submissionId}`);
+    return data.data;
+  },
+
+  // Get my submissions in a contest
+  async getMyContestSubmissions(slug) {
+    const data = await authFetch(`/hosted-contests/${slug}/my-submissions`);
+    return data;
+  },
+
+  // Get problem submissions
+  async getProblemSubmissions(slug, problemSlug) {
+    const data = await authFetch(`/hosted-contests/${slug}/problems/${problemSlug}/submissions`);
+    return data;
+  },
+
+  // Run code (live compiler)
+  async runCode(code, language, input = '') {
+    const data = await authFetch('/run-code', {
+      method: 'POST',
+      body: JSON.stringify({ code, language, input })
+    });
+    return data;
   }
 };
 

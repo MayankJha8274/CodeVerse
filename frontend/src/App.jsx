@@ -17,6 +17,14 @@ import DailyChallengePage from './pages/DailyChallengePage';
 import ContestsPage from './pages/ContestsPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
+// Contest Hosting Pages
+import ContestAdminPage from './pages/ContestAdminPage';
+import ContestEditPage from './pages/ContestEditPage';
+import ChallengeEditorPage from './pages/ChallengeEditorPage';
+import ContestLandingPage from './pages/ContestLandingPage';
+import ContestParticipationPage from './pages/ContestParticipationPage';
+import ContestLeaderboardPage from './pages/ContestLeaderboardPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -27,6 +35,18 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/oauth-success" element={<OAuthSuccess />} />
+
+          {/* Public Contest Pages */}
+          <Route path="/contest/:contestSlug" element={<ContestLandingPage />} />
+          <Route path="/contest/:contestSlug/leaderboard" element={<ContestLeaderboardPage />} />
+
+          {/* Contest Participation (requires auth) */}
+          <Route path="/contest/:contestSlug/problems" element={
+            <PrivateRoute><ContestParticipationPage /></PrivateRoute>
+          } />
+          <Route path="/contest/:contestSlug/problem/:problemSlug" element={
+            <PrivateRoute><ContestParticipationPage /></PrivateRoute>
+          } />
 
           {/* Protected Routes with Dashboard Layout */}
           <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
@@ -39,6 +59,13 @@ function App() {
             <Route path="daily-challenge" element={<DailyChallengePage />} />
             <Route path="contests" element={<ContestsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            
+            {/* Contest Admin Routes */}
+            <Route path="contests/admin" element={<ContestAdminPage />} />
+            <Route path="contests/create" element={<ContestEditPage />} />
+            <Route path="contests/:slug/edit" element={<ContestEditPage />} />
+            <Route path="contests/:contestSlug/problems/create" element={<ChallengeEditorPage />} />
+            <Route path="contests/:contestSlug/problems/:problemSlug/edit" element={<ChallengeEditorPage />} />
           </Route>
 
           {/* Fallback Route */}
