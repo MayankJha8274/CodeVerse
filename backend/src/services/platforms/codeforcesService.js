@@ -131,7 +131,187 @@ const fetchCodeforcesRatingHistory = async (handle) => {
   }
 };
 
+/**
+ * Fetch Codeforces topic-wise statistics from solved problems
+ * @param {string} handle - Codeforces handle
+ * @returns {Object} Topic stats with counts
+ */
+const fetchCodeforcesTopicStats = async (handle) => {
+  try {
+    const submissionsResponse = await axios.get(`${CODEFORCES_API}/user.status`, {
+      params: { handle, from: 1, count: 10000 },
+      timeout: 15000
+    });
+
+    if (submissionsResponse.data.status !== 'OK') {
+      return { success: false, data: [] };
+    }
+
+    const submissions = submissionsResponse.data.result;
+    const topicMap = {};
+    const solvedProblems = new Set();
+
+    submissions.forEach(submission => {
+      if (submission.verdict === 'OK' && submission.problem) {
+        const problemId = `${submission.problem.contestId || 'gym'}-${submission.problem.index}`;
+        
+        // Only count unique solved problems
+        if (!solvedProblems.has(problemId)) {
+          solvedProblems.add(problemId);
+          
+          // Count tags
+          const tags = submission.problem.tags || [];
+          tags.forEach(tag => {
+            const formattedTag = tag.split('-').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+            topicMap[formattedTag] = (topicMap[formattedTag] || 0) + 1;
+          });
+        }
+      }
+    });
+
+    const topics = Object.entries(topicMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    console.log(`✅ Codeforces topics: ${handle} - ${topics.length} topics`);
+    return { success: true, data: topics };
+  } catch (error) {
+    console.error(`❌ Codeforces topics error for ${handle}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
+/**
+ * Get Codeforces rank info with color
+ * @param {string} rank - Codeforces rank string
+ * @param {number} rating - User rating
+ * @returns {Object} Rank info with color
+ */
+const getCodeforcesRankInfo = (rank, rating) => {
+  const rankColors = {
+    'newbie': '#808080',
+    'pupil': '#008000',
+    'specialist': '#03A89E',
+    'expert': '#0000FF',
+    'candidate master': '#AA00AA',
+    'master': '#FF8C00',
+    'international master': '#FF8C00',
+    'grandmaster': '#FF0000',
+    'international grandmaster': '#FF0000',
+    'legendary grandmaster': '#FF0000',
+    'unrated': '#000000'
+  };
+
+  const displayRank = rank ? rank.charAt(0).toUpperCase() + rank.slice(1) : 'Unrated';
+  const color = rankColors[rank?.toLowerCase()] || '#808080';
+
+  return {
+    title: displayRank,
+    color,
+    rating: rating || 0
+  };
+};
+
+/**
+ * Fetch list of solved problems with their names from Codeforces
+ * @param {string} handle - Codeforces handle
+ * @returns {Object} List of solved problem names
+ */
+const fetchCodeforcesSolvedProblems = async (handle) => {
+  try {
+    const response = await axios.get(`${CODEFORCES_API}/user.status`, {
+      params: { handle, from: 1, count: 10000 },
+      timeout: 15000
+    });
+
+    if (response.data.status !== 'OK') {
+      return { success: false, data: [] };
+    }
+
+    const submissions = response.data.result;
+    const solvedMap = new Map();
+
+    submissions.forEach(submission => {
+      if (submission.verdict === 'OK' && submission.problem) {
+        const problemId = `${submission.problem.contestId || 'gym'}-${submission.problem.index}`;
+        if (!solvedMap.has(problemId)) {
+          solvedMap.set(problemId, {
+            name: submission.problem.name,
+            problemId,
+            contestId: submission.problem.contestId,
+            index: submission.problem.index,
+            rating: submission.problem.rating,
+            tags: submission.problem.tags,
+            lastSolvedAt: new Date(submission.creationTimeSeconds * 1000)
+          });
+        }
+      }
+    });
+
+    const solvedProblems = Array.from(solvedMap.values());
+    console.log(`✅ Codeforces solved problems: ${handle} - ${solvedProblems.length} problems`);
+    return { success: true, data: solvedProblems };
+  } catch (error) {
+    console.error(`❌ Codeforces solved problems error for ${handle}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
+/**
+ * Fetch today's submissions from Codeforces
+ * @param {string} handle - Codeforces handle
+ * @returns {Object} List of problems solved today
+ */
+const fetchCodeforcesTodaySubmissions = async (handle) => {
+  try {
+    const response = await axios.get(`${CODEFORCES_API}/user.status`, {
+      params: { handle, from: 1, count: 100 },
+      timeout: 15000
+    });
+
+    if (response.data.status !== 'OK') {
+      return { success: false, data: [] };
+    }
+
+    const submissions = response.data.result;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayProblems = [];
+    const seen = new Set();
+
+    submissions.forEach(submission => {
+      if (submission.verdict === 'OK' && submission.problem) {
+        const subDate = new Date(submission.creationTimeSeconds * 1000);
+        if (subDate >= today) {
+          const problemId = `${submission.problem.contestId || 'gym'}-${submission.problem.index}`;
+          if (!seen.has(problemId)) {
+            seen.add(problemId);
+            todayProblems.push({
+              name: submission.problem.name,
+              problemId,
+              solvedAt: subDate
+            });
+          }
+        }
+      }
+    });
+
+    console.log(`✅ Codeforces today's problems: ${handle} - ${todayProblems.length} problems`);
+    return { success: true, data: todayProblems };
+  } catch (error) {
+    console.error(`❌ Codeforces today's submissions error for ${handle}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
 module.exports = {
   fetchCodeforcesStats,
-  fetchCodeforcesRatingHistory
+  fetchCodeforcesRatingHistory,
+  fetchCodeforcesTopicStats,
+  getCodeforcesRankInfo,
+  fetchCodeforcesSolvedProblems,
+  fetchCodeforcesTodaySubmissions
 };

@@ -272,7 +272,285 @@ const fetchLeetCodeRatingHistory = async (username) => {
   }
 };
 
+/**
+ * Fetch LeetCode topic-wise statistics (skill stats)
+ * @param {string} username - LeetCode username
+ * @returns {Object} Topic stats with counts
+ */
+const fetchLeetCodeSkillStats = async (username) => {
+  try {
+    const query = `
+      query skillStats($username: String!) {
+        matchedUser(username: $username) {
+          tagProblemCounts {
+            advanced {
+              tagName
+              tagSlug
+              problemsSolved
+            }
+            intermediate {
+              tagName
+              tagSlug
+              problemsSolved
+            }
+            fundamental {
+              tagName
+              tagSlug
+              problemsSolved
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await axios.post(LEETCODE_API_ENDPOINT, {
+      query,
+      variables: { username }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 15000
+    });
+
+    const tagCounts = response.data?.data?.matchedUser?.tagProblemCounts;
+    
+    if (!tagCounts) {
+      return { success: false, data: [] };
+    }
+
+    // Combine all skill levels into one array
+    const allTopics = [
+      ...(tagCounts.fundamental || []),
+      ...(tagCounts.intermediate || []),
+      ...(tagCounts.advanced || [])
+    ];
+
+    // Aggregate by tag name (some topics might appear in multiple levels)
+    const topicMap = {};
+    allTopics.forEach(topic => {
+      if (!topicMap[topic.tagName]) {
+        topicMap[topic.tagName] = 0;
+      }
+      topicMap[topic.tagName] += topic.problemsSolved;
+    });
+
+    // Convert to array and sort by count
+    const topics = Object.entries(topicMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    console.log(`✅ LeetCode skills: ${username} - ${topics.length} topics`);
+    return { success: true, data: topics };
+  } catch (error) {
+    console.error(`❌ LeetCode skills error for ${username}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
+/**
+ * Fetch LeetCode badges and achievements
+ * @param {string} username - LeetCode username
+ * @returns {Object} Badges and achievements data
+ */
+const fetchLeetCodeBadges = async (username) => {
+  try {
+    const query = `
+      query userBadges($username: String!) {
+        matchedUser(username: $username) {
+          badges {
+            id
+            displayName
+            icon
+            creationDate
+          }
+          upcomingBadges {
+            name
+            icon
+          }
+        }
+      }
+    `;
+
+    const response = await axios.post(LEETCODE_API_ENDPOINT, {
+      query,
+      variables: { username }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 15000
+    });
+
+    const badgesData = response.data?.data?.matchedUser;
+    
+    if (!badgesData) {
+      return { success: false, data: { badges: [], upcomingBadges: [] } };
+    }
+
+    const badges = (badgesData.badges || []).map(badge => ({
+      id: badge.id,
+      name: badge.displayName,
+      icon: badge.icon,
+      earnedDate: badge.creationDate
+    }));
+
+    const upcomingBadges = (badgesData.upcomingBadges || []).map(badge => ({
+      name: badge.name,
+      icon: badge.icon
+    }));
+
+    console.log(`✅ LeetCode badges: ${username} - ${badges.length} badges`);
+    return { success: true, data: { badges, upcomingBadges } };
+  } catch (error) {
+    console.error(`❌ LeetCode badges error for ${username}:`, error.message);
+    return { success: false, data: { badges: [], upcomingBadges: [] } };
+  }
+};
+
+/**
+ * Get LeetCode rank title based on rating
+ * @param {number} rating - Contest rating
+ * @returns {Object} Rank info with title and color
+ */
+const getLeetCodeRankTitle = (rating) => {
+  if (!rating || rating === 0) return { title: 'Unrated', color: '#808080' };
+  if (rating < 1400) return { title: 'Beginner', color: '#808080' };
+  if (rating < 1600) return { title: 'Knight', color: '#2DB55D' };
+  if (rating < 1800) return { title: 'Knight', color: '#2DB55D' };
+  if (rating < 2000) return { title: 'Knight', color: '#2DB55D' };
+  if (rating < 2200) return { title: 'Guardian', color: '#3366CC' };
+  if (rating < 2400) return { title: 'Guardian', color: '#3366CC' };
+  if (rating < 2600) return { title: 'Guardian', color: '#3366CC' };
+  if (rating < 2850) return { title: 'Emperor', color: '#AB55FF' };
+  return { title: 'Emperor', color: '#FF7F00' };
+};
+
+/**
+ * Fetch all accepted submissions for a LeetCode user (to check solved problems)
+ * @param {string} username - LeetCode username
+ * @returns {Object} List of solved problem slugs/titles
+ */
+const fetchLeetCodeSolvedProblems = async (username) => {
+  try {
+    const query = `
+      query recentAcSubmissions($username: String!, $limit: Int!) {
+        recentAcSubmissionList(username: $username, limit: $limit) {
+          id
+          title
+          titleSlug
+          timestamp
+        }
+      }
+    `;
+
+    const response = await axios.post(LEETCODE_API_ENDPOINT, {
+      query,
+      variables: { username, limit: 500 }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 15000
+    });
+
+    const submissions = response.data?.data?.recentAcSubmissionList;
+    
+    if (!submissions || !Array.isArray(submissions)) {
+      return { success: false, data: [] };
+    }
+
+    // Map submissions to unique solved problem titles and slugs
+    const solvedMap = new Map();
+    submissions.forEach(sub => {
+      if (!solvedMap.has(sub.titleSlug)) {
+        solvedMap.set(sub.titleSlug, {
+          title: sub.title,
+          titleSlug: sub.titleSlug,
+          lastSolvedAt: new Date(sub.timestamp * 1000)
+        });
+      }
+    });
+
+    const solvedProblems = Array.from(solvedMap.values());
+    console.log(`✅ LeetCode solved problems: ${username} - ${solvedProblems.length} unique problems`);
+    return { success: true, data: solvedProblems };
+  } catch (error) {
+    console.error(`❌ LeetCode solved problems error for ${username}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
+/**
+ * Fetch today's submissions to check if a problem was solved today
+ * @param {string} username - LeetCode username
+ * @returns {Object} List of problems solved today
+ */
+const fetchLeetCodeTodaySubmissions = async (username) => {
+  try {
+    const query = `
+      query recentAcSubmissions($username: String!, $limit: Int!) {
+        recentAcSubmissionList(username: $username, limit: $limit) {
+          id
+          title
+          titleSlug
+          timestamp
+        }
+      }
+    `;
+
+    const response = await axios.post(LEETCODE_API_ENDPOINT, {
+      query,
+      variables: { username, limit: 50 }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 15000
+    });
+
+    const submissions = response.data?.data?.recentAcSubmissionList;
+    
+    if (!submissions || !Array.isArray(submissions)) {
+      return { success: false, data: [] };
+    }
+
+    // Filter to only today's submissions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayProblems = submissions
+      .filter(sub => {
+        const subDate = new Date(sub.timestamp * 1000);
+        return subDate >= today;
+      })
+      .map(sub => ({
+        title: sub.title,
+        titleSlug: sub.titleSlug,
+        solvedAt: new Date(sub.timestamp * 1000)
+      }));
+
+    // Deduplicate by titleSlug
+    const uniqueProblems = [...new Map(todayProblems.map(p => [p.titleSlug, p])).values()];
+    
+    console.log(`✅ LeetCode today's problems: ${username} - ${uniqueProblems.length} problems`);
+    return { success: true, data: uniqueProblems };
+  } catch (error) {
+    console.error(`❌ LeetCode today's submissions error for ${username}:`, error.message);
+    return { success: false, data: [] };
+  }
+};
+
 module.exports = {
   fetchLeetCodeStats,
-  fetchLeetCodeRatingHistory
+  fetchLeetCodeRatingHistory,
+  fetchLeetCodeSkillStats,
+  fetchLeetCodeBadges,
+  getLeetCodeRankTitle,
+  fetchLeetCodeSolvedProblems,
+  fetchLeetCodeTodaySubmissions
 };
