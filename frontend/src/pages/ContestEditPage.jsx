@@ -1,3 +1,4 @@
+// contest edit page - allows creating and editing contests with multiple tabs for different settings
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
