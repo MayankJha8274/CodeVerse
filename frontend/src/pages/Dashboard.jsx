@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import ContributionCalendar from '../components/ContributionCalendar';
 
 // Platform icons/colors
 const platformConfig = {
@@ -32,48 +33,7 @@ const platformConfig = {
   codingninjas: { name: 'Coding Ninjas', color: '#F96D00', icon: '🥷' }
 };
 
-// Contribution Heatmap Component
-const ContributionHeatmap = ({ submissions = 0 }) => {
-  const generateHeatmapData = () => {
-    const weeks = [];
-    const today = new Date();
-    for (let w = 0; w < 26; w++) {
-      const week = [];
-      for (let d = 0; d < 7; d++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - (25 - w) * 7 - (6 - d));
-        const activity = Math.random() > 0.4 ? Math.floor(Math.random() * 4) + 1 : 0;
-        week.push({ date, activity });
-      }
-      weeks.push(week);
-    }
-    return weeks;
-  };
 
-  const weeks = generateHeatmapData();
-  
-  const getColor = (level) => {
-    const colors = ['#1a1a2e', '#2d4a3e', '#3d6b4f', '#4d8c60', '#5dad71'];
-    return colors[level] || colors[0];
-  };
-
-  return (
-    <div className="flex gap-1">
-      {weeks.map((week, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          {week.map((day, j) => (
-            <div
-              key={j}
-              className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: getColor(day.activity) }}
-              title={`${day.date.toDateString()}: ${day.activity} contributions`}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 // Circular Progress Component
 const CircularProgress = ({ value, max, size = 120, strokeWidth = 10, color = '#f59e0b' }) => {
@@ -127,6 +87,7 @@ const Dashboard = () => {
   const [topicAnalysis, setTopicAnalysis] = useState([]);
   const [badges, setBadges] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [contributionCalendar, setContributionCalendar] = useState(null);
 
   // Platform colors for rating graph
   const platformRatingColors = {
@@ -143,14 +104,15 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [summaryData, allStats, ratingsData, allRatingsData, topicsData, badgesData, achievementsData] = await Promise.all([
+      const [summaryData, allStats, ratingsData, allRatingsData, topicsData, badgesData, achievementsData, calendarData] = await Promise.all([
         api.getStats().catch(() => null),
         api.getAllPlatformStats().catch(() => ({})),
         api.getRatingGrowth().catch(() => []),
         api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] })),
         api.getTopicAnalysis().catch(() => []),
         api.getBadges().catch(() => []),
-        api.getAchievements().catch(() => [])
+        api.getAchievements().catch(() => []),
+        api.getContributionCalendar().catch(() => null)
       ]);
 
       setUserData(summaryData);
@@ -160,6 +122,7 @@ const Dashboard = () => {
       setTopicAnalysis(topicsData || []);
       setBadges(badgesData || []);
       setAchievements(achievementsData || []);
+      setContributionCalendar(calendarData);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -308,20 +271,6 @@ const Dashboard = () => {
           {/* Left Column - Profile Section */}
           <div className="col-span-12 lg:col-span-3">
             <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              {/* Public Profile Toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-400">Public Profile</span>
-                <div className="w-12 h-6 bg-amber-500 rounded-full relative cursor-pointer">
-                  <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                </div>
-              </div>
-
-              {/* Next Refresh */}
-              <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                <span>Next Refresh: {refreshTimer ? `${Math.floor(refreshTimer / 60)}m ${refreshTimer % 60}s` : 'Ready'}</span>
-              </div>
-
               {/* Avatar */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
@@ -440,36 +389,13 @@ const Dashboard = () => {
               </div>
               <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
                 <p className="text-gray-400 text-sm mb-1">Total Active Days</p>
-                <p className="text-4xl font-bold text-white">{userData?.totals?.activeDays || 142}</p>
+                <p className="text-4xl font-bold text-white">{contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0}</p>
               </div>
             </div>
 
-            {/* Submissions Heatmap */}
+            {/* Contribution Calendar */}
             <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <span className="text-sm text-gray-400">Submissions <span className="text-white font-semibold">{getTotalProblems()}</span></span>
-                  <span className="text-sm text-gray-400">Max.Streak <span className="text-white font-semibold">{userData?.totals?.maxStreak || 45}</span></span>
-                  <span className="text-sm text-gray-400">Current.Streak <span className="text-white font-semibold">{userData?.totals?.currentStreak || 7}</span></span>
-                </div>
-                <select className="bg-[#1a1a2e] text-white text-sm px-3 py-1 rounded-lg border border-gray-700">
-                  <option>Current</option>
-                  <option>Last Year</option>
-                </select>
-              </div>
-              <div className="overflow-x-auto">
-                <ContributionHeatmap submissions={getTotalProblems()} />
-              </div>
-              <div className="flex justify-between mt-4 text-xs text-gray-500">
-                <span>Jul</span>
-                <span>Aug</span>
-                <span>Sep</span>
-                <span>Oct</span>
-                <span>Nov</span>
-                <span>Dec</span>
-                <span>Jan</span>
-                <span>Feb</span>
-              </div>
+              <ContributionCalendar calendarData={contributionCalendar} />
             </div>
 
             {/* Total Contests */}

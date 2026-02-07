@@ -73,6 +73,7 @@ const fetchGitHubStats = async (username, token = null) => {
     let currentYearContributions = 0;
     let contributionStreak = 0;
     let allTimeContributions = 0;
+    let contributionCalendarData = null;
 
     // Step 3: Use GraphQL to get ACCURATE contribution data
     if (token) {
@@ -189,10 +190,18 @@ const fetchGitHubStats = async (username, token = null) => {
           totalPRs = userData.pullRequests?.totalCount || yearlyPRs;
           totalIssues = userData.issues?.totalCount || yearlyIssues;
           
+          // Extract contribution calendar for the last year
+          const contributionDays = userData.contributionsCollection.contributionCalendar.weeks
+            .flatMap(week => week.contributionDays);
+          
+          // Store calendar data for later use
+          contributionCalendarData = contributionDays.map(day => ({
+            date: day.date,
+            count: day.contributionCount
+          }));
+
           // Calculate contribution streak from current year data
-          const days = userData.contributionsCollection.contributionCalendar.weeks
-            .flatMap(week => week.contributionDays)
-            .reverse();
+          const days = [...contributionDays].reverse();
           
           for (const day of days) {
             if (day.contributionCount > 0) {
@@ -204,6 +213,7 @@ const fetchGitHubStats = async (username, token = null) => {
 
           console.log(`✅ All-time totals: ${totalPRs} PRs, ${totalIssues} issues`);
           console.log(`✅ Current streak: ${contributionStreak} days`);
+          console.log(`✅ Calendar data: ${contributionDays.length} days`);
         }
 
       } catch (graphqlError) {
@@ -259,6 +269,7 @@ const fetchGitHubStats = async (username, token = null) => {
       console.warn(`   Add GITHUB_TOKEN to .env for accurate all-time statistics.`);
     }
 
+    // Build stats object
     const stats = {
       totalRepos,
       totalStars,
@@ -273,7 +284,8 @@ const fetchGitHubStats = async (username, token = null) => {
       followers: user.followers,
       following: user.following,
       publicGists: user.public_gists,
-      accountCreated: user.created_at
+      accountCreated: user.created_at,
+      contributionCalendar: contributionCalendarData // Add calendar data if available
     };
 
     console.log(`\n✅ GITHUB STATS for ${username}:`);

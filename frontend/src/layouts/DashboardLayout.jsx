@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 import { useAuth } from '../context/AuthContext';
 
 const DashboardLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -13,14 +13,16 @@ const DashboardLayout = () => {
     window.location.href = '/';
   };
 
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-[#0d0d14]">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onToggle={toggleSidebar} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar 
           user={user} 
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={toggleSidebar}
           onLogout={handleLogout}
         />
         

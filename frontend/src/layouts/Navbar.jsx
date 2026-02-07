@@ -13,7 +13,8 @@ const Navbar = ({ user, onMenuClick, onLogout }) => {
         <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
-            className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
+            title="Toggle sidebar"
           >
             <Menu className="w-6 h-6" />
           </button>
