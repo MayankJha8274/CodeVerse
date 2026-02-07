@@ -177,6 +177,12 @@ const calculateAggregatedStats = async (userId) => {
       breakdown.problemsSolved = ps.stats.problemsSolved || 0;
     }
 
+    // Coding Ninjas
+    if (ps.platform === 'codingninjas') {
+      breakdown.problemsSolved = ps.stats.problemsSolved || ps.stats.totalSolved || 0;
+      breakdown.contests = ps.stats.contestsParticipated || 0;
+    }
+
     aggregated.totalProblemsSolved += breakdown.problemsSolved;
     aggregated.totalCommits += breakdown.commits;
     aggregated.totalContests += breakdown.contests;
@@ -639,16 +645,24 @@ const getContributionCalendar = async (userId) => {
 
   // Calculate stats
   const totalContributions = calendar.reduce((sum, day) => sum + day.count, 0);
+  const totalProblems = calendar.reduce((sum, day) => sum + (day.problems || 0), 0);
+  const totalCommits = calendar.reduce((sum, day) => sum + (day.commits || 0), 0);
   const activeDays = calendar.filter(d => d.count > 0).length;
+  // Streaks count ANY activity (problems OR commits across all platforms)
   const currentStreak = calculateCurrentStreak(calendar);
   const longestStreak = calculateLongestStreak(calendar);
 
-  console.log(`📅 Calendar final: ${totalContributions} contributions, ${activeDays} active days, streak: ${currentStreak}/${longestStreak}`);
+  // Debug: Show last 14 days to understand streak calculation
+  const last14 = calendar.slice(-14).map((d) => `${d.date.slice(5)}: ${d.count} (${d.problems || 0}p+${d.commits || 0}c)`).join(' | ');
+  console.log(`📅 Last 14 days: ${last14}`);
+  console.log(`📅 Calendar final: ${totalContributions} total (${totalProblems} problems + ${totalCommits} commits), ${activeDays} active days, streak: ${currentStreak}/${longestStreak}`);
 
   return {
     calendar,
     stats: {
       totalContributions,
+      totalProblems,
+      totalCommits,
       currentStreak,
       longestStreak,
       activeDays
@@ -658,11 +672,18 @@ const getContributionCalendar = async (userId) => {
 
 /**
  * Calculate current streak from calendar data
+ * Counts days with ANY activity: at least 1 problem OR 1 commit (any platform)
+ * Skips today if no activity yet (the day isn't over)
  */
 const calculateCurrentStreak = (calendar) => {
   let streak = 0;
-  for (let i = calendar.length - 1; i >= 0; i--) {
-    if (calendar[i].count > 0) {
+  let i = calendar.length - 1;
+  // Skip today if no activity yet (day isn't over)
+  if (i >= 0 && (calendar[i].count || 0) === 0) {
+    i--;
+  }
+  for (; i >= 0; i--) {
+    if ((calendar[i].count || 0) > 0) {
       streak++;
     } else {
       break;
@@ -673,13 +694,14 @@ const calculateCurrentStreak = (calendar) => {
 
 /**
  * Calculate longest streak from calendar data
+ * Counts days with ANY activity: at least 1 problem OR 1 commit (any platform)
  */
 const calculateLongestStreak = (calendar) => {
   let maxStreak = 0;
   let currentStreak = 0;
   
   calendar.forEach(day => {
-    if (day.count > 0) {
+    if ((day.count || 0) > 0) {
       currentStreak++;
       maxStreak = Math.max(maxStreak, currentStreak);
     } else {

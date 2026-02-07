@@ -13,43 +13,23 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import PLATFORM_CONFIG, { PlatformIcon } from '../utils/platformConfig';
 
-// Platform configuration
-const platformConfig = {
-  leetcode: { 
-    name: 'LeetCode', 
-    color: '#FFA116', 
-    bgColor: 'bg-orange-500/20',
-    textColor: 'text-orange-400',
-    icon: '📊'
-  },
-  codeforces: { 
-    name: 'Codeforces', 
-    color: '#1F8ACB', 
-    bgColor: 'bg-blue-500/20',
-    textColor: 'text-blue-400',
-    icon: '🔵'
-  },
-  codechef: { 
-    name: 'CodeChef', 
-    color: '#5B4638', 
-    bgColor: 'bg-amber-700/20',
-    textColor: 'text-amber-600',
-    icon: '👨‍🍳'
-  },
+// Platform configuration (extends centralized config with contest-specific entries)
+const platformConfigLocal = {
+  ...Object.fromEntries(
+    Object.entries(PLATFORM_CONFIG).map(([key, cfg]) => [key, {
+      name: cfg.name,
+      color: cfg.color,
+      bgColor: cfg.bgColor,
+      textColor: cfg.textColor,
+    }])
+  ),
   atcoder: { 
     name: 'AtCoder', 
     color: '#222222', 
     bgColor: 'bg-gray-500/20',
     textColor: 'text-gray-300',
-    icon: '🅰️'
-  },
-  hackerrank: { 
-    name: 'HackerRank', 
-    color: '#00EA64', 
-    bgColor: 'bg-green-500/20',
-    textColor: 'text-green-400',
-    icon: '💚'
   }
 };
 
@@ -82,7 +62,7 @@ const formatTimeRemaining = (startTime) => {
 
 // Contest Card Component
 const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, isSettingReminder }) => {
-  const platform = platformConfig[contest.platform] || platformConfig.codeforces;
+  const platform = platformConfigLocal[contest.platform] || platformConfigLocal.codeforces;
   const startTime = new Date(contest.startTime);
   const formattedDate = startTime.toLocaleDateString('en-US', {
     month: 'short',
@@ -100,8 +80,8 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, is
         <div className="flex-1">
           {/* Platform Badge */}
           <div className="flex items-center gap-2 mb-2">
-            <span className={`${platform.bgColor} ${platform.textColor} px-2 py-0.5 rounded text-xs font-medium`}>
-              {platform.icon} {platform.name}
+            <span className={`${platform.bgColor} ${platform.textColor} px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1`}>
+              <PlatformIcon platform={contest.platform} className="w-3.5 h-3.5" /> {platform.name}
             </span>
             <span className="text-xs text-gray-500">
               {formatTimeRemaining(contest.startTime)}
@@ -250,7 +230,7 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
                 </div>
                 <div className="space-y-1">
                   {dayData.contests.slice(0, 3).map((contest, cidx) => {
-                    const platform = platformConfig[contest.platform] || platformConfig.codeforces;
+                    const platform = platformConfigLocal[contest.platform] || platformConfigLocal.codeforces;
                     return (
                       <a
                         key={cidx}
@@ -260,7 +240,7 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
                         className={`block px-1.5 py-0.5 rounded text-[10px] truncate ${platform.bgColor} ${platform.textColor} hover:opacity-80 transition-opacity`}
                         title={`${contest.name} - ${new Date(contest.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
                       >
-                        {platform.icon} {contest.name.substring(0, 15)}...
+                        <span className="flex items-center gap-0.5"><PlatformIcon platform={contest.platform} className="w-2.5 h-2.5" /> {contest.name.substring(0, 15)}...</span>
                       </a>
                     );
                   })}

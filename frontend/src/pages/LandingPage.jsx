@@ -14,14 +14,17 @@ import {
   Twitter
 } from 'lucide-react';
 
+import { PlatformIcon } from '../utils/platformConfig';
+
 const LandingPage = () => {
   const platforms = [
-    { name: 'LeetCode', logo: 'https://leetcode.com/favicon.ico' },
-    { name: 'Codeforces', logo: 'https://codeforces.org/favicon.ico' },
-    { name: 'CodeChef', logo: 'https://www.codechef.com/favicon.ico' },
-    { name: 'GitHub', logo: 'https://github.com/favicon.ico' },
-    { name: 'GeeksforGeeks', logo: 'https://www.geeksforgeeks.org/favicon.ico' },
-    { name: 'HackerRank', logo: 'https://www.hackerrank.com/favicon.ico' }
+    { name: 'LeetCode', key: 'leetcode', color: '#FFA116' },
+    { name: 'Codeforces', key: 'codeforces', color: '#1F8ACB' },
+    { name: 'CodeChef', key: 'codechef', color: '#5B4638' },
+    { name: 'GitHub', key: 'github', color: '#FFFFFF' },
+    { name: 'GeeksforGeeks', key: 'geeksforgeeks', color: '#2F8D46' },
+    { name: 'HackerRank', key: 'hackerrank', color: '#00EA64' },
+    { name: 'Coding Ninjas', key: 'codingninjas', color: '#F96D00' }
   ];
 
   const features = [
@@ -149,18 +152,13 @@ const LandingPage = () => {
               Connect all your coding profiles and see everything in one place
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-6">
             {platforms.map((platform) => (
               <div
                 key={platform.name}
                 className="flex flex-col items-center gap-3 p-6 rounded-lg border border-gray-700 hover:border-amber-500 transition-colors"
               >
-                <img
-                  src={platform.logo}
-                  alt={platform.name}
-                  className="w-12 h-12"
-                  onError={(e) => e.target.style.display = 'none'}
-                />
+                <PlatformIcon platform={platform.key} className="w-12 h-12" color={platform.color} />
                 <span className="text-sm font-medium text-gray-300">
                   {platform.name}
                 </span>

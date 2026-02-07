@@ -1,10 +1,11 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
+import { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
 
 /**
  * ContributionCalendar - Exact LeetCode-style contribution heatmap
  * Large green rounded cells, month labels at bottom, fire 🔥 badges, no scrollbar
  */
-const ContributionCalendar = ({ calendarData }) => {
+const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
   const containerRef = useRef(null);
   const [cellPx, setCellPx] = useState(13);
 
@@ -168,6 +169,18 @@ const ContributionCalendar = ({ calendarData }) => {
         ))}
         <span style={{ fontSize: 10, color: '#8b949e', marginLeft: 2 }}>More</span>
       </div>
+
+      {/* ── Connected Platforms ── */}
+      {connectedPlatforms.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #2a2a3e' }}>
+          {connectedPlatforms.map(p => (
+            <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, backgroundColor: '#1a1a2e', border: '1px solid #2a2a3e' }}>
+              <PlatformIcon platform={p.key} className="w-4 h-4" color={getPlatformColor(p.key)} />
+              <span style={{ fontSize: 12, color: '#d1d5db', fontWeight: 500 }}>{getPlatformName(p.key)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

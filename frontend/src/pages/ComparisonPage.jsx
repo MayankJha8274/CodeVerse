@@ -4,6 +4,7 @@ import UserAvatar from '../components/UserAvatar';
 import ChartCard from '../components/ChartCard';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import api from '../services/api';
+import { PlatformIcon } from '../utils/platformConfig';
 
 const ComparisonPage = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -164,7 +165,7 @@ const ComparisonPage = () => {
                   </tr>
                   <tr className="border-b border-gray-700">
                     <td className="py-3 px-4 text-sm font-medium text-gray-300">
-                      LeetCode
+                      <span className="flex items-center gap-2"><PlatformIcon platform="leetcode" className="w-4 h-4" color="#FFA116" /> LeetCode</span>
                     </td>
                     {comparisonData.map(user => (
                       <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">
@@ -174,7 +175,7 @@ const ComparisonPage = () => {
                   </tr>
                   <tr className="border-b border-gray-700">
                     <td className="py-3 px-4 text-sm font-medium text-gray-300">
-                      Codeforces
+                      <span className="flex items-center gap-2"><PlatformIcon platform="codeforces" className="w-4 h-4" color="#1F8ACB" /> Codeforces</span>
                     </td>
                     {comparisonData.map(user => (
                       <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">
@@ -184,7 +185,7 @@ const ComparisonPage = () => {
                   </tr>
                   <tr className="border-b border-gray-700">
                     <td className="py-3 px-4 text-sm font-medium text-gray-300">
-                      CodeChef
+                      <span className="flex items-center gap-2"><PlatformIcon platform="codechef" className="w-4 h-4" color="#5B4638" /> CodeChef</span>
                     </td>
                     {comparisonData.map(user => (
                       <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">

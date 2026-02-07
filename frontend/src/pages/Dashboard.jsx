@@ -21,17 +21,7 @@ import {
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ContributionCalendar from '../components/ContributionCalendar';
-
-// Platform icons/colors
-const platformConfig = {
-  leetcode: { name: 'LeetCode', color: '#FFA116', icon: '📊' },
-  codeforces: { name: 'CodeForces', color: '#1F8ACB', icon: '🏆' },
-  codechef: { name: 'CodeChef', icon: '👨‍🍳', color: '#5B4638' },
-  github: { name: 'GitHub', color: '#333', icon: '🐙' },
-  geeksforgeeks: { name: 'GeeksForGeeks', color: '#2F8D46', icon: '🧑‍💻' },
-  hackerrank: { name: 'HackerRank', color: '#00EA64', icon: '💚' },
-  codingninjas: { name: 'Coding Ninjas', color: '#F96D00', icon: '🥷' }
-};
+import PLATFORM_CONFIG, { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
 
 
 
@@ -81,13 +71,15 @@ const Dashboard = () => {
   const [platformStats, setPlatformStats] = useState({});
   const [ratingHistory, setRatingHistory] = useState([]);
   const [allRatingHistory, setAllRatingHistory] = useState({ chartData: [], platforms: [] });
-  const [refreshTimer, setRefreshTimer] = useState(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0); // seconds remaining
   const [showPlatformStats, setShowPlatformStats] = useState(false);
   const [selectedRatingPlatform, setSelectedRatingPlatform] = useState('all'); // 'all' or specific platform
   const [topicAnalysis, setTopicAnalysis] = useState([]);
   const [badges, setBadges] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [contributionCalendar, setContributionCalendar] = useState(null);
+
+  const SYNC_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour in ms
 
   // Platform colors for rating graph
   const platformRatingColors = {
@@ -97,13 +89,71 @@ const Dashboard = () => {
     codingninjas: '#F96D00' // Orange-red
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  // ── Cooldown timer (persisted in localStorage per user) ──
+  const getSyncKey = () => `codeverse_lastSync_${authUser?._id || authUser?.id || 'default'}`;
 
-  const fetchDashboardData = async () => {
+  useEffect(() => {
+    // On mount / user change: check remaining cooldown
+    const stored = localStorage.getItem(getSyncKey());
+    if (stored) {
+      const elapsed = Date.now() - Number(stored);
+      const remaining = Math.max(0, Math.ceil((SYNC_COOLDOWN_MS - elapsed) / 1000));
+      setCooldownRemaining(remaining);
+    } else {
+      setCooldownRemaining(0);
+    }
+  }, [authUser?._id, authUser?.id]);
+
+  useEffect(() => {
+    // Tick the cooldown every second
+    if (cooldownRemaining <= 0) return;
+    const id = setInterval(() => {
+      setCooldownRemaining(prev => {
+        if (prev <= 1) { clearInterval(id); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [cooldownRemaining]);
+
+  const formatCooldown = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    // On first load: fetch dashboard data. If user has never synced (no stored data), auto-sync.
+    const loadData = async () => {
+      await fetchDashboardData();
+      // Auto-sync on first visit if there's no cooldown stored (never synced before)
+      const stored = localStorage.getItem(getSyncKey());
+      if (!stored) {
+        handleAutoSync();
+      }
+    };
+    loadData();
+  }, [authUser?._id || authUser?.id]);
+
+  const handleAutoSync = async () => {
     try {
-      setLoading(true);
+      setSyncing(true);
+      await api.syncPlatforms();
+      // Re-fetch but don't show full-page loading spinner
+      await fetchDashboardData(true);
+      const now = Date.now();
+      localStorage.setItem(getSyncKey(), String(now));
+      setCooldownRemaining(Math.ceil(SYNC_COOLDOWN_MS / 1000));
+    } catch (error) {
+      console.error('Auto-sync failed:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const fetchDashboardData = async (skipLoadingSpinner = false) => {
+    try {
+      if (!skipLoadingSpinner) setLoading(true);
       const [summaryData, allStats, ratingsData, allRatingsData, topicsData, badgesData, achievementsData, calendarData] = await Promise.all([
         api.getStats().catch(() => null),
         api.getAllPlatformStats().catch(() => ({})),
@@ -126,16 +176,22 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
-      setLoading(false);
+      if (!skipLoadingSpinner) setLoading(false);
     }
   };
 
   const handleSync = async () => {
+    if (cooldownRemaining > 0) return; // block if cooldown active
     try {
       setSyncing(true);
+      // 1. Tell the backend to re-fetch fresh data from all platforms
       await api.syncPlatforms();
-      await fetchDashboardData();
-      setRefreshTimer(900);
+      // 2. Re-fetch all dashboard data (now reflects the fresh sync, no full-page spinner)
+      await fetchDashboardData(true);
+      // 3. Start cooldown timer (1 hour)
+      const now = Date.now();
+      localStorage.setItem(getSyncKey(), String(now));
+      setCooldownRemaining(Math.ceil(SYNC_COOLDOWN_MS / 1000));
     } catch (error) {
       console.error('Sync failed:', error);
     } finally {
@@ -143,8 +199,14 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate totals
+  // Calculate totals — use summary which has actual unique problems solved
   const getTotalProblems = () => {
+    // Summary endpoint (userData) provides actual unique problems solved per platform
+    // NOT calendar which counts submissions (can count same problem multiple times)
+    if (userData?.totalProblemsSolved !== undefined) {
+      return userData.totalProblemsSolved;
+    }
+    // Fallback to stored platform stats
     let total = 0;
     Object.values(platformStats).forEach(stats => {
       total += stats?.totalSolved || stats?.problemsSolved || 0;
@@ -163,13 +225,13 @@ const Dashboard = () => {
   const getContestsByPlatform = () => {
     const contests = [];
     if (platformStats.leetcode?.contestsParticipated) {
-      contests.push({ platform: 'LeetCode', count: platformStats.leetcode.contestsParticipated, icon: '📊' });
+      contests.push({ platform: 'leetcode', name: 'LeetCode', count: platformStats.leetcode.contestsParticipated });
     }
     if (platformStats.codechef?.contestsParticipated) {
-      contests.push({ platform: 'CodeChef', count: platformStats.codechef.contestsParticipated, icon: '👨‍🍳' });
+      contests.push({ platform: 'codechef', name: 'CodeChef', count: platformStats.codechef.contestsParticipated });
     }
     if (platformStats.codeforces?.contestsParticipated) {
-      contests.push({ platform: 'CodeForces', count: platformStats.codeforces.contestsParticipated, icon: '🏆' });
+      contests.push({ platform: 'codeforces', name: 'Codeforces', count: platformStats.codeforces.contestsParticipated });
     }
     return contests;
   };
@@ -179,10 +241,12 @@ const Dashboard = () => {
     const userPlatforms = authUser?.platforms || userData?.user?.platforms || {};
     
     Object.entries(userPlatforms).forEach(([platform, username]) => {
-      if (username && platformConfig[platform]) {
+      if (username && PLATFORM_CONFIG[platform]) {
+        const cfg = PLATFORM_CONFIG[platform];
         connected.push({
           key: platform,
-          ...platformConfig[platform],
+          name: cfg.name,
+          color: cfg.color,
           username,
           stats: platformStats[platform] || {}
         });
@@ -339,8 +403,11 @@ const Dashboard = () => {
                 {showPlatformStats && (
                   <div className="p-3 border-t border-gray-700 space-y-2">
                     {connectedPlatforms.map(platform => (
-                      <div key={platform.key} className="flex justify-between text-sm">
-                        <span className="text-gray-400">{platform.name}</span>
+                      <div key={platform.key} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400 flex items-center gap-2">
+                          <PlatformIcon platform={platform.key} className="w-4 h-4" />
+                          {platform.name}
+                        </span>
                         <span className="text-white font-semibold">{platform.stats?.totalSolved || platform.stats?.problemsSolved || 0}</span>
                       </div>
                     ))}
@@ -353,7 +420,7 @@ const Dashboard = () => {
                 {connectedPlatforms.map(platform => (
                   <div key={platform.key} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
                     <div className="flex items-center gap-2">
-                      <span>{platform.icon}</span>
+                      <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
                       <span className="text-sm text-white">{platform.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -395,7 +462,7 @@ const Dashboard = () => {
 
             {/* Contribution Calendar */}
             <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <ContributionCalendar calendarData={contributionCalendar} />
+              <ContributionCalendar calendarData={contributionCalendar} connectedPlatforms={connectedPlatforms} />
             </div>
 
             {/* Total Contests */}
@@ -410,8 +477,8 @@ const Dashboard = () => {
                     getContestsByPlatform().map(item => (
                       <div key={item.platform} className="flex items-center justify-between gap-8">
                         <div className="flex items-center gap-2">
-                          <span>{item.icon}</span>
-                          <span className="text-sm text-gray-300">{item.platform}</span>
+                          <PlatformIcon platform={item.platform} className="w-4 h-4" color={getPlatformColor(item.platform)} />
+                          <span className="text-sm text-gray-300">{item.name}</span>
                         </div>
                         <span className="text-sm font-semibold text-white">{item.count}</span>
                       </div>
@@ -456,7 +523,7 @@ const Dashboard = () => {
                 </button>
                 {['leetcode', 'codeforces', 'codechef'].map(platform => {
                   const hasData = allRatingHistory.byPlatform?.[platform]?.length > 0;
-                  const platformName = platformConfig[platform]?.name || platform;
+                  const platformName = PLATFORM_CONFIG[platform]?.name || platform;
                   return (
                     <button
                       key={platform}
@@ -471,7 +538,7 @@ const Dashboard = () => {
                       }`}
                       style={selectedRatingPlatform === platform ? { backgroundColor: platformRatingColors[platform] } : {}}
                     >
-                      {platformConfig[platform]?.icon} {platformName}
+                      <PlatformIcon platform={platform} className="w-4 h-4" /> {platformName}
                     </button>
                   );
                 })}
@@ -482,11 +549,8 @@ const Dashboard = () => {
                 <div className="flex flex-wrap gap-4 mb-3">
                   {allRatingHistory.platforms.map(platform => (
                     <div key={platform} className="flex items-center gap-2">
-                      <div 
-                        className="w-2.5 h-2.5 rounded-full" 
-                        style={{ backgroundColor: platformRatingColors[platform] }}
-                      />
-                      <span className="text-xs text-gray-400">{platformConfig[platform]?.name || platform}</span>
+                      <PlatformIcon platform={platform} className="w-3.5 h-3.5" color={platformRatingColors[platform]} />
+                      <span className="text-xs text-gray-400">{PLATFORM_CONFIG[platform]?.name || platform}</span>
                     </div>
                   ))}
                 </div>
@@ -535,8 +599,8 @@ const Dashboard = () => {
                       }}
                       labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: 4 }}
                       formatter={(value, name) => {
-                        if (value === null) return ['-', platformConfig[name]?.name || name];
-                        return [value, platformConfig[name]?.name || name];
+                        if (value === null) return ['-', PLATFORM_CONFIG[name]?.name || name];
+                        return [value, PLATFORM_CONFIG[name]?.name || name];
                       }}
                       labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { 
                         day: 'numeric', month: 'short', year: 'numeric' 
@@ -640,16 +704,6 @@ const Dashboard = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {achievements.map((achievement, idx) => {
-                    const platformIcons = {
-                      leetcode: '📊',
-                      codeforces: '🔵',
-                      codechef: '👨‍🍳'
-                    };
-                    const platformNames = {
-                      leetcode: 'LeetCode',
-                      codeforces: 'Codeforces',
-                      codechef: 'CodeChef'
-                    };
                     return (
                       <div 
                         key={idx}
@@ -665,7 +719,9 @@ const Dashboard = () => {
                         
                         <div className="relative z-10">
                           {/* Platform icon */}
-                          <div className="text-3xl mb-3">{achievement.icon}</div>
+                          <div className="flex justify-center mb-3">
+                            <PlatformIcon platform={achievement.platform} className="w-8 h-8" color={achievement.color} />
+                          </div>
                           
                           {/* Title/Rank */}
                           <div 
@@ -676,9 +732,9 @@ const Dashboard = () => {
                           </div>
                           
                           {/* Platform name */}
-                          <div className="text-sm text-gray-400 mb-2 flex items-center justify-center gap-1">
-                            <span>{platformIcons[achievement.platform]}</span>
-                            {platformNames[achievement.platform]}
+                          <div className="text-sm text-gray-400 mb-2 flex items-center justify-center gap-1.5">
+                            <PlatformIcon platform={achievement.platform} className="w-4 h-4" />
+                            {getPlatformName(achievement.platform)}
                           </div>
                           
                           {/* Rating */}
@@ -713,7 +769,7 @@ const Dashboard = () => {
               <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span className="text-xl">📊</span> DSA Topic Analysis
+                    <PlatformIcon platform="leetcode" className="w-5 h-5" color="#FFA116" /> DSA Topic Analysis
                   </h3>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">{topicAnalysis.length} topics</span>
@@ -753,12 +809,12 @@ const Dashboard = () => {
                           <div className="flex gap-3 mt-1">
                             {topic.platforms?.leetcode && (
                               <span className="text-xs text-orange-400 flex items-center gap-1">
-                                📊 {topic.platforms.leetcode}
+                                <PlatformIcon platform="leetcode" className="w-3 h-3" /> {topic.platforms.leetcode}
                               </span>
                             )}
                             {topic.platforms?.codeforces && (
                               <span className="text-xs text-blue-400 flex items-center gap-1">
-                                🔵 {topic.platforms.codeforces}
+                                <PlatformIcon platform="codeforces" className="w-3 h-3" /> {topic.platforms.codeforces}
                               </span>
                             )}
                           </div>
@@ -771,10 +827,10 @@ const Dashboard = () => {
             ) : (
               <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
-                  <span className="text-xl">📊</span> DSA Topic Analysis
+                  <PlatformIcon platform="leetcode" className="w-5 h-5" color="#FFA116" /> DSA Topic Analysis
                 </h3>
                 <div className="text-center py-6">
-                  <div className="text-4xl mb-3">📚</div>
+                  <div className="flex justify-center mb-3"><BookOpen className="w-10 h-10 text-gray-600" /></div>
                   <p className="text-gray-400 text-sm mb-2">No topic data available</p>
                   <p className="text-gray-500 text-xs">Connect LeetCode or Codeforces and sync to see your topic-wise progress</p>
                 </div>
@@ -904,15 +960,42 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Sync Button */}
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
-            >
-              <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync All Platforms'}
-            </button>
+            {/* Sync Button with Cooldown Timer */}
+            <div className="space-y-2">
+              <button
+                onClick={handleSync}
+                disabled={syncing || cooldownRemaining > 0}
+                className={`w-full font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors ${
+                  cooldownRemaining > 0
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black'
+                }`}
+              >
+                <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing 
+                  ? 'Syncing all platforms...' 
+                  : cooldownRemaining > 0 
+                    ? `Sync available in ${formatCooldown(cooldownRemaining)}` 
+                    : 'Sync All Platforms'}
+              </button>
+              {cooldownRemaining > 0 && (
+                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="h-full bg-amber-500/60 rounded-full transition-all duration-1000"
+                    style={{ width: `${((SYNC_COOLDOWN_MS / 1000 - cooldownRemaining) / (SYNC_COOLDOWN_MS / 1000)) * 100}%` }}
+                  />
+                </div>
+              )}
+              {/* Last synced info */}
+              {(() => {
+                const stored = localStorage.getItem(getSyncKey());
+                if (!stored) return <p className="text-xs text-gray-500 text-center">Never synced — syncing automatically...</p>;
+                const mins = Math.floor((Date.now() - Number(stored)) / 60000);
+                const label = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+                return <p className="text-xs text-gray-500 text-center">Last synced: {label}</p>;
+              })()}
+              <p className="text-[10px] text-gray-600 text-center">Refreshes problem counts, ratings, and contest data from all platforms</p>
+            </div>
 
             {/* Quick Links */}
             <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
@@ -950,16 +1033,9 @@ const Dashboard = () => {
 
 // Helper function to get platform URLs
 const getPlatformUrl = (platform, username) => {
-  const urls = {
-    leetcode: `https://leetcode.com/${username}`,
-    codeforces: `https://codeforces.com/profile/${username}`,
-    codechef: `https://www.codechef.com/users/${username}`,
-    github: `https://github.com/${username}`,
-    geeksforgeeks: `https://auth.geeksforgeeks.org/user/${username}`,
-    hackerrank: `https://www.hackerrank.com/${username}`,
-    codingninjas: `https://www.codingninjas.com/studio/profile/${username}`
-  };
-  return urls[platform] || '#';
+  const cfg = PLATFORM_CONFIG[platform];
+  if (cfg?.url) return cfg.url(username);
+  return '#';
 };
 
 export default Dashboard;
