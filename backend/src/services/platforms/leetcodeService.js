@@ -169,6 +169,18 @@ const fetchLeetCodeStats = async (username) => {
 
       console.log(`✅ LeetCode: ${username} - ${stats.totalSolved} problems (E:${stats.easySolved}, M:${stats.mediumSolved}, H:${stats.hardSolved}), Rating: ${stats.rating}`);
 
+      // Also fetch submission calendar and embed in stats
+      try {
+        const calendarResult = await fetchLeetCodeSubmissionCalendar(username);
+        if (calendarResult.success) {
+          stats.submissionCalendar = calendarResult.data;
+          stats.leetcodeStreak = calendarResult.streak;
+          stats.leetcodeActiveDays = calendarResult.totalActiveDays;
+        }
+      } catch (calErr) {
+        console.warn(`⚠️ LeetCode calendar fetch failed during stats: ${calErr.message}`);
+      }
+
       return {
         success: true,
         platform: 'leetcode',
@@ -545,6 +557,74 @@ const fetchLeetCodeTodaySubmissions = async (username) => {
   }
 };
 
+/**
+ * Fetch LeetCode submission calendar (daily submission counts for past year)
+ * This powers the contribution heatmap
+ * @param {string} username - LeetCode username
+ * @returns {Object} submissionCalendar array of {date, count}
+ */
+const fetchLeetCodeSubmissionCalendar = async (username) => {
+  try {
+    // NOTE: Omitting 'year' parameter returns rolling 365-day window (not just current year)
+    const query = `
+      query userProfileCalendar($username: String!) {
+        matchedUser(username: $username) {
+          userCalendar {
+            activeYears
+            streak
+            totalActiveDays
+            submissionCalendar
+          }
+        }
+      }
+    `;
+
+    const response = await axios.post(LEETCODE_API_ENDPOINT, {
+      query,
+      variables: { username }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': `${LEETCODE_PROFILE_URL}/${username}/`,
+      },
+      timeout: 15000
+    });
+
+    const calendarData = response.data?.data?.matchedUser?.userCalendar;
+    
+    if (!calendarData || !calendarData.submissionCalendar) {
+      console.log(`⚠️ LeetCode calendar: No data for ${username}`);
+      return { success: false, data: [], streak: 0, totalActiveDays: 0 };
+    }
+
+    // submissionCalendar is a JSON string: {"unix_timestamp": count, ...}
+    const calendarJson = JSON.parse(calendarData.submissionCalendar);
+    
+    // Convert to array of {date, count} objects
+    const calendarArray = Object.entries(calendarJson).map(([timestamp, count]) => {
+      const date = new Date(parseInt(timestamp) * 1000);
+      return {
+        date: date.toISOString().split('T')[0],
+        count: count
+      };
+    }).sort((a, b) => a.date.localeCompare(b.date));
+
+    console.log(`✅ LeetCode calendar: ${username} - ${calendarArray.length} days, streak: ${calendarData.streak}, active: ${calendarData.totalActiveDays}`);
+
+    return { 
+      success: true, 
+      data: calendarArray,
+      streak: calendarData.streak || 0,
+      totalActiveDays: calendarData.totalActiveDays || 0,
+      activeYears: calendarData.activeYears || []
+    };
+  } catch (error) {
+    console.error(`❌ LeetCode calendar error for ${username}:`, error.message);
+    return { success: false, data: [], streak: 0, totalActiveDays: 0 };
+  }
+};
+
 module.exports = {
   fetchLeetCodeStats,
   fetchLeetCodeRatingHistory,
@@ -552,5 +632,6 @@ module.exports = {
   fetchLeetCodeBadges,
   getLeetCodeRankTitle,
   fetchLeetCodeSolvedProblems,
-  fetchLeetCodeTodaySubmissions
+  fetchLeetCodeTodaySubmissions,
+  fetchLeetCodeSubmissionCalendar
 };

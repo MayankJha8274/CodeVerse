@@ -34,6 +34,7 @@ const fetchCodeforcesStats = async (handle) => {
 
     let acceptedProblems = new Set();
     let totalSubmissions = 0;
+    let submissionCalendar = [];
 
     if (submissionsResponse.data.status === 'OK') {
       const submissions = submissionsResponse.data.result;
@@ -47,6 +48,26 @@ const fetchCodeforcesStats = async (handle) => {
           acceptedProblems.add(problemId);
         }
       });
+
+      // Build submission calendar (daily submission counts for last 365 days)
+      const oneYearAgo = new Date();
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+      oneYearAgo.setHours(0, 0, 0, 0);
+      
+      const dailyCounts = {};
+      submissions.forEach(submission => {
+        if (submission.verdict === 'OK' && submission.creationTimeSeconds) {
+          const date = new Date(submission.creationTimeSeconds * 1000);
+          if (date >= oneYearAgo) {
+            const dateKey = date.toISOString().split('T')[0];
+            dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
+          }
+        }
+      });
+      
+      submissionCalendar = Object.entries(dailyCounts)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
     }
 
     // Fetch contest participation
@@ -72,7 +93,8 @@ const fetchCodeforcesStats = async (handle) => {
       problemsSolved: acceptedProblems.size,
       totalSubmissions,
       contestsParticipated,
-      friendsCount: user.friendOfCount || 0
+      friendsCount: user.friendOfCount || 0,
+      submissionCalendar
     };
 
     console.log(`✅ Codeforces: ${handle} - ${stats.problemsSolved} problems, Rating: ${stats.rating} (${stats.rank})`);

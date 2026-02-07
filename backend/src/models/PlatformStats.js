@@ -43,7 +43,13 @@ const platformStatsSchema = new mongoose.Schema({
     // General
     problemsSolved: { type: Number, default: 0 },
     submissions: { type: Number, default: 0 },
-    score: { type: Number, default: 0 }
+    score: { type: Number, default: 0 },
+
+    // Calendar/heatmap data (arrays of {date, count})
+    submissionCalendar: { type: mongoose.Schema.Types.Mixed, default: null },
+    contributionCalendar: { type: mongoose.Schema.Types.Mixed, default: null },
+    leetcodeStreak: { type: Number, default: 0 },
+    leetcodeActiveDays: { type: Number, default: 0 }
   },
   // Store daily data for trend analysis
   history: [{

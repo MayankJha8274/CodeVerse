@@ -33,6 +33,7 @@ const fetchHackerRankStats = async (username) => {
     } catch (e) {}
     
     // Fetch submissions
+    let submissionCalendar = [];
     try {
       const subsRes = await axios.get(`https://www.hackerrank.com/rest/hackers/${username}/submission_histories`, {
         headers: {
@@ -41,8 +42,33 @@ const fetchHackerRankStats = async (username) => {
         },
         timeout: 10000
       });
-      if (subsRes.data) {
+      if (subsRes.data && typeof subsRes.data === 'object') {
+        // subsRes.data is { "YYYY-MM-DD": count, ... } or nested
+        // Build calendar from the response
+        const now = new Date();
+        const oneYearAgo = new Date();
+        oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+        
+        const processEntries = (obj) => {
+          if (typeof obj === 'object' && obj !== null) {
+            Object.entries(obj).forEach(([key, value]) => {
+              if (typeof value === 'number' && key.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                // Direct date:count mapping
+                const d = new Date(key + 'T00:00:00');
+                if (d >= oneYearAgo && d <= now && value > 0) {
+                  submissionCalendar.push({ date: key, count: value });
+                }
+              } else if (typeof value === 'object' && value !== null) {
+                // Nested object, recurse
+                processEntries(value);
+              }
+            });
+          }
+        };
+        processEntries(subsRes.data);
+        submissionCalendar.sort((a, b) => a.date.localeCompare(b.date));
         submissions = Object.values(subsRes.data).flat();
+        console.log(`✅ HackerRank calendar: ${submissionCalendar.length} active days extracted`);
       }
     } catch (e) {}
     
@@ -84,7 +110,8 @@ const fetchHackerRankStats = async (username) => {
       totalSolved: profileData?.problemsSolved || uniqueProblems || 0,
       badges: badges.length,
       totalSubmissions,
-      rank: 0
+      rank: 0,
+      submissionCalendar: submissionCalendar.length > 0 ? submissionCalendar : null
     };
 
     console.log(`✅ HackerRank: ${username} - ${stats.problemsSolved} problems, ${stats.badges} badges`);

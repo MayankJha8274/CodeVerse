@@ -1,4 +1,5 @@
 const { fetchLeetCodeStats } = require('./platforms/leetcodeService');
+const { fetchLeetCodeSubmissionCalendar } = require('./platforms/leetcodeService');
 const { fetchGitHubStats } = require('./platforms/githubService');
 const { fetchCodeforcesStats } = require('./platforms/codeforcesService');
 const { fetchCodeChefStats } = require('./platforms/codechefService');
@@ -7,6 +8,7 @@ const { fetchHackerRankStats } = require('./platforms/hackerrankService');
 const { fetchCodingNinjasStats } = require('./platforms/codingNinjasService');
 const PlatformStats = require('../models/PlatformStats');
 const DailyProgress = require('../models/DailyProgress');
+const User = require('../models/User');
 
 /**
  * Platform Aggregation Service
@@ -413,6 +415,281 @@ const calculateWeeklyProgress = async (userId) => {
   };
 };
 
+/**
+ * Get contribution calendar data for last 365 days
+ * Merges data from ALL platforms: LeetCode, GitHub, Codeforces, CodeChef,
+ * HackerRank, GFG, CodingNinjas + DailyProgress records
+ * @param {string} userId - User ID
+ * @returns {Object} Calendar data with stats
+ */
+const getContributionCalendar = async (userId) => {
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999);
+  
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 365);
+  startDate.setHours(0, 0, 0, 0);
+
+  // Create a map of dates to contributions
+  const contributionMap = {};
+
+  // Helper to add contributions to the map
+  const addContribution = (dateKey, count, type) => {
+    if (!dateKey || count <= 0) return;
+    if (!contributionMap[dateKey]) {
+      contributionMap[dateKey] = {
+        date: dateKey,
+        count: 0,
+        problems: 0,
+        commits: 0,
+        level: 0
+      };
+    }
+    contributionMap[dateKey].count += count;
+    if (type === 'problems') {
+      contributionMap[dateKey].problems += count;
+    } else if (type === 'commits') {
+      contributionMap[dateKey].commits += count;
+    }
+  };
+
+  // Helper to merge a calendar array into the map
+  const mergeCalendarArray = (calendarArray, type) => {
+    if (!Array.isArray(calendarArray)) return 0;
+    let merged = 0;
+    calendarArray.forEach(day => {
+      const dateKey = (day.date || '').split('T')[0];
+      if (dateKey && day.count > 0) {
+        const dayDate = new Date(dateKey + 'T00:00:00');
+        if (dayDate >= startDate && dayDate <= endDate) {
+          addContribution(dateKey, day.count, type);
+          merged++;
+        }
+      }
+    });
+    return merged;
+  };
+
+  // Look up user to get platform usernames
+  const user = await User.findById(userId);
+  const allPlatformStats = await PlatformStats.find({ userId, fetchStatus: 'success' });
+
+  // ═══════════════════════════════════════════════════════
+  // 1. LEETCODE — Live-fetch from API (most reliable)
+  // ═══════════════════════════════════════════════════════
+  const leetcodeUsername = user?.platforms?.leetcode;
+  if (leetcodeUsername) {
+    try {
+      const lcResult = await fetchLeetCodeSubmissionCalendar(leetcodeUsername);
+      if (lcResult.success && lcResult.data.length > 0) {
+        const count = mergeCalendarArray(lcResult.data, 'problems');
+        console.log(`📅 Calendar: Live-fetched LeetCode for ${leetcodeUsername} (${count} active days)`);
+      }
+    } catch (err) {
+      console.error('📅 Calendar: LeetCode live-fetch failed:', err.message);
+      // Fallback to stored data
+      const leetcodeStats = allPlatformStats.find(ps => ps.platform === 'leetcode');
+      if (leetcodeStats?.stats?.submissionCalendar) {
+        mergeCalendarArray(leetcodeStats.stats.submissionCalendar, 'problems');
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 2. GITHUB — Live-fetch via GraphQL for contribution calendar
+  // ═══════════════════════════════════════════════════════
+  const githubUsername = user?.platforms?.github;
+  if (githubUsername) {
+    try {
+      const ghResult = await fetchGitHubStats(githubUsername, process.env.GITHUB_TOKEN);
+      if (ghResult.success && ghResult.stats?.contributionCalendar) {
+        const count = mergeCalendarArray(ghResult.stats.contributionCalendar, 'commits');
+        console.log(`📅 Calendar: Live-fetched GitHub for ${githubUsername} (${count} active days)`);
+      }
+    } catch (err) {
+      console.error('📅 Calendar: GitHub live-fetch failed:', err.message);
+      const githubStats = allPlatformStats.find(ps => ps.platform === 'github');
+      if (githubStats?.stats?.contributionCalendar) {
+        mergeCalendarArray(githubStats.stats.contributionCalendar, 'commits');
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 3. CODEFORCES — Live-fetch submissions and build calendar
+  // ═══════════════════════════════════════════════════════
+  const cfUsername = user?.platforms?.codeforces;
+  if (cfUsername) {
+    try {
+      const cfResult = await fetchCodeforcesStats(cfUsername);
+      if (cfResult.success && cfResult.stats?.submissionCalendar) {
+        const count = mergeCalendarArray(cfResult.stats.submissionCalendar, 'problems');
+        console.log(`📅 Calendar: Live-fetched Codeforces for ${cfUsername} (${count} active days)`);
+      }
+    } catch (err) {
+      console.error('📅 Calendar: Codeforces live-fetch failed:', err.message);
+      const cfStats = allPlatformStats.find(ps => ps.platform === 'codeforces');
+      if (cfStats?.stats?.submissionCalendar) {
+        mergeCalendarArray(cfStats.stats.submissionCalendar, 'problems');
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 4. HACKERRANK — Live-fetch submission histories
+  // ═══════════════════════════════════════════════════════
+  const hrUsername = user?.platforms?.hackerrank;
+  if (hrUsername) {
+    try {
+      const hrResult = await fetchHackerRankStats(hrUsername);
+      if (hrResult.success && hrResult.stats?.submissionCalendar) {
+        const count = mergeCalendarArray(hrResult.stats.submissionCalendar, 'problems');
+        console.log(`📅 Calendar: Live-fetched HackerRank for ${hrUsername} (${count} active days)`);
+      }
+    } catch (err) {
+      console.error('📅 Calendar: HackerRank live-fetch failed:', err.message);
+      const hrStats = allPlatformStats.find(ps => ps.platform === 'hackerrank');
+      if (hrStats?.stats?.submissionCalendar) {
+        mergeCalendarArray(hrStats.stats.submissionCalendar, 'problems');
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 5. CODECHEF — Use stored data (no calendar API available)
+  // ═══════════════════════════════════════════════════════
+  const codechefStats = allPlatformStats.find(ps => ps.platform === 'codechef');
+  if (codechefStats?.stats?.submissionCalendar) {
+    const count = mergeCalendarArray(codechefStats.stats.submissionCalendar, 'problems');
+    console.log(`📅 Calendar: Merged CodeChef stored data (${count} active days)`);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 6. GFG — Use stored data (no calendar API available)
+  // ═══════════════════════════════════════════════════════
+  const gfgStats = allPlatformStats.find(ps => ps.platform === 'geeksforgeeks');
+  if (gfgStats?.stats?.submissionCalendar) {
+    const count = mergeCalendarArray(gfgStats.stats.submissionCalendar, 'problems');
+    console.log(`📅 Calendar: Merged GFG stored data (${count} active days)`);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 7. CODING NINJAS — Use stored data
+  // ═══════════════════════════════════════════════════════
+  const cnStats = allPlatformStats.find(ps => ps.platform === 'codingninjas');
+  if (cnStats?.stats?.submissionCalendar) {
+    const count = mergeCalendarArray(cnStats.stats.submissionCalendar, 'problems');
+    console.log(`📅 Calendar: Merged CodingNinjas stored data (${count} active days)`);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 8. DailyProgress records — fill any gaps
+  // ═══════════════════════════════════════════════════════
+  const progressData = await DailyProgress.find({
+    userId,
+    date: { $gte: startDate, $lte: endDate }
+  }).sort({ date: 1 });
+
+  progressData.forEach(day => {
+    const dateKey = day.date.toISOString().split('T')[0];
+    if (!contributionMap[dateKey] || contributionMap[dateKey].count === 0) {
+      const problems = day.changes?.problemsDelta || 0;
+      const commits = day.changes?.commitsDelta || 0;
+      if (problems > 0) addContribution(dateKey, problems, 'problems');
+      if (commits > 0) addContribution(dateKey, commits, 'commits');
+    }
+  });
+
+  // Fill in all 366 days with zeros where no data exists
+  const calendar = [];
+  const current = new Date(startDate);
+  
+  while (current <= endDate) {
+    const dateKey = current.toISOString().split('T')[0];
+    if (contributionMap[dateKey]) {
+      calendar.push(contributionMap[dateKey]);
+    } else {
+      calendar.push({
+        date: dateKey,
+        count: 0,
+        problems: 0,
+        commits: 0,
+        level: 0
+      });
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  // Calculate contribution levels (0-4) based on activity using percentiles
+  const counts = calendar.map(d => d.count).filter(c => c > 0).sort((a, b) => a - b);
+  
+  if (counts.length > 0) {
+    const percentile25 = counts[Math.floor(counts.length * 0.25)] || 1;
+    const percentile50 = counts[Math.floor(counts.length * 0.50)] || 2;
+    const percentile75 = counts[Math.floor(counts.length * 0.75)] || 4;
+
+    calendar.forEach(day => {
+      if (day.count === 0) day.level = 0;
+      else if (day.count <= percentile25) day.level = 1;
+      else if (day.count <= percentile50) day.level = 2;
+      else if (day.count <= percentile75) day.level = 3;
+      else day.level = 4;
+    });
+  }
+
+  // Calculate stats
+  const totalContributions = calendar.reduce((sum, day) => sum + day.count, 0);
+  const activeDays = calendar.filter(d => d.count > 0).length;
+  const currentStreak = calculateCurrentStreak(calendar);
+  const longestStreak = calculateLongestStreak(calendar);
+
+  console.log(`📅 Calendar final: ${totalContributions} contributions, ${activeDays} active days, streak: ${currentStreak}/${longestStreak}`);
+
+  return {
+    calendar,
+    stats: {
+      totalContributions,
+      currentStreak,
+      longestStreak,
+      activeDays
+    }
+  };
+};
+
+/**
+ * Calculate current streak from calendar data
+ */
+const calculateCurrentStreak = (calendar) => {
+  let streak = 0;
+  for (let i = calendar.length - 1; i >= 0; i--) {
+    if (calendar[i].count > 0) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+};
+
+/**
+ * Calculate longest streak from calendar data
+ */
+const calculateLongestStreak = (calendar) => {
+  let maxStreak = 0;
+  let currentStreak = 0;
+  
+  calendar.forEach(day => {
+    if (day.count > 0) {
+      currentStreak++;
+      maxStreak = Math.max(maxStreak, currentStreak);
+    } else {
+      currentStreak = 0;
+    }
+  });
+  
+  return maxStreak;
+};
+
 module.exports = {
   fetchPlatformData,
   fetchAllPlatformStats,
@@ -420,5 +697,6 @@ module.exports = {
   getProgressHistory,
   calculateStreaks,
   calculateLanguageBreakdown,
-  calculateWeeklyProgress
+  calculateWeeklyProgress,
+  getContributionCalendar
 };

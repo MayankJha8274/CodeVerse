@@ -20,4 +20,7 @@ router.get('/timeline', protect, dashboardController.getUserTimeline);
 // Get user's rooms
 router.get('/rooms', protect, dashboardController.getUserRooms);
 
+// Get contribution calendar (last 365 days)
+router.get('/calendar', protect, dashboardController.getContributionCalendar);
+
 module.exports = router;

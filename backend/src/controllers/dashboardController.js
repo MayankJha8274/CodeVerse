@@ -2,6 +2,7 @@ const User = require('../models/User');
 const PlatformStats = require('../models/PlatformStats');
 const DailyProgress = require('../models/DailyProgress');
 const Room = require('../models/Room');
+const { getContributionCalendar } = require('../services/aggregationService');
 
 /**
  * Dashboard Controller
@@ -154,6 +155,19 @@ exports.getUserSummary = async (req, res) => {
 
     avgRating = ratingCount > 0 ? Math.round(avgRating / ratingCount) : 0;
 
+    // Calculate total active days from last 365 days
+    const oneYearAgo = new Date();
+    oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+    
+    const activeDaysCount = await DailyProgress.countDocuments({
+      userId,
+      date: { $gte: oneYearAgo },
+      $or: [
+        { 'changes.problemsDelta': { $gt: 0 } },
+        { 'changes.commitsDelta': { $gt: 0 } }
+      ]
+    });
+
     // Get today's activity
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -188,7 +202,8 @@ exports.getUserSummary = async (req, res) => {
           commits: totalCommits,
           contests: totalContests,
           rating: avgRating,
-          platformsConnected: platformStats.length
+          platformsConnected: platformStats.length,
+          activeDays: activeDaysCount
         },
         platforms,
         today: todayActivity
@@ -290,6 +305,29 @@ exports.getUserRooms = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching user rooms',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get contribution calendar data (last 365 days)
+ * GET /api/dashboard/calendar
+ */
+exports.getContributionCalendar = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const calendarData = await getContributionCalendar(userId);
+
+    res.json({
+      success: true,
+      data: calendarData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching contribution calendar',
       error: error.message
     });
   }

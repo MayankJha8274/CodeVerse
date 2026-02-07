@@ -168,6 +168,11 @@ export const api = {
     return data.data.timeline;
   },
 
+  async getContributionCalendar() {
+    const data = await authFetch('/dashboard/calendar');
+    return data.data;
+  },
+
   async getRatingGrowth() {
     const data = await authFetch('/analytics/rating-history/leetcode?days=90');
     return data.data;
