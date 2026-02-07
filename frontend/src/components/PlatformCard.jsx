@@ -1,42 +1,20 @@
 import React from 'react';
 import { ExternalLink, TrendingUp } from 'lucide-react';
-
-const platformLogos = {
-  leetcode: 'https://leetcode.com/favicon.ico',
-  codeforces: 'https://codeforces.org/favicon.ico',
-  codechef: 'https://www.codechef.com/favicon.ico',
-  github: 'https://github.com/favicon.ico',
-  geeksforgeeks: 'https://www.geeksforgeeks.org/favicon.ico',
-  hackerrank: 'https://www.hackerrank.com/favicon.ico'
-};
+import PLATFORM_CONFIG, { PlatformIcon, getPlatformName } from '../utils/platformConfig';
 
 const PlatformCard = ({ platform, stats, onViewDetails }) => {
-  const getPlatformColor = (platform) => {
-    const colors = {
-      leetcode: 'from-yellow-500 to-orange-500',
-      codeforces: 'from-blue-500 to-indigo-600',
-      codechef: 'from-brown-500 to-amber-600',
-      github: 'from-gray-700 to-gray-900',
-      geeksforgeeks: 'from-green-500 to-emerald-600',
-      hackerrank: 'from-green-600 to-teal-600'
-    };
-    return colors[platform] || 'from-gray-500 to-gray-700';
-  };
+  const config = PLATFORM_CONFIG[platform];
+  const gradient = config?.gradient || 'from-gray-500 to-gray-700';
 
   return (
     <div className="bg-[#16161f] rounded-xl overflow-hidden hover:bg-[#1a1a2e] transition-colors group">
-      <div className={`h-2 bg-gradient-to-r ${getPlatformColor(platform)}`}></div>
+      <div className={`h-2 bg-gradient-to-r ${gradient}`}></div>
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <img 
-              src={platformLogos[platform]} 
-              alt={platform}
-              className="w-8 h-8"
-              onError={(e) => e.target.style.display = 'none'}
-            />
-            <h3 className="text-xl font-semibold text-white capitalize">
-              {platform}
+            <PlatformIcon platform={platform} className="w-8 h-8" color={config?.color} />
+            <h3 className="text-xl font-semibold text-white">
+              {getPlatformName(platform)}
             </h3>
           </div>
           <button

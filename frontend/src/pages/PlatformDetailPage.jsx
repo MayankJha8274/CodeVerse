@@ -6,9 +6,12 @@ import PlatformLinkModal from '../components/PlatformLinkModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { ExternalLink, TrendingUp, Calendar, Award, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import api from '../services/api';
+import { PlatformIcon } from '../utils/platformConfig';
+import { useAuth } from '../context/AuthContext';
 
 const PlatformDetailPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { updateUserData } = useAuth();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leetcode');
   const [platformData, setPlatformData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -131,8 +134,7 @@ const PlatformDetailPage = () => {
       }
       user.platforms[platformId] = username;
       localStorage.setItem('user', JSON.stringify(user));
-      
-      // Show success notification
+      updateUserData(user);
       setNotification({ type: 'success', message: `Successfully linked ${platformId}! Fetching data...` });
       
       // Sync platform data in background
@@ -195,6 +197,7 @@ const PlatformDetailPage = () => {
           delete user.platforms[platformId];
         }
         localStorage.setItem('user', JSON.stringify(user));
+        updateUserData(user);
       }
       
       // Clear platform data if currently viewing
@@ -597,7 +600,10 @@ const PlatformDetailPage = () => {
             onClick={() => handleTabChange(tab.id)}
           >
             <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-white">{tab.label}</h3>
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <PlatformIcon platform={tab.id} className="w-5 h-5" />
+                {tab.label}
+              </h3>
               {linkedPlatforms[tab.id] ? (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 text-green-500 text-sm">
@@ -641,12 +647,13 @@ const PlatformDetailPage = () => {
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50'
                 : 'text-gray-400 hover:bg-[#1a1a2e]'
             }`}
           >
+            <PlatformIcon platform={tab.id} className="w-4 h-4" />
             {tab.label}
           </button>
         ))}

@@ -3,9 +3,10 @@ import { Save, RefreshCw, Eye, EyeOff, CheckCircle, Camera, Upload, AlertCircle 
 import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { PlatformIcon, getPlatformName } from '../utils/platformConfig';
 
 const SettingsPage = () => {
-  const { user: authUser, login: updateAuthUser } = useAuth();
+  const { user: authUser, updateUserData } = useAuth();
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -137,12 +138,9 @@ const SettingsPage = () => {
       });
       
       // Update auth context with new user data
-      if (response && updateAuthUser) {
-        // Refresh user data
-        const userData = await api.getUser();
-        if (userData) {
-          localStorage.setItem('user', JSON.stringify(userData));
-        }
+      const userData = await api.getUser();
+      if (userData) {
+        updateUserData(userData);
       }
       
       setSaved(true);
@@ -360,8 +358,8 @@ const SettingsPage = () => {
           {Object.entries(platforms).map(([platform, username]) => (
             <div key={platform} className="flex items-center gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-300 mb-2 capitalize">
-                  {platform}
+                <label className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                  <PlatformIcon platform={platform} className="w-4 h-4" /> {getPlatformName(platform)}
                 </label>
                 <input
                   type="text"

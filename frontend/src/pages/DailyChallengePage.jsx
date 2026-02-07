@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { PlatformIcon, getPlatformName } from '../utils/platformConfig';
 
 // Difficulty Badge Component
 const DifficultyBadge = ({ difficulty, size = 'md' }) => {
@@ -322,12 +323,12 @@ const DailyChallengePage = () => {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <span className={`px-2 py-1 text-xs rounded font-medium ${
+                            <span className={`px-2 py-1 text-xs rounded font-medium flex items-center gap-1 ${
                               challenge.platform === 'codeforces' 
                                 ? 'bg-blue-500/20 text-blue-400' 
                                 : 'bg-orange-500/20 text-orange-400'
                             }`}>
-                              {challenge.platform === 'codeforces' ? '🔵 Codeforces' : '📊 LeetCode'}
+                              <PlatformIcon platform={challenge.platform} className="w-3.5 h-3.5" /> {getPlatformName(challenge.platform)}
                             </span>
                             <span className="px-2 py-1 bg-amber-500/20 text-amber-500 text-xs rounded">
                               {challenge.topic}
