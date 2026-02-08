@@ -470,6 +470,10 @@ const getContributionCalendar = async (userId) => {
         if (dayDate >= startDate && dayDate <= endDate) {
           addContribution(dateKey, day.count, type);
           merged++;
+          // Log specific dates for debugging
+          if (dateKey === '2025-10-31' || dateKey === '2025-11-01') {
+            console.log(`   🔍 ${dateKey}: Adding ${day.count} ${type}`);
+          }
         }
       }
     });
@@ -481,84 +485,39 @@ const getContributionCalendar = async (userId) => {
   const allPlatformStats = await PlatformStats.find({ userId, fetchStatus: 'success' });
 
   // ═══════════════════════════════════════════════════════
-  // 1. LEETCODE — Live-fetch from API (most reliable)
+  // 1. LEETCODE — Use stored data (live fetch causes inconsistent streaks)
   // ═══════════════════════════════════════════════════════
-  const leetcodeUsername = user?.platforms?.leetcode;
-  if (leetcodeUsername) {
-    try {
-      const lcResult = await fetchLeetCodeSubmissionCalendar(leetcodeUsername);
-      if (lcResult.success && lcResult.data.length > 0) {
-        const count = mergeCalendarArray(lcResult.data, 'problems');
-        console.log(`📅 Calendar: Live-fetched LeetCode for ${leetcodeUsername} (${count} active days)`);
-      }
-    } catch (err) {
-      console.error('📅 Calendar: LeetCode live-fetch failed:', err.message);
-      // Fallback to stored data
-      const leetcodeStats = allPlatformStats.find(ps => ps.platform === 'leetcode');
-      if (leetcodeStats?.stats?.submissionCalendar) {
-        mergeCalendarArray(leetcodeStats.stats.submissionCalendar, 'problems');
-      }
-    }
+  const leetcodeStats = allPlatformStats.find(ps => ps.platform === 'leetcode');
+  if (leetcodeStats?.stats?.submissionCalendar) {
+    const count = mergeCalendarArray(leetcodeStats.stats.submissionCalendar, 'problems');
+    console.log(`📅 Calendar: Using stored LeetCode data (${count} active days)`);
   }
 
   // ═══════════════════════════════════════════════════════
-  // 2. GITHUB — Live-fetch via GraphQL for contribution calendar
+  // 2. GITHUB — Use stored data for consistency
   // ═══════════════════════════════════════════════════════
-  const githubUsername = user?.platforms?.github;
-  if (githubUsername) {
-    try {
-      const ghResult = await fetchGitHubStats(githubUsername, process.env.GITHUB_TOKEN);
-      if (ghResult.success && ghResult.stats?.contributionCalendar) {
-        const count = mergeCalendarArray(ghResult.stats.contributionCalendar, 'commits');
-        console.log(`📅 Calendar: Live-fetched GitHub for ${githubUsername} (${count} active days)`);
-      }
-    } catch (err) {
-      console.error('📅 Calendar: GitHub live-fetch failed:', err.message);
-      const githubStats = allPlatformStats.find(ps => ps.platform === 'github');
-      if (githubStats?.stats?.contributionCalendar) {
-        mergeCalendarArray(githubStats.stats.contributionCalendar, 'commits');
-      }
-    }
+  const githubStats = allPlatformStats.find(ps => ps.platform === 'github');
+  if (githubStats?.stats?.contributionCalendar) {
+    const count = mergeCalendarArray(githubStats.stats.contributionCalendar, 'commits');
+    console.log(`📅 Calendar: Using stored GitHub data (${count} active days)`);
   }
 
   // ═══════════════════════════════════════════════════════
-  // 3. CODEFORCES — Live-fetch submissions and build calendar
+  // 3. CODEFORCES — Use stored data for consistency
   // ═══════════════════════════════════════════════════════
-  const cfUsername = user?.platforms?.codeforces;
-  if (cfUsername) {
-    try {
-      const cfResult = await fetchCodeforcesStats(cfUsername);
-      if (cfResult.success && cfResult.stats?.submissionCalendar) {
-        const count = mergeCalendarArray(cfResult.stats.submissionCalendar, 'problems');
-        console.log(`📅 Calendar: Live-fetched Codeforces for ${cfUsername} (${count} active days)`);
-      }
-    } catch (err) {
-      console.error('📅 Calendar: Codeforces live-fetch failed:', err.message);
-      const cfStats = allPlatformStats.find(ps => ps.platform === 'codeforces');
-      if (cfStats?.stats?.submissionCalendar) {
-        mergeCalendarArray(cfStats.stats.submissionCalendar, 'problems');
-      }
-    }
+  const cfStats = allPlatformStats.find(ps => ps.platform === 'codeforces');
+  if (cfStats?.stats?.submissionCalendar) {
+    const count = mergeCalendarArray(cfStats.stats.submissionCalendar, 'problems');
+    console.log(`📅 Calendar: Using stored Codeforces data (${count} active days)`);
   }
 
   // ═══════════════════════════════════════════════════════
-  // 4. HACKERRANK — Live-fetch submission histories
+  // 4. HACKERRANK — Use stored data for consistency
   // ═══════════════════════════════════════════════════════
-  const hrUsername = user?.platforms?.hackerrank;
-  if (hrUsername) {
-    try {
-      const hrResult = await fetchHackerRankStats(hrUsername);
-      if (hrResult.success && hrResult.stats?.submissionCalendar) {
-        const count = mergeCalendarArray(hrResult.stats.submissionCalendar, 'problems');
-        console.log(`📅 Calendar: Live-fetched HackerRank for ${hrUsername} (${count} active days)`);
-      }
-    } catch (err) {
-      console.error('📅 Calendar: HackerRank live-fetch failed:', err.message);
-      const hrStats = allPlatformStats.find(ps => ps.platform === 'hackerrank');
-      if (hrStats?.stats?.submissionCalendar) {
-        mergeCalendarArray(hrStats.stats.submissionCalendar, 'problems');
-      }
-    }
+  const hrStats = allPlatformStats.find(ps => ps.platform === 'hackerrank');
+  if (hrStats?.stats?.submissionCalendar) {
+    const count = mergeCalendarArray(hrStats.stats.submissionCalendar, 'problems');
+    console.log(`📅 Calendar: Using stored HackerRank data (${count} active days)`);
   }
 
   // ═══════════════════════════════════════════════════════
