@@ -88,7 +88,7 @@ const getGlobalLeaderboard = async (req, res, next) => {
     const leaderboard = users.map(user => {
       const stats = statsMap[user._id.toString()] || { totalProblems: 0 };
       const cScore = calculateCScore(user, stats);
-      
+      // Return user data along with scores
       return {
         id: user._id,
         username: user.username,
