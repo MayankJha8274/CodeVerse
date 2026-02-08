@@ -68,6 +68,7 @@ const getGlobalLeaderboard = async (req, res, next) => {
     // Create a map of user stats
     const statsMap = {};
     platformStats.forEach(stat => {
+      if (!stat || !stat.user) return; // guard against malformed records
       const userId = stat.user.toString();
       if (!statsMap[userId]) {
         statsMap[userId] = {
@@ -177,6 +178,7 @@ const getUserRank = async (req, res, next) => {
     
     const statsMap = {};
     platformStats.forEach(stat => {
+      if (!stat || !stat.user) return; // skip malformed entries
       const uid = stat.user.toString();
       if (!statsMap[uid]) statsMap[uid] = { totalProblems: 0 };
       statsMap[uid][stat.platform] = stat;
@@ -225,6 +227,7 @@ const getInstitutionLeaderboard = async (req, res, next) => {
     
     const statsMap = {};
     platformStats.forEach(stat => {
+      if (!stat || !stat.user) return; // guard against missing user references
       const userId = stat.user.toString();
       if (!statsMap[userId]) statsMap[userId] = { totalProblems: 0 };
       statsMap[userId][stat.platform] = stat;
