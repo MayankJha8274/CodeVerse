@@ -349,8 +349,9 @@ const fetchGeeksforGeeksStats = async (username) => {
       codingScore,
       instituteRank,
       monthlyScore: monthlyScore || codingScore,
-      // Only create calendar if we actually have problems (don't add fake data)
-      submissionCalendar: problemsSolved > 0 ? generateEstimatedCalendar(problemsSolved) : []
+      // DO NOT create estimated calendar - it adds fake activity on zero days
+      // This breaks streak calculations with incorrect data
+      submissionCalendar: []
     };
     
     console.log(`✅ GeeksforGeeks: ${username}`);
