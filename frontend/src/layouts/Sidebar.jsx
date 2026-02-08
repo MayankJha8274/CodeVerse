@@ -29,8 +29,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
     profileTracker: true,
     questionTracker: true,
     eventTracker: true,
-    community: true,
-    support: false
+    community: true
   });
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -61,9 +60,16 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       id: 'profileTracker',
       label: 'PROFILE TRACKER',
       items: [
-        { to: '/dashboard', icon: LayoutDashboard, label: 'Portfolio' },
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/platforms', icon: Code2, label: 'Platforms' },
-        { to: '/compare', icon: GitCompare, label: 'Compare' },
+      ]
+    },
+    {
+      id: 'community',
+      label: 'COMMUNITY',
+      items: [
+        { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+        { to: '/rooms', icon: Users, label: 'Societies' },
       ]
     },
     {
@@ -81,21 +87,6 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       items: [
         { to: '/contests', icon: Swords, label: 'Contests' },
         { to: '/contests/admin', icon: PlusCircle, label: 'Host Contest' },
-      ]
-    },
-    {
-      id: 'community',
-      label: 'COMMUNITY',
-      items: [
-        { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-        { to: '/rooms', icon: Users, label: 'Societies' },
-      ]
-    },
-    {
-      id: 'support',
-      label: 'SUPPORT',
-      items: [
-        { to: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
   ];

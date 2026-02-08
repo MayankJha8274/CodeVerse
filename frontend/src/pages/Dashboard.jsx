@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PLATFORM_CONFIG, { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
 import { 
   Code, 
   ExternalLink,
@@ -13,7 +14,9 @@ import {
   RefreshCw,
   ChevronRight,
   BookOpen,
-  ChevronDown
+  ChevronDown,
+  Users,
+  Zap
 } from 'lucide-react';
 import { 
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -21,7 +24,6 @@ import {
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ContributionCalendar from '../components/ContributionCalendar';
-import PLATFORM_CONFIG, { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
 
 
 
@@ -73,6 +75,8 @@ const Dashboard = () => {
   const [allRatingHistory, setAllRatingHistory] = useState({ chartData: [], platforms: [] });
   const [cooldownRemaining, setCooldownRemaining] = useState(0); // seconds remaining
   const [showPlatformStats, setShowPlatformStats] = useState(false);
+  const [openProblemStats, setOpenProblemStats] = useState(true);
+  const [openDevStats, setOpenDevStats] = useState(true);
   const [selectedRatingPlatform, setSelectedRatingPlatform] = useState('all'); // 'all' or specific platform
   const [topicAnalysis, setTopicAnalysis] = useState([]);
   const [badges, setBadges] = useState([]);
@@ -276,6 +280,25 @@ const Dashboard = () => {
     };
   };
 
+  // Compute activity count for a platform: prefer submissions, fall back to problemsSolved/totalSolved
+  function getPlatformActivityCount(key, stats = {}) {
+    if (!stats) return 0;
+    const v = stats.submissions || stats.totalSubmissions || stats.totalSolved || stats.problemsSolved || stats.submitted || 0;
+    if (key === 'github') {
+      return stats.contributions || stats.totalContributions || stats.contribs || stats.activeContributions || v || 0;
+    }
+    return v;
+  }
+
+  // Combined submissions + contributions across all platforms
+  function getCombinedSubmissionsContributions() {
+    let total = 0;
+    Object.entries(platformStats || {}).forEach(([key, stats]) => {
+      total += Number(getPlatformActivityCount(key, stats) || 0);
+    });
+    return total;
+  }
+
   const connectedPlatforms = getConnectedPlatforms();
   const dsaProblems = getDSAProblems();
   const cpProblems = getCPProblems();
@@ -391,58 +414,82 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-400">{authUser?.bio || 'Passionate about competitive programming and software development.'}</p>
               </div>
 
-              {/* Problem Solving Stats - Accordion */}
-              <div className="bg-[#1a1a2e] rounded-lg overflow-hidden mb-4">
-                <button 
-                  onClick={() => setShowPlatformStats(!showPlatformStats)}
-                  className="w-full flex items-center justify-between p-3 hover:bg-[#252538] transition-colors"
+              {/* Problem Solving Stats (non-GitHub) */}
+              <div className="mb-4">
+                <button
+                  onClick={() => setOpenProblemStats(prev => !prev)}
+                  className="w-full flex items-center justify-between mb-2"
                 >
-                  <span className="text-sm font-semibold text-white">Problem Solving Stats</span>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showPlatformStats ? 'rotate-180' : ''}`} />
+                  <h3 className="text-sm font-semibold text-white">Problem Solving Stats</h3>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openProblemStats ? 'rotate-180' : ''}`} />
                 </button>
-                {showPlatformStats && (
-                  <div className="p-3 border-t border-gray-700 space-y-2">
-                    {connectedPlatforms.map(platform => (
-                      <div key={platform.key} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400 flex items-center gap-2">
-                          <PlatformIcon platform={platform.key} className="w-4 h-4" />
-                          {platform.name}
-                        </span>
-                        <span className="text-white font-semibold">{platform.stats?.totalSolved || platform.stats?.problemsSolved || 0}</span>
-                      </div>
-                    ))}
+                {openProblemStats && (
+                  <div className="space-y-2">
+                    {connectedPlatforms.filter(p => p.key !== 'github').map(platform => {
+                      return (
+                        <div key={platform.key} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
+                            <span className="text-sm text-white">{platform.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <a
+                              href={getPlatformUrl(platform.key, platform.username)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
-              {/* Connected Platforms */}
-              <div className="space-y-2">
-                {connectedPlatforms.map(platform => (
-                  <div key={platform.key} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
-                      <span className="text-sm text-white">{platform.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-500" />
-                      <a 
-                        href={getPlatformUrl(platform.key, platform.username)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-white"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </div>
-                ))}
-                <button 
-                  onClick={() => navigate('/settings')}
-                  className="w-full text-center text-amber-500 text-sm py-2 hover:text-amber-400 transition-colors"
+              {/* Development Stats (GitHub) */}
+              <div className="mb-4">
+                <button
+                  onClick={() => setOpenDevStats(prev => !prev)}
+                  className="w-full flex items-center justify-between mb-2"
                 >
-                  + Add Platform
+                  <h3 className="text-sm font-semibold text-white">Development Stats</h3>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openDevStats ? 'rotate-180' : ''}`} />
                 </button>
+                {openDevStats && (
+                  <div className="space-y-2">
+                    {connectedPlatforms.filter(p => p.key === 'github').map(platform => {
+                      return (
+                        <div key={platform.key} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
+                            <span className="text-sm text-white">{platform.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <a
+                              href={getPlatformUrl(platform.key, platform.username)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              <button
+                onClick={() => navigate('/settings')}
+                className="w-full text-center text-amber-500 text-sm py-2 hover:text-amber-400 transition-colors"
+              >
+                + Add Platform
+              </button>
             </div>
           </div>
 
@@ -883,7 +930,7 @@ const Dashboard = () => {
               
               {/* Fundamentals */}
               <div className="mb-6">
-                <p className="text-sm text-gray-400 mb-3">Fundamentals ℹ️</p>
+                <p className="text-sm text-gray-400 mb-3">Fundamentals</p>
                 <div className="flex items-center gap-4">
                   <CircularProgress 
                     value={platformStats.hackerrank?.problemsSolved || 0} 
@@ -894,7 +941,7 @@ const Dashboard = () => {
                   />
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-green-500">💚</span>
+                      <PlatformIcon platform="hackerrank" className="w-5 h-5 text-green-500" color={PLATFORM_CONFIG['hackerrank']?.color} />
                       <span className="text-sm text-gray-300">HackerRank</span>
                       <span className="text-sm font-semibold text-white">{platformStats.hackerrank?.problemsSolved || 0}</span>
                     </div>
@@ -946,12 +993,12 @@ const Dashboard = () => {
                   />
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-amber-700"></span>
+                      <PlatformIcon platform="codechef" className="w-5 h-5" color={PLATFORM_CONFIG['codechef']?.color} />
                       <span className="text-sm text-gray-300">Codechef</span>
                       <span className="text-sm font-semibold text-white">{cpProblems.codechef}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                      <PlatformIcon platform="codeforces" className="w-5 h-5" color={PLATFORM_CONFIG['codeforces']?.color} />
                       <span className="text-sm text-gray-300">Codeforces</span>
                       <span className="text-sm font-semibold text-white">{cpProblems.codeforces}</span>
                     </div>
@@ -1002,24 +1049,24 @@ const Dashboard = () => {
               <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
               <div className="space-y-2">
                 <button 
+                  onClick={() => navigate('/platforms')}
+                  className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
+                >
+                  <span className="text-sm text-gray-300 flex items-center gap-2"><Code className="w-4 h-4" /> Platforms</span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </button>
+                <button 
                   onClick={() => navigate('/rooms')}
                   className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
                 >
-                  <span className="text-sm text-gray-300">🏆 Leaderboards</span>
+                  <span className="text-sm text-gray-300 flex items-center gap-2"><Users className="w-4 h-4" /> Societies</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button 
-                  onClick={() => navigate('/compare')}
+                  onClick={() => navigate('/daily-challenge')}
                   className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
                 >
-                  <span className="text-sm text-gray-300">🔄 Compare</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-                <button 
-                  onClick={() => navigate('/sheets')}
-                  className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
-                >
-                  <span className="text-sm text-gray-300">📚 DSA Sheets</span>
+                  <span className="text-sm text-gray-300 flex items-center gap-2"><Zap className="w-4 h-4" /> Daily Challenge</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
               </div>
