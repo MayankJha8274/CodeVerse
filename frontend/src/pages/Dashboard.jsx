@@ -326,7 +326,7 @@ const Dashboard = () => {
   // Empty state for new users
   if (!connectedPlatforms.length) {
     return (
-      <div className="min-h-screen bg-[#0d0d14] p-8">
+      <div className="min-h-full bg-[#0d0d14]">
         <div className="max-w-2xl mx-auto text-center py-20">
           <div className="w-24 h-24 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
             <Code className="w-12 h-12 text-amber-500" />
@@ -347,8 +347,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="min-h-full bg-[#0d0d14] text-white">
+      <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-12 gap-6">
           
           {/* Left Column - Profile Section */}

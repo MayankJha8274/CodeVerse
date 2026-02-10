@@ -77,7 +77,7 @@ const ContestAdminPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-full bg-[#0a0a0f] text-white">
       {/* Header */}
       <div className="bg-[#0d0d14] border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-8">

@@ -124,7 +124,7 @@ const LeaderboardPage = () => {
 
   if (loading && !leaderboardData) {
     return (
-      <div className="min-h-screen bg-[#0d0d14] p-6">
+      <div className="min-h-full bg-[#0d0d14]">
         <SkeletonLoader type="list" />
       </div>
     );
@@ -134,7 +134,7 @@ const LeaderboardPage = () => {
   const currentUser = leaderboardData?.currentUser;
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white p-6">
+    <div className="min-h-full bg-[#0d0d14] text-white">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

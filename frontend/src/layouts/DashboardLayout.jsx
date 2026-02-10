@@ -26,7 +26,7 @@ const DashboardLayout = () => {
           onLogout={handleLogout}
         />
         
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#0d0d14]">
+        <main className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#0d0d14] p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>
