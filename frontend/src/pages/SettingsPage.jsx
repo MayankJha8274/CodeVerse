@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, RefreshCw, Eye, EyeOff, CheckCircle, Camera, Upload, AlertCircle } from 'lucide-react';
+import { Save, RefreshCw, Camera, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { PlatformIcon, getPlatformName } from '../utils/platformConfig';
 
 const SettingsPage = () => {
   const { user: authUser, updateUserData } = useAuth();
@@ -12,7 +11,7 @@ const SettingsPage = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [refreshing, setRefreshing] = useState(null);
+
   const [user, setUser] = useState({
     name: '',
     username: '',
@@ -20,170 +19,165 @@ const SettingsPage = () => {
     bio: '',
     location: '',
     institution: '',
-    country: '',
+    degree: '',
+    branch: '',
+    graduationYear: '',
+    country: 'IN',
     avatar: ''
   });
 
-  const [platforms, setPlatforms] = useState({
-    leetcode: '',
-    codeforces: '',
-    codechef: '',
-    github: '',
-    geeksforgeeks: '',
-    hackerrank: ''
-  });
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
-  const [settings, setSettings] = useState({
-    publicProfile: true,
-    showEmail: false,
-    emailNotifications: true,
-    weeklyDigest: true,
-    roomInvites: true
-  });
-
-  // Load user data from AuthContext
   useEffect(() => {
     if (authUser) {
-      setUser({
-        name: authUser.name || authUser.fullName || '',
+      // Clear any previous errors when authUser loads
+      setError(null);
+      
+      const full = authUser.fullName || authUser.name || '';
+      const parts = full.trim().split(/\s+/);
+      setFirstName(parts.slice(0, -1).join(' ') || parts[0] || '');
+      setLastName(parts.slice(-1).join(' ') || '');
+
+      setUser(prev => ({
+        ...prev,
+        name: full,
         username: authUser.username || '',
         email: authUser.email || '',
         bio: authUser.bio || '',
         location: authUser.location || '',
         institution: authUser.institution || '',
+        degree: authUser.degree || '',
+        branch: authUser.branch || '',
+        graduationYear: authUser.graduationYear || '',
         country: authUser.country || 'IN',
         avatar: authUser.avatar || authUser.avatarUrl || ''
-      });
-      
-      // Load platform usernames if available
-      if (authUser.platforms) {
-        setPlatforms({
-          leetcode: authUser.platforms.leetcode?.username || authUser.platforms.leetcode || '',
-          codeforces: authUser.platforms.codeforces?.username || authUser.platforms.codeforces || '',
-          codechef: authUser.platforms.codechef?.username || authUser.platforms.codechef || '',
-          github: authUser.platforms.github?.username || authUser.platforms.github || '',
-          geeksforgeeks: authUser.platforms.geeksforgeeks?.username || authUser.platforms.geeksforgeeks || '',
-          hackerrank: authUser.platforms.hackerrank?.username || authUser.platforms.hackerrank || ''
-        });
-      }
+      }));
     }
   }, [authUser]);
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleAvatarClick = () => fileInputRef.current?.click();
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Image must be less than 2MB');
-      return;
-    }
+    if (!file.type.startsWith('image/')) return setError('Please upload an image file');
+    if (file.size > 2 * 1024 * 1024) return setError('Image must be less than 2MB');
 
     setUploadingAvatar(true);
     setError(null);
-
     try {
       const result = await api.uploadAvatar(file);
-      setUser(prev => ({ ...prev, avatar: result.avatar }));
+      const newAvatar = result.avatar;
+      setUser(prev => ({ ...prev, avatar: newAvatar }));
+      // Update auth context so avatar shows everywhere
+      updateUserData({ ...authUser, avatar: newAvatar });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      setError(error.message || 'Failed to upload avatar');
+    } catch (err) {
+      setError(err.message || 'Failed to upload avatar');
     } finally {
       setUploadingAvatar(false);
     }
   };
 
-  const handleUserChange = (e) => {
-    setUser({
-      ...user,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handlePlatformChange = (e) => {
-    setPlatforms({
-      ...platforms,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSettingChange = (setting) => {
-    setSettings({
-      ...settings,
-      [setting]: !settings[setting]
-    });
-  };
+  const handleUserChange = (e) => setUser({ ...user, [e.target.name]: e.target.value });
+  const handleFirstNameChange = (e) => setFirstName(e.target.value);
+  const handleLastNameChange = (e) => setLastName(e.target.value);
 
   const handleSave = async () => {
     setLoading(true);
-    setSaved(false);
     setError(null);
-    
     try {
-      const response = await api.updateUser({ 
-        ...user, 
-        fullName: user.name,
-        platforms, 
-        settings 
-      });
+      // Combine first + last into `name` which backend expects as `name` (will be saved as fullName)
+      const fullName = `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim();
+      const payload = { 
+        name: fullName,
+        username: user.username,
+        email: user.email,
+        bio: user.bio,
+        location: user.location,
+        institution: user.institution,
+        degree: user.degree,
+        branch: user.branch,
+        graduationYear: user.graduationYear,
+        country: user.country
+      };
       
-      // Update auth context with new user data
-      const userData = await api.getUser();
-      if (userData) {
-        updateUserData(userData);
+      const updatedUser = await api.updateUser(payload);
+      
+      if (updatedUser) {
+        // Update auth context with the new user data
+        updateUserData(updatedUser);
+        
+        // Update local state with the returned user data
+        const returnedFullName = updatedUser.fullName || updatedUser.name || '';
+        const parts = returnedFullName.trim().split(/\s+/);
+        setFirstName(parts.slice(0, -1).join(' ') || parts[0] || '');
+        setLastName(parts.slice(-1).join(' ') || '');
+        
+        setUser(prev => ({
+          ...prev,
+          name: returnedFullName,
+          username: updatedUser.username || '',
+          email: updatedUser.email || '',
+          bio: updatedUser.bio || '',
+          location: updatedUser.location || '',
+          institution: updatedUser.institution || '',
+          degree: updatedUser.degree || '',
+          branch: updatedUser.branch || '',
+          graduationYear: updatedUser.graduationYear || '',
+          country: updatedUser.country || 'IN',
+          avatar: updatedUser.avatar || ''
+        }));
       }
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      setError(error.message || 'Failed to save settings');
-      console.error('Failed to save settings:', error);
+    } catch (err) {
+      console.error('Save error:', err);
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      setError(serverMsg || 'Failed to save changes');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRefresh = async (platform) => {
-    setRefreshing(platform);
-    
-    try {
-      await api.refreshData(platform);
-    } catch (error) {
-      console.error(`Failed to refresh ${platform} data:`, error);
-    } finally {
-      setRefreshing(null);
+  const handleCancel = () => {
+    if (authUser) {
+      const full = authUser.fullName || authUser.name || '';
+      const parts = full.trim().split(/\s+/);
+      setFirstName(parts.slice(0, -1).join(' ') || parts[0] || '');
+      setLastName(parts.slice(-1).join(' ') || '');
+
+      setUser({
+        name: full,
+        username: authUser.username || '',
+        email: authUser.email || '',
+        bio: authUser.bio || '',
+        location: authUser.location || '',
+        institution: authUser.institution || '',
+        degree: authUser.degree || '',
+        branch: authUser.branch || '',
+        graduationYear: authUser.graduationYear || '',
+        country: authUser.country || 'IN',
+        avatar: authUser.avatar || authUser.avatarUrl || ''
+      });
     }
+    setError(null);
   };
 
   return (
     <div className="max-w-4xl space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">
-          Settings
-        </h1>
-        <p className="text-gray-400">
-          Manage your profile and platform connections
-        </p>
+        <h1 className="text-3xl font-bold text-white mb-2">Profile</h1>
+        <p className="text-gray-400">Manage your profile and platform connections</p>
       </div>
 
-      {/* Profile Information */}
       <div className="bg-[#16161f] rounded-xl p-6">
-        <h2 className="text-xl font-semibold text-white mb-6">
-          Profile Information
-        </h2>
+        <h2 className="text-xl font-semibold text-white mb-2">Basic Info</h2>
+        <p className="text-gray-400 text-sm mb-6">You can manage your details here.</p>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-400">
             <AlertCircle className="w-5 h-5" />
@@ -191,7 +185,9 @@ const SettingsPage = () => {
           </div>
         )}
 
-        <div className="flex items-center gap-6 mb-6">
+        <h3 className="text-lg font-semibold text-white mb-6">Basic Details</h3>
+
+        <div className="flex items-start gap-6 mb-6">
           <div className="relative">
             <UserAvatar user={{ avatar: user.avatar, name: user.name }} size="2xl" />
             <button
@@ -199,25 +195,46 @@ const SettingsPage = () => {
               disabled={uploadingAvatar}
               className="absolute bottom-0 right-0 p-2 bg-amber-500 hover:bg-amber-600 rounded-full text-black transition-colors disabled:opacity-50"
             >
-              {uploadingAvatar ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Camera className="w-4 h-4" />
-              )}
+              {uploadingAvatar ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
           </div>
-          <div>
-            <button 
+
+          <div className="flex-1">
+            <div className="mb-4">
+              <span className="text-sm text-gray-400">CodeVerse Id: </span>
+              <span className="text-sm text-gray-500">{user.username}</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  name="firstName" 
+                  value={firstName} 
+                  onChange={handleFirstNameChange} 
+                  placeholder="Mayank"
+                  className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+                <input 
+                  name="lastName" 
+                  value={lastName} 
+                  onChange={handleLastNameChange} 
+                  placeholder="Jha"
+                  className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors" 
+                />
+              </div>
+            </div>
+
+            <button
               onClick={handleAvatarClick}
               disabled={uploadingAvatar}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg mb-2 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {uploadingAvatar ? (
                 <>
@@ -231,105 +248,54 @@ const SettingsPage = () => {
                 </>
               )}
             </button>
-            <p className="text-sm text-gray-500">
-              JPG, PNG or GIF. Max size 2MB.
-            </p>
+            <p className="text-sm text-gray-500 mt-2">JPG, PNG or GIF. Max size 2MB.</p>
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={user.name}
-                onChange={handleUserChange}
-                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={user.username}
-                onChange={handleUserChange}
-                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-              />
-            </div>
-          </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={user.email}
-              onChange={handleUserChange}
-              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+            <input 
+              type="email" 
+              name="email" 
+              value={user.email} 
+              onChange={handleUserChange} 
+              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors" 
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Bio
-            </label>
-            <textarea
-              name="bio"
-              value={user.bio}
-              onChange={handleUserChange}
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Location
-            </label>
-            <input
-              type="text"
-              name="location"
-              value={user.location}
-              onChange={handleUserChange}
-              placeholder="e.g., Mumbai, India"
-              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+            <label className="block text-sm font-medium text-gray-300 mb-2">Bio (Max 200 Characters)</label>
+            <textarea 
+              name="bio" 
+              value={user.bio} 
+              onChange={handleUserChange} 
+              maxLength={200}
+              rows={3} 
+              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors resize-none" 
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Institution / College
-              </label>
-              <input
-                type="text"
-                name="institution"
-                value={user.institution}
-                onChange={handleUserChange}
-                placeholder="e.g., IIT Delhi"
-                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+              <input 
+                name="location" 
+                value={user.location} 
+                onChange={handleUserChange} 
+                placeholder="e.g., Mumbai, India"
+                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors" 
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Country
+                Country <span className="text-red-500">*</span>
               </label>
-              <select
-                name="country"
-                value={user.country}
-                onChange={handleUserChange}
-                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              <select 
+                name="country" 
+                value={user.country} 
+                onChange={handleUserChange} 
+                className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors"
               >
                 <option value="IN">India</option>
                 <option value="US">United States</option>
@@ -345,162 +311,102 @@ const SettingsPage = () => {
               </select>
             </div>
           </div>
+
+          {/* Institution input moved to Educational Details to avoid duplication */}
         </div>
       </div>
 
-      {/* Platform Connections */}
+      
+
       <div className="bg-[#16161f] rounded-xl p-6">
-        <h2 className="text-xl font-semibold text-white mb-6">
-          Platform Connections
-        </h2>
+        <h2 className="text-xl font-semibold text-white mb-6">Educational Details</h2>
 
         <div className="space-y-4">
-          {Object.entries(platforms).map(([platform, username]) => (
-            <div key={platform} className="flex items-center gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                  <PlatformIcon platform={platform} className="w-4 h-4" /> {getPlatformName(platform)}
-                </label>
-                <input
-                  type="text"
-                  name={platform}
-                  value={username}
-                  onChange={handlePlatformChange}
-                  placeholder={`Your ${platform} username`}
-                  className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                />
-              </div>
-              <button
-                onClick={() => handleRefresh(platform)}
-                disabled={refreshing === platform}
-                className="mt-7 p-3 rounded-lg hover:bg-[#1a1a2e] text-gray-400 disabled:opacity-50"
-                title="Refresh data"
-              >
-                <RefreshCw className={`w-5 h-5 ${refreshing === platform ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Privacy & Notifications */}
-      <div className="bg-[#16161f] rounded-xl p-6">
-        <h2 className="text-xl font-semibold text-white mb-6">
-          Privacy & Notifications
-        </h2>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a2e]">
-            <div className="flex items-center gap-3">
-              {settings.publicProfile ? (
-                <Eye className="w-5 h-5 text-gray-400" />
-              ) : (
-                <EyeOff className="w-5 h-5 text-gray-400" />
-              )}
-              <div>
-                <div className="font-medium text-white">Public Profile</div>
-                <div className="text-sm text-gray-500">Allow others to view your profile</div>
-              </div>
-            </div>
-            <button
-              onClick={() => handleSettingChange('publicProfile')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.publicProfile ? 'bg-amber-500' : 'bg-gray-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.publicProfile ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              School / College / University <span className="text-red-500">*</span>
+            </label>
+            <input 
+              name="institution" 
+              value={user.institution} 
+              onChange={handleUserChange} 
+              placeholder="Bhagwan Parshuram Institute of Technology"
+              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors" 
+            />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a2e]">
-            <div>
-              <div className="font-medium text-white">Show Email</div>
-              <div className="text-sm text-gray-500">Display email on public profile</div>
-            </div>
-            <button
-              onClick={() => handleSettingChange('showEmail')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.showEmail ? 'bg-amber-500' : 'bg-gray-600'
-              }`}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Degree <span className="text-red-500">*</span>
+            </label>
+            <select 
+              name="degree" 
+              value={user.degree} 
+              onChange={handleUserChange} 
+              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors"
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.showEmail ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+              <option value="">Select Degree</option>
+              <option value="Bachelor of Technology">Bachelor of Technology</option>
+              <option value="Bachelor of Engineering">Bachelor of Engineering</option>
+              <option value="Bachelor of Science">Bachelor of Science</option>
+              <option value="Bachelor of Computer Applications">Bachelor of Computer Applications</option>
+              <option value="Master of Technology">Master of Technology</option>
+              <option value="Master of Engineering">Master of Engineering</option>
+              <option value="Master of Science">Master of Science</option>
+              <option value="Master of Computer Applications">Master of Computer Applications</option>
+              <option value="PhD">PhD</option>
+              <option value="Diploma">Diploma</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a2e]">
-            <div>
-              <div className="font-medium text-white">Email Notifications</div>
-              <div className="text-sm text-gray-500">Receive updates via email</div>
-            </div>
-            <button
-              onClick={() => handleSettingChange('emailNotifications')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.emailNotifications ? 'bg-amber-500' : 'bg-gray-600'
-              }`}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Branch <span className="text-red-500">*</span>
+            </label>
+            <select 
+              name="branch" 
+              value={user.branch} 
+              onChange={handleUserChange} 
+              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors"
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.emailNotifications ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+              <option value="">Select Branch</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Electronics and Communication">Electronics and Communication</option>
+              <option value="Electrical Engineering">Electrical Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+              <option value="Chemical Engineering">Chemical Engineering</option>
+              <option value="Biotechnology">Biotechnology</option>
+              <option value="Artificial Intelligence">Artificial Intelligence</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Cyber Security">Cyber Security</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a2e]">
-            <div>
-              <div className="font-medium text-white">Weekly Digest</div>
-              <div className="text-sm text-gray-500">Get weekly progress summary</div>
-            </div>
-            <button
-              onClick={() => handleSettingChange('weeklyDigest')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.weeklyDigest ? 'bg-amber-500' : 'bg-gray-600'
-              }`}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Year of Graduation <span className="text-red-500">*</span>
+            </label>
+            <select 
+              name="graduationYear" 
+              value={user.graduationYear} 
+              onChange={handleUserChange} 
+              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white outline-none focus:border-amber-500 transition-colors"
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.weeklyDigest ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-lg bg-[#1a1a2e]">
-            <div>
-              <div className="font-medium text-white">Room Invites</div>
-              <div className="text-sm text-gray-500">Allow others to invite you to rooms</div>
-            </div>
-            <button
-              onClick={() => handleSettingChange('roomInvites')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.roomInvites ? 'bg-amber-500' : 'bg-gray-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.roomInvites ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+              <option value="">Select Year</option>
+              {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Save Button */}
       <div className="flex items-center gap-4">
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
-        >
+        <button onClick={handleSave} disabled={loading} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors">
           {loading ? (
             <>
               <RefreshCw className="w-5 h-5 animate-spin" />
@@ -513,6 +419,8 @@ const SettingsPage = () => {
             </>
           )}
         </button>
+
+        <button onClick={handleCancel} disabled={loading} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50">Cancel</button>
 
         {saved && (
           <div className="flex items-center gap-2 text-green-500">

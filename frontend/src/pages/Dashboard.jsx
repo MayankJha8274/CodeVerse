@@ -7,10 +7,6 @@ import {
   Check,
   MapPin,
   Building,
-  Mail,
-  Linkedin,
-  Twitter,
-  Globe,
   RefreshCw,
   ChevronRight,
   BookOpen,
@@ -375,41 +371,33 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              {/* Get Card Button */}
-              <button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-6 hover:from-amber-600 hover:to-orange-600 transition-all">
-                Get your CodeVerse Card
+              {/* Edit Profile Button (opens full editable settings) */}
+              <button onClick={() => navigate('/settings')} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all">
+                Edit Profile
               </button>
 
-              {/* Social Links */}
-              <div className="flex justify-center gap-4 mb-6">
-                <button className="p-2 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                </button>
-                <button className="p-2 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors">
-                  <Linkedin className="w-5 h-5 text-gray-400" />
-                </button>
-                <button className="p-2 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors">
-                  <Twitter className="w-5 h-5 text-gray-400" />
-                </button>
-                <button className="p-2 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors">
-                  <Globe className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
+              <div className="border-t border-gray-700 my-4"></div>
 
               {/* Location Info */}
-              <div className="space-y-3 mb-6 text-sm">
-                <div className="flex items-center gap-2 text-gray-400">
-                  <MapPin className="w-4 h-4" />
-                  <span>India</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-400">
-                  <Building className="w-4 h-4" />
-                  <span className="truncate">Coding Enthusiast</span>
-                </div>
+              <div className="space-y-3 mb-4 text-sm">
+                {authUser?.location && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <MapPin className="w-4 h-4" />
+                    <span>{authUser.location}</span>
+                  </div>
+                )}
+                {authUser?.institution && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Building className="w-4 h-4" />
+                    <span className="truncate">{authUser.institution}</span>
+                  </div>
+                )}
               </div>
 
+              <div className="border-t border-gray-700 my-4"></div>
+
               {/* About Section */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <h3 className="text-sm font-semibold text-white mb-2">About</h3>
                 <p className="text-sm text-gray-400">{authUser?.bio || 'Passionate about competitive programming and software development.'}</p>
               </div>

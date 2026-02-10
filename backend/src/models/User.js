@@ -54,6 +54,21 @@ const userSchema = new mongoose.Schema({
     maxlength: [50, 'Country cannot exceed 50 characters'],
     default: 'IN'
   },
+  // Educational details
+  degree: {
+    type: String,
+    maxlength: [100, 'Degree cannot exceed 100 characters'],
+    default: ''
+  },
+  branch: {
+    type: String,
+    maxlength: [100, 'Branch cannot exceed 100 characters'],
+    default: ''
+  },
+  graduationYear: {
+    type: Number,
+    default: null
+  },
   // Platform connections - store usernames/handles
   platforms: {
     leetcode: { type: String, default: null },
@@ -73,6 +88,14 @@ const userSchema = new mongoose.Schema({
   oauthId: {
     type: String,
     default: null
+  },
+  // Privacy and notification settings
+  settings: {
+    publicProfile: { type: Boolean, default: true },
+    showEmail: { type: Boolean, default: false },
+    emailNotifications: { type: Boolean, default: true },
+    weeklyDigest: { type: Boolean, default: true },
+    roomInvites: { type: Boolean, default: true }
   },
   // Rooms/Societies the user is part of
   rooms: [{
