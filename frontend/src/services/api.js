@@ -122,9 +122,9 @@ export const api = {
 
   // User/Dashboard APIs
   async getUser() {
-    const data = await authFetch('/dashboard/summary');
+    const data = await authFetch('/auth/me');
     // Return the user object with all fields including platforms
-    return data.data?.user || data.data;
+    return data.data.user;
   },
 
   async getUserProfile(userId) {
@@ -133,11 +133,11 @@ export const api = {
   },
 
   async updateUser(userData) {
-    const data = await authFetch('/auth/profile', {
+    const data = await authFetch('/auth/settings', {
       method: 'PUT',
       body: JSON.stringify(userData)
     });
-    return data.data;
+    return data.data.user;
   },
 
   // Stats APIs

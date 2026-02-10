@@ -238,14 +238,25 @@ const uploadAvatar = async (req, res, next) => {
 // @access  Private
 const updateSettings = async (req, res, next) => {
   try {
-    const { name, username, email, bio, location, platforms, settings } = req.body;
+    const { name, username, email, bio, location, country, institution, degree, branch, graduationYear, platforms, settings } = req.body;
 
     const updateData = {};
+    
+    // Basic info
     if (name) updateData.fullName = name;
     if (username) updateData.username = username;
     if (email) updateData.email = email;
     if (bio !== undefined) updateData.bio = bio;
     if (location !== undefined) updateData.location = location;
+    if (country !== undefined) updateData.country = country;
+    
+    // Educational details
+    if (institution !== undefined) updateData.institution = institution;
+    if (degree !== undefined) updateData.degree = degree;
+    if (branch !== undefined) updateData.branch = branch;
+    if (graduationYear !== undefined) updateData.graduationYear = graduationYear;
+    
+    // User preferences/settings
     if (settings) updateData.settings = settings;
     
     // Handle platforms - merge with existing
@@ -255,12 +266,7 @@ const updateSettings = async (req, res, next) => {
       
       for (const [platform, platformUsername] of Object.entries(platforms)) {
         if (platformUsername) {
-          updatedPlatforms[platform] = {
-            ...updatedPlatforms[platform],
-            username: platformUsername,
-            connected: true,
-            lastSync: new Date()
-          };
+          updatedPlatforms[platform] = platformUsername;
         }
       }
       updateData.platforms = updatedPlatforms;
