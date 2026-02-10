@@ -577,7 +577,7 @@ const SheetsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white p-6">
+    <div className="min-h-full bg-[#0d0d14] text-white">
       <div className="max-w-7xl mx-auto">
         {/* Notes Modal */}
         <NotesModal

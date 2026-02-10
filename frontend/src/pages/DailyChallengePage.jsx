@@ -231,7 +231,7 @@ const DailyChallengePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white p-6">
+    <div className="min-h-full bg-[#0d0d14] text-white">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
