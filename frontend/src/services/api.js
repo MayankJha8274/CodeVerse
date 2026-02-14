@@ -132,6 +132,14 @@ export const api = {
     return data.data;
   },
 
+  async updateProfile(userData) {
+    const data = await authFetch('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(userData)
+    });
+    return data.data.user;
+  },
+
   async updateUser(userData) {
     const data = await authFetch('/auth/settings', {
       method: 'PUT',

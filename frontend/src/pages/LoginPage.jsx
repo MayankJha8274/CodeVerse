@@ -53,7 +53,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center px-6 py-12 transition-colors relative">
+      
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -62,28 +63,28 @@ const LoginPage = () => {
               <Code2 className="w-7 h-7 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome Back
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400">
             Sign in to continue to CodeVerse
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#16161f] rounded-xl p-8">
+        <div className="bg-gray-50 dark:bg-[#16161f] rounded-xl p-8 transition-colors">
           {/* OAuth Buttons */}
           <div className="space-y-3 mb-6">
             <button
               onClick={() => handleOAuthLogin('github')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white"
             >
               <Github className="w-5 h-5" />
               <span className="font-medium">Continue with GitHub</span>
             </button>
             <button
               onClick={() => handleOAuthLogin('google')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white"
             >
               <Chrome className="w-5 h-5" />
               <span className="font-medium">Continue with Google</span>
@@ -93,10 +94,10 @@ const LoginPage = () => {
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700"></div>
+              <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-[#16161f] text-gray-500">
+              <span className="px-2 bg-white dark:bg-[#16161f] text-gray-500 transition-colors">
                 Or continue with email
               </span>
             </div>
@@ -112,7 +113,7 @@ const LoginPage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email
               </label>
               <div className="relative">
@@ -123,14 +124,14 @@ const LoginPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -141,7 +142,7 @@ const LoginPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="Enter your password"
                 />
               </div>
@@ -151,7 +152,7 @@ const LoginPage = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 text-amber-500 border-gray-700 rounded focus:ring-amber-500"
+                  className="w-4 h-4 text-amber-500 border-gray-300 dark:border-gray-700 rounded focus:ring-amber-500"
                 />
                 <span className="ml-2 text-sm text-gray-400">
                   Remember me

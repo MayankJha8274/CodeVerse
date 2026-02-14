@@ -271,7 +271,7 @@ const ContestParticipationPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0f] flex items-center justify-center transition-colors">
         <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
       </div>
     );

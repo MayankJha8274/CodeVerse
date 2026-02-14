@@ -96,7 +96,7 @@ const scrapeLeetCodeProfile = async (username) => {
  */
 const fetchLeetCodeStats = async (username) => {
   try {
-    // Fixed GraphQL query - userContestRanking is a separate top-level query
+    // Query to get current rating and contest history for max rating
     const query = `
       query userProblemsSolved($username: String!) {
         matchedUser(username: $username) {
@@ -116,6 +116,9 @@ const fetchLeetCodeStats = async (username) => {
           rating
           globalRanking
           topPercentage
+        }
+        userContestRankingHistory(username: $username) {
+          rating
         }
       }
     `;
@@ -139,7 +142,23 @@ const fetchLeetCodeStats = async (username) => {
     if (response.data?.data?.matchedUser?.submitStatsGlobal) {
       const matchedUser = response.data.data.matchedUser;
       const submissions = matchedUser.submitStatsGlobal.acSubmissionNum;
-      const contestRanking = response.data.data.userContestRanking; // Separate from matchedUser
+      const contestRanking = response.data.data.userContestRanking;
+      const contestHistory = response.data.data.userContestRankingHistory;
+      
+      const currentRating = Math.round(contestRanking?.rating || 0);
+      
+      // Calculate max rating from contest history
+      let maxRating = currentRating;
+      if (contestHistory && Array.isArray(contestHistory)) {
+        contestHistory.forEach(entry => {
+          if (entry && entry.rating) {
+            maxRating = Math.max(maxRating, Math.round(entry.rating));
+          }
+        });
+      } else if (contestHistory && typeof contestHistory === 'object' && contestHistory.rating) {
+        // In case it returns a single object
+        maxRating = Math.max(maxRating, Math.round(contestHistory.rating));
+      }
       
       const stats = {
         totalSolved: 0,
@@ -147,7 +166,8 @@ const fetchLeetCodeStats = async (username) => {
         mediumSolved: 0,
         hardSolved: 0,
         ranking: matchedUser.profile?.ranking || 0,
-        rating: Math.round(contestRanking?.rating || 0),
+        rating: currentRating,
+        maxRating: maxRating,
         contestsParticipated: contestRanking?.attendedContestsCount || 0
       };
 
@@ -167,7 +187,7 @@ const fetchLeetCodeStats = async (username) => {
         // Skip 'All' difficulty to avoid double counting
       });
 
-      console.log(`✅ LeetCode: ${username} - ${stats.totalSolved} problems (E:${stats.easySolved}, M:${stats.mediumSolved}, H:${stats.hardSolved}), Rating: ${stats.rating}`);
+      console.log(`✅ LeetCode: ${username} - ${stats.totalSolved} problems (E:${stats.easySolved}, M:${stats.mediumSolved}, H:${stats.hardSolved}), Rating: ${stats.rating}/${stats.maxRating}`);
 
       // Also fetch submission calendar and embed in stats
       try {

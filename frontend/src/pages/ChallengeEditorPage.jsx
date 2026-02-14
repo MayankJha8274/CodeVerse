@@ -154,14 +154,14 @@ const ChallengeEditorPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0f] flex items-center justify-center transition-colors">
         <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white pb-24">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0f] text-gray-900 dark:text-white transition-colors">
       {/* Header */}
       <div className="bg-[#0d0d14] border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-6">

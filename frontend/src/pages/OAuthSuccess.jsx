@@ -90,21 +90,21 @@ const OAuthSuccess = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-primary px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d0d14] px-4 transition-colors">
       <div className="max-w-xl w-full text-center">
         {status === 'processing' && (
           <div>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
-            <p className="text-text-primary text-lg">Completing login...</p>
-            <p className="text-gray-400 text-sm mt-2">If this takes too long, use the Continue button below.</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+            <p className="text-gray-900 dark:text-white text-lg">Completing login...</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">If this takes too long, use the Continue button below.</p>
           </div>
         )}
 
         {status === 'success' && (
           <div>
             <div className="text-4xl mb-4">✅</div>
-            <h2 className="text-xl font-semibold text-white mb-2">Login successful</h2>
-            <p className="text-gray-400 mb-4">Redirecting you to your dashboard...</p>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Login successful</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Redirecting you to your dashboard...</p>
             <button onClick={handleContinue} className="px-4 py-2 bg-amber-500 rounded text-black font-medium">Go to Dashboard</button>
           </div>
         )}
@@ -112,10 +112,10 @@ const OAuthSuccess = () => {
         {status === 'error' && (
           <div>
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-white mb-2">Authentication</h2>
-            <p className="text-gray-400 mb-4">{errorMsg || 'Something went wrong during authentication.'}</p>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Authentication</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{errorMsg || 'Something went wrong during authentication.'}</p>
             {decoded && (
-              <div className="text-left bg-[#0d0d14] p-3 rounded mb-3 text-xs text-gray-300">
+              <div className="text-left bg-white dark:bg-[#0d0d14] p-3 rounded mb-3 text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 transition-colors">
                 <strong>Decoded token:</strong>
                 <pre className="whitespace-pre-wrap mt-2">{JSON.stringify(decoded, null, 2)}</pre>
               </div>

@@ -15,13 +15,15 @@ import {
 } from 'lucide-react';
 
 import { PlatformIcon } from '../utils/platformConfig';
+import { useTheme } from '../hooks/useCustomHooks';
 
 const LandingPage = () => {
+  const { theme, toggleTheme } = useTheme();
   const platforms = [
     { name: 'LeetCode', key: 'leetcode', color: '#FFA116' },
     { name: 'Codeforces', key: 'codeforces', color: '#1F8ACB' },
     { name: 'CodeChef', key: 'codechef', color: '#5B4638' },
-    { name: 'GitHub', key: 'github', color: '#FFFFFF' },
+    { name: 'GitHub', key: 'github', color: '#24292f' },
     { name: 'GeeksforGeeks', key: 'geeksforgeeks', color: '#2F8D46' },
     { name: 'HackerRank', key: 'hackerrank', color: '#00EA64' },
     { name: 'Coding Ninjas', key: 'codingninjas', color: '#F96D00' }
@@ -61,31 +63,43 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0d0d14]">
+    <div className="min-h-screen bg-white dark:bg-[#0d0d14] transition-colors">
       {/* Header */}
-      <header className="border-b border-gray-700 bg-[#16161f]">
+      <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#16161f] transition-colors">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
               <Code2 className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
               CodeVerse
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-gray-400 hover:text-white">
+            <a href="#features" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               Features
             </a>
-            <a href="#platforms" className="text-gray-400 hover:text-white">
+            <a href="#platforms" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               Platforms
             </a>
-            <a href="#demo" className="text-gray-400 hover:text-white">
+            <a href="#demo" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               Demo
             </a>
           </nav>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-gray-300 hover:text-white font-medium">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 transition-colors"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a.75.75 0 01.743.648L10.75 2.75V4a.75.75 0 01-1.493.102L9.25 4V2.75A.75.75 0 0110 2zM10 16a.75.75 0 01.743.648L10.75 16.75V18a.75.75 0 01-1.493.102L9.25 18v-1.25A.75.75 0 0110 16zM4.222 4.222a.75.75 0 011.06 0l.884.884a.75.75 0 11-1.06 1.06l-.884-.884a.75.75 0 010-1.06zM14.834 14.834a.75.75 0 011.06 0l.884.884a.75.75 0 11-1.06 1.06l-.884-.884a.75.75 0 010-1.06zM2 10a.75.75 0 01.648-.743L2.75 9.25H4a.75.75 0 01.102 1.493L4 10.75H2.75A.75.75 0 012 10zM16 10a.75.75 0 01.648-.743L16.75 9.25H18a.75.75 0 01.102 1.493L18 10.75h-1.25A.75.75 0 0116 10zM4.222 15.778a.75.75 0 010 1.06l-.884.884a.75.75 0 11-1.06-1.06l.884-.884a.75.75 0 011.06 0zM15.778 5.166a.75.75 0 010 1.06l-.884.884a.75.75 0 11-1.06-1.06l.884-.884a.75.75 0 011.06 0z"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707 8 8 0 1017.293 13.293z"/></svg>
+              )}
+            </button>
+
+            <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium">
               Sign In
             </Link>
             <Link to="/register" className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors">
@@ -102,14 +116,14 @@ const LandingPage = () => {
             <Zap className="w-4 h-4" />
             Join 50,000+ developers
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
             One Dashboard.
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">
               Every Coding Platform.
             </span>
           </h1>
-          <p className="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
             Aggregate stats from LeetCode, Codeforces, CodeChef, GitHub, and more.
             Get personalized analytics, daily challenges, and compete with your team.
           </p>
@@ -127,28 +141,28 @@ const LandingPage = () => {
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div>
               <div className="text-4xl font-bold text-amber-500 mb-2">7+</div>
-              <div className="text-gray-400">Platforms</div>
+              <div className="text-gray-600 dark:text-gray-400">Platforms</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-amber-500 mb-2">1M+</div>
-              <div className="text-gray-400">Problems Tracked</div>
+              <div className="text-gray-600 dark:text-gray-400">Problems Tracked</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-amber-500 mb-2">50K+</div>
-              <div className="text-gray-400">Developers</div>
+              <div className="text-gray-600 dark:text-gray-400">Developers</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Platforms Section */}
-      <section id="platforms" className="py-20 px-6 bg-[#16161f]">
+      <section id="platforms" className="py-20 px-6 bg-gray-50 dark:bg-[#16161f] transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Integrates with your favorite platforms
             </h2>
-            <p className="text-lg text-gray-400">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
               Connect all your coding profiles and see everything in one place
             </p>
           </div>
@@ -156,10 +170,10 @@ const LandingPage = () => {
             {platforms.map((platform) => (
               <div
                 key={platform.name}
-                className="flex flex-col items-center gap-3 p-6 rounded-lg border border-gray-700 hover:border-amber-500 transition-colors"
+                className="flex flex-col items-center gap-3 p-6 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-colors bg-white dark:bg-transparent"
               >
                 <PlatformIcon platform={platform.key} className="w-12 h-12" color={platform.color} />
-                <span className="text-sm font-medium text-gray-300">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {platform.name}
                 </span>
               </div>
@@ -168,14 +182,16 @@ const LandingPage = () => {
         </div>
       </section>
 
+
+
       {/* Features Section */}
       <section id="features" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Everything You Need to Level Up
             </h2>
-            <p className="text-lg text-gray-400">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
               Powerful analytics, personalized challenges, and team competitions ΓÇö all in one place
             </p>
           </div>
@@ -183,15 +199,15 @@ const LandingPage = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-[#16161f] rounded-xl p-6 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-[#16161f] rounded-xl p-6 hover:shadow-lg transition-shadow transition-colors"
               >
                 <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center mb-4">
                   <feature.icon className="w-6 h-6 text-amber-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-400">
+                <p className="text-gray-600 dark:text-gray-400">
                   {feature.description}
                 </p>
               </div>
@@ -201,13 +217,13 @@ const LandingPage = () => {
       </section>
 
       {/* Demo Section */}
-      <section id="demo" className="py-20 px-6 bg-[#16161f]">
+      <section id="demo" className="py-20 px-6 bg-gray-100 dark:bg-[#16161f] transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               See CodeVerse in Action
             </h2>
-            <p className="text-lg text-gray-400 mb-8">
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
               Experience the power of unified analytics
             </p>
             <Link to="/dashboard" className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors text-lg inline-flex items-center gap-2">
@@ -221,7 +237,7 @@ const LandingPage = () => {
       {/* CTA Section */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-[#16161f] rounded-xl p-12 bg-gradient-to-r from-amber-500 to-purple-600">
+          <div className="rounded-xl p-12 bg-gradient-to-r from-amber-500 to-purple-600">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Ready to Track Your Progress?
             </h2>
@@ -236,71 +252,10 @@ const LandingPage = () => {
                 Sign In
               </Link>
             </div>
-            <p className="text-white/80 text-sm mt-6">
-              Free forever ΓÇó No credit card required ΓÇó Privacy-focused
-            </p>
+
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-700 bg-[#16161f] py-12 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-                  <Code2 className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-white">
-                  CodeVerse
-                </span>
-              </div>
-              <p className="text-sm text-gray-400">
-                Unify your competitive programming progress across all platforms.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#features" className="hover:text-white">Features</a></li>
-                <li><a href="#platforms" className="hover:text-white">Platforms</a></li>
-                <li><a href="#demo" className="hover:text-white">Demo</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white">Documentation</a></li>
-                <li><a href="#" className="hover:text-white">API</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Support</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white">Cookie Policy</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-700">
-            <p className="text-sm text-gray-400">
-              ┬⌐ 2026 CodeVerse. All rights reserved. Built with Γ¥ñ∩╕Å for developers worldwide.
-            </p>
-            <div className="flex items-center gap-4 mt-4 md:mt-0">
-              <a href="#" className="text-gray-400 hover:text-white">
-                <Github className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white">
-                <Twitter className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

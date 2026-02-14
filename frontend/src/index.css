@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:is(.dark *));
+
 @theme {
   --color-primary-50: #e6f1ff;
   --color-primary-100: #b3d7ff;
@@ -25,9 +27,32 @@
 }
 
 @layer base {
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --border-color: #e5e7eb;
+  }
+
+  .dark {
+    --bg-primary: #0a0d10;
+    --bg-secondary: #0d0d14;
+    --bg-tertiary: #16161f;
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --border-color: #374151;
+  }
+
   body {
-    @apply bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-100;
-    @apply font-sans antialiased;
+    @apply font-sans antialiased text-gray-900 dark:text-gray-100;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  html, body, #root {
+    @apply transition-colors duration-200;
   }
 }
 

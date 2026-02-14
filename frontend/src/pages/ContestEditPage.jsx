@@ -244,26 +244,26 @@ const ContestEditPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0f] flex items-center justify-center transition-colors">
         <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0f] text-gray-900 dark:text-white transition-colors">
       {/* Header */}
-      <div className="bg-[#0d0d14] border-b border-gray-800">
+      <div className="bg-gray-50 dark:bg-[#0d0d14] border-b border-gray-200 dark:border-gray-800 transition-colors">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center gap-4 mb-4">
             <button
               onClick={() => navigate('/contests/admin')}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex-1">
-              <div className="text-sm text-gray-400 mb-1">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                 Manage Contests &gt; {isNewContest ? 'Create Contest' : contest.name}
               </div>
               <h1 className="text-2xl font-bold">
@@ -292,8 +292,8 @@ const ContestEditPage = () => {
                   disabled={isDisabled}
                   className={`px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'bg-[#1a1a24] text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                      ? 'bg-amber-500 text-black'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50'
                   } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   title={isDisabled ? 'Save the contest first to access this tab' : ''}
                 >
@@ -326,7 +326,7 @@ const ContestEditPage = () => {
 
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-[#0d0d14] rounded-xl border border-gray-800 p-6">
+        <div className="bg-white dark:bg-[#0d0d14] rounded-xl border border-gray-200 dark:border-gray-800 p-6 transition-colors">
           
           {/* Details Tab */}
           {activeTab === 'details' && (

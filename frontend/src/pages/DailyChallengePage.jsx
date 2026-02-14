@@ -67,10 +67,10 @@ const TopicProgressBar = ({ topic, completed, total }) => {
   const percent = total > 0 ? (completed / total) * 100 : 0;
   
   return (
-    <div className="bg-[#1a1a2e] rounded-lg p-3">
+    <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-3">
       <div className="flex justify-between text-sm mb-2">
-        <span className="text-white font-medium">{topic}</span>
-        <span className="text-gray-400">{completed}/{total}</span>
+        <span className="text-gray-900 dark:text-white font-medium">{topic}</span>
+        <span className="text-gray-600 dark:text-gray-400">{completed}/{total}</span>
       </div>
       <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
         <div 
@@ -224,22 +224,22 @@ const DailyChallengePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d0d14] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center transition-colors">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-[#0d0d14] text-white">
+    <div className="min-h-full bg-white dark:bg-[#0d0d14] text-gray-900 dark:text-white transition-colors">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
             <Zap className="w-8 h-8 text-amber-500" />
             Daily DSA Challenge
           </h1>
-          <p className="text-gray-400">Stay consistent and master DSA one problem at a time</p>
+          <p className="text-gray-600 dark:text-gray-400">Stay consistent and master DSA one problem at a time</p>
         </div>
 
         {/* Streak Stats */}
@@ -255,30 +255,30 @@ const DailyChallengePage = () => {
             </div>
           </div>
 
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-3 mb-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
-              <span className="text-gray-400 text-sm">Longest Streak</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Longest Streak</span>
             </div>
-            <p className="text-3xl font-bold text-white">{streak.longest}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{streak.longest}</p>
             <p className="text-gray-500 text-sm">days</p>
           </div>
 
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-3 mb-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <span className="text-gray-400 text-sm">Total Completed</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Total Completed</span>
             </div>
-            <p className="text-3xl font-bold text-white">{streak.total}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{streak.total}</p>
             <p className="text-gray-500 text-sm">challenges</p>
           </div>
 
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-3 mb-2">
               <TrendingUp className="w-5 h-5 text-blue-500" />
-              <span className="text-gray-400 text-sm">Consistency</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Consistency</span>
             </div>
-            <p className="text-3xl font-bold text-white">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {streak.total > 0 ? Math.round((streak.current / 30) * 100) : 0}%
             </p>
             <p className="text-gray-500 text-sm">this month</p>
@@ -288,7 +288,7 @@ const DailyChallengePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's Challenge */}
           <div className="lg:col-span-2">
-            <div className="bg-[#16161f] rounded-xl border border-gray-800 overflow-hidden">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
               <div className="h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500"></div>
               
               <div className="p-6">
@@ -298,8 +298,8 @@ const DailyChallengePage = () => {
                       <Target className="w-6 h-6 text-amber-500" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-white">Today's Challenge</h2>
-                      <p className="text-gray-400 text-sm">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Today's Challenge</h2>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
                         {new Date().toLocaleDateString('en-US', { 
                           weekday: 'long', 
                           month: 'long', 
@@ -319,7 +319,7 @@ const DailyChallengePage = () => {
                 {challenge ? (
                   <div className="space-y-6">
                     {/* Problem Card */}
-                    <div className="bg-[#0d0d14] rounded-xl p-6 border border-gray-800">
+                    <div className="bg-gray-50 dark:bg-[#0d0d14] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -335,7 +335,7 @@ const DailyChallengePage = () => {
                             </span>
                             <DifficultyBadge difficulty={challenge.difficulty} size="sm" />
                           </div>
-                          <h3 className="text-2xl font-bold text-white mb-2">
+                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                             {challenge.problemName}
                           </h3>
                           {challenge.autoCompleted && (
@@ -376,7 +376,7 @@ const DailyChallengePage = () => {
                             <button
                               onClick={handleSkip}
                               disabled={completing}
-                              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                              className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                               title="Skip and get a new challenge"
                             >
                               <SkipForward className="w-5 h-5" />
@@ -408,7 +408,7 @@ const DailyChallengePage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-gray-400">No challenge available. Please login to get started.</p>
+                    <p className="text-gray-600 dark:text-gray-400">No challenge available. Please login to get started.</p>
                   </div>
                 )}
               </div>
@@ -418,8 +418,8 @@ const DailyChallengePage = () => {
           {/* Right Sidebar */}
           <div className="space-y-6">
             {/* Activity Calendar */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-amber-500" />
                 Last 30 Days
               </h3>
@@ -437,8 +437,8 @@ const DailyChallengePage = () => {
             </div>
 
             {/* Topic Progress */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Award className="w-5 h-5 text-amber-500" />
                 Topic Progress
               </h3>
@@ -453,14 +453,14 @@ const DailyChallengePage = () => {
                     />
                   ))
                 ) : (
-                  <p className="text-gray-400 text-sm">Complete challenges to see your topic progress</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Complete challenges to see your topic progress</p>
                 )}
               </div>
             </div>
 
             {/* Recent History */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-amber-500" />
                 Recent Challenges
               </h3>
@@ -469,7 +469,7 @@ const DailyChallengePage = () => {
                   challengeHistory.slice(0, 5).map((item, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-3 bg-[#0d0d14] rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#0d0d14] rounded-lg"
                     >
                       <div className="flex items-center gap-3">
                         {item.isCompleted ? (
@@ -478,15 +478,15 @@ const DailyChallengePage = () => {
                           <Clock className="w-4 h-4 text-gray-500" />
                         )}
                         <div>
-                          <p className="text-sm text-white">{item.problemName}</p>
-                          <p className="text-xs text-gray-400">{item.date}</p>
+                          <p className="text-sm text-gray-900 dark:text-white">{item.problemName}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{item.date}</p>
                         </div>
                       </div>
                       <DifficultyBadge difficulty={item.difficulty} size="sm" />
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400 text-sm">No history yet</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">No history yet</p>
                 )}
               </div>
             </div>
@@ -500,12 +500,12 @@ const DailyChallengePage = () => {
               <div className="flex items-center gap-4">
                 <div className="text-5xl">🎉</div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                     {streak.current >= 7 
                       ? "🔥 You're on fire! Amazing streak!" 
                       : `Great job! ${streak.current} days and counting!`}
                   </h3>
-                  <p className="text-gray-400">
+                  <p className="text-gray-600 dark:text-gray-400">
                     Keep going! Consistency is the key to mastering DSA.
                   </p>
                 </div>

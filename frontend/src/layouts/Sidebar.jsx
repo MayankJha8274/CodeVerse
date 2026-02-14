@@ -94,12 +94,13 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
   const NavItem = ({ item }) => (
     <NavLink
       to={item.to}
+      end={item.to === '/contests'} // Only match exact path for /contests to avoid conflict with /contests/admin
       onClick={() => window.innerWidth < 1024 && onClose()}
       className={({ isActive }) => `
         flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
         ${isActive 
           ? 'bg-amber-500/15 text-amber-500' 
-          : 'text-gray-400 hover:bg-[#1a1a2e] hover:text-gray-200'
+          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1a2e] hover:text-gray-900 dark:hover:text-gray-200'
         }
       `}
     >
@@ -111,7 +112,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
   const SectionHeader = ({ section }) => (
     <button
       onClick={() => toggleSection(section.id)}
-      className="flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-500 uppercase hover:text-gray-400 transition-colors"
+      className="flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-500 dark:text-gray-500 uppercase hover:text-gray-700 dark:hover:text-gray-400 transition-colors"
     >
       <span>{section.label}</span>
       {expandedSections[section.id] ? (
@@ -135,7 +136,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full z-50 bg-[#111118] border-r border-gray-800/50
+          fixed top-0 left-0 h-full z-50 bg-white dark:bg-[#111118] border-r border-gray-200 dark:border-gray-800/50
           transition-all duration-300 ease-in-out
           ${isOpen ? 'w-60' : 'w-0 lg:w-0'}
           lg:relative
@@ -144,18 +145,18 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       >
         <div className="flex flex-col h-full w-60">
           {/* Logo */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-800/50">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800/50 transition-colors">
             <NavLink to="/dashboard" className="flex items-center gap-2">
               <div className="w-7 h-7 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Code2 className="w-4 h-4 text-black" />
               </div>
-              <span className="text-lg font-bold text-white tracking-tight whitespace-nowrap">
+              <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight whitespace-nowrap">
                 CodeVerse
               </span>
             </NavLink>
             <button
               onClick={onToggle}
-              className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-[#1a1a2e]"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a2e]"
               title="Close sidebar"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -179,7 +180,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
           </nav>
 
           {/* Bottom section */}
-          <div className="border-t border-gray-800/50 p-3 space-y-2">
+          <div className="border-t border-gray-200 dark:border-gray-800/50 p-3 space-y-2 transition-colors">
             {/* Rank Card */}
             <NavLink
               to="/leaderboard"
@@ -187,14 +188,14 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
             >
               <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Rank</div>
-                <div className="text-sm font-bold text-white truncate">
+                <div className="text-[10px] text-gray-500 dark:text-gray-500 uppercase tracking-wider">Rank</div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
                   {userRank ? `#${userRank.rank.toLocaleString()}` : '—'}
                 </div>
               </div>
               {userRank && (
                 <div className="text-right flex-shrink-0">
-                  <div className="text-[10px] text-gray-500">Score</div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-500">Score</div>
                   <div className="text-sm font-bold text-amber-500">{userRank.cScore}</div>
                 </div>
               )}
@@ -205,14 +206,14 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
               <NavLink
                 to="/settings"
                 onClick={() => window.innerWidth < 1024 && onClose()}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-[#1a1a2e] transition-all"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-all"
               >
                 <UserPen className="w-3.5 h-3.5" />
                 <span>Edit Profile</span>
               </NavLink>
               <button
                 onClick={handleLogout}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Log Out</span>

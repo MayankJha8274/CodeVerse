@@ -75,7 +75,7 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, is
   });
 
   return (
-    <div className="bg-[#1a1a2e] rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-all group">
+    <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all group transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           {/* Platform Badge */}
@@ -89,12 +89,12 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, is
           </div>
           
           {/* Contest Name */}
-          <h3 className="text-white font-medium mb-2 group-hover:text-amber-400 transition-colors line-clamp-2">
+          <h3 className="text-gray-900 dark:text-white font-medium mb-2 group-hover:text-amber-400 transition-colors line-clamp-2">
             {contest.name}
           </h3>
           
           {/* Time Info */}
-          <div className="flex items-center gap-4 text-sm text-gray-400">
+          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
               <span>{formattedDate}</span>
@@ -116,7 +116,7 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, is
             className={`p-2 rounded-lg transition-all ${
               hasReminder 
                 ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
-                : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'
+                : 'bg-gray-200 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
             }`}
             title={hasReminder ? 'Remove reminder' : 'Set reminder (16h before)'}
           >
@@ -132,7 +132,7 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, is
             href={contest.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-lg bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white transition-all"
+            className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all"
             title="Open contest page"
           >
             <ExternalLink className="w-4 h-4" />
@@ -179,22 +179,22 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
   };
 
   return (
-    <div className="bg-[#16161f] rounded-xl border border-gray-800 overflow-hidden">
+    <div className="bg-white dark:bg-[#16161f] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <h3 className="text-lg font-semibold text-white">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           {monthNames[currentMonth]} {currentYear}
         </h3>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onMonthChange(-1)}
-            className="p-2 rounded-lg bg-[#1a1a2e] text-gray-400 hover:text-white hover:bg-[#252538] transition-all"
+            className="p-2 rounded-lg bg-gray-50 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#252538] transition-all"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => onMonthChange(1)}
-            className="p-2 rounded-lg bg-[#1a1a2e] text-gray-400 hover:text-white hover:bg-[#252538] transition-all"
+            className="p-2 rounded-lg bg-gray-50 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#252538] transition-all"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -202,7 +202,7 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
       </div>
       
       {/* Day Names */}
-      <div className="grid grid-cols-7 border-b border-gray-800">
+      <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800">
         {dayNames.map(day => (
           <div key={day} className="p-2 text-center text-xs font-medium text-gray-500">
             {day}
@@ -215,8 +215,8 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
         {calendarDays.map((dayData, idx) => (
           <div 
             key={idx} 
-            className={`min-h-[100px] p-1 border-r border-b border-gray-800/50 ${
-              dayData === null ? 'bg-[#0d0d14]' : 'bg-[#16161f]'
+            className={`min-h-[100px] p-1 border-r border-b border-gray-200 dark:border-gray-800/50 ${
+              dayData === null ? 'bg-gray-100 dark:bg-[#0d0d14]' : 'bg-gray-50 dark:bg-[#16161f]'
             } ${isToday(dayData?.day) ? 'bg-amber-500/10' : ''}`}
           >
             {dayData && (
@@ -224,7 +224,7 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
                 <div className={`text-xs p-1 ${
                   isToday(dayData.day) 
                     ? 'text-amber-400 font-bold' 
-                    : 'text-gray-400'
+                    : 'text-gray-600 dark:text-gray-400'
                 }`}>
                   {dayData.day}
                 </div>
@@ -399,16 +399,16 @@ const ContestsPage = () => {
   });
 
   return (
-    <div className="min-h-full bg-[#0d0d14]">
+    <div className="min-h-full bg-white dark:bg-[#0d0d14] transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Calendar className="w-7 h-7 text-amber-500" />
               Contest Tracker
             </h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
               Don't miss scheduled events • Set reminders 16 hours before
             </p>
           </div>
@@ -432,7 +432,7 @@ const ContestsPage = () => {
               placeholder="Search Contests"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#16161f] border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 transition-colors"
             />
           </div>
           
@@ -444,7 +444,7 @@ const ContestsPage = () => {
                 setSelectedPlatform(e.target.value);
                 setTimeout(fetchContests, 0);
               }}
-              className="pl-10 pr-8 py-2.5 bg-[#16161f] border border-gray-800 rounded-lg text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 min-w-[180px]"
+              className="pl-10 pr-8 py-2.5 bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 min-w-[180px]"
             >
               <option value="all">All Platforms</option>
               <option value="leetcode">LeetCode</option>
@@ -459,7 +459,7 @@ const ContestsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Contests List */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-[#16161f] rounded-xl p-4 border border-gray-800">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 border border-gray-200 dark:border-gray-800">
               <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <span className="text-xl">📅</span>
                 Upcoming Contests
@@ -469,14 +469,14 @@ const ContestsPage = () => {
                 <div className="space-y-4">
                   {[1, 2, 3, 4].map(i => (
                     <div key={i} className="animate-pulse">
-                      <div className="h-24 bg-[#1a1a2e] rounded-xl"></div>
+                      <div className="h-24 bg-gray-100 dark:bg-[#1a1a2e] rounded-xl"></div>
                     </div>
                   ))}
                 </div>
               ) : filteredContests.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">📭</div>
-                  <p className="text-gray-400">No upcoming contests found</p>
+                  <p className="text-gray-600 dark:text-gray-400">No upcoming contests found</p>
                   <button
                     onClick={handleRefresh}
                     className="mt-3 text-amber-400 hover:text-amber-300 text-sm"
@@ -488,7 +488,7 @@ const ContestsPage = () => {
                 <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar-thin">
                   {Object.entries(groupedContests).map(([date, dateContests]) => (
                     <div key={date}>
-                      <div className="text-sm font-medium text-gray-400 mb-2 sticky top-0 bg-[#16161f] py-1">
+                      <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 sticky top-0 bg-white dark:bg-[#16161f] py-1">
                         {date}
                       </div>
                       <div className="space-y-3">
@@ -511,7 +511,7 @@ const ContestsPage = () => {
 
             {/* User's Reminders */}
             {user && userReminders.length > 0 && (
-              <div className="bg-[#16161f] rounded-xl p-4 border border-gray-800">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 border border-gray-200 dark:border-gray-800">
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <Bell className="w-5 h-5 text-amber-400" />
                   Your Reminders
@@ -521,9 +521,9 @@ const ContestsPage = () => {
                 </h2>
                 <div className="space-y-2">
                   {userReminders.slice(0, 5).map((reminder, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg">
                       <div>
-                        <p className="text-white text-sm font-medium">
+                        <p className="text-gray-900 dark:text-white text-sm font-medium">
                           {reminder.contestDetails?.name || 'Contest'}
                         </p>
                         <p className="text-xs text-gray-500">
