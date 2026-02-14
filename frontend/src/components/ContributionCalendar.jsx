@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
+import { useTheme } from '../hooks/useCustomHooks';
 
 /**
  * ContributionCalendar - Exact LeetCode-style contribution heatmap
@@ -8,15 +9,17 @@ import { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platfo
 const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
   const containerRef = useRef(null);
   const [cellPx, setCellPx] = useState(13);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // ── empty state ──
   if (!calendarData?.calendar?.length) {
     return (
       <div style={{ width: '100%' }}>
-        <p style={{ color: '#fff', fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
+        <p className="text-gray-900 dark:text-white text-base font-semibold mb-3">
           Contribution Activity
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120, color: '#6b7280', fontSize: 14 }}>
+        <div className="flex items-center justify-center h-30 text-gray-500 dark:text-gray-400 text-sm">
           No contribution data yet. Link your platforms and sync!
         </div>
       </div>
@@ -54,8 +57,10 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
     return () => window.removeEventListener('resize', calc);
   }, [weeks.length]);
 
-  // ── LeetCode green palette ──
-  const COLOR = ['#2d333b', '#0e4429', '#006d32', '#26a641', '#39d353'];
+  // ── Theme-aware color palette ──
+  const COLOR = isDark 
+    ? ['#2d333b', '#0e4429', '#006d32', '#26a641', '#39d353']  // Dark mode - LeetCode green
+    : ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']; // Light mode - lighter greens
 
   // ── tooltip ──
   const tip = (day) => {
@@ -108,15 +113,15 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
       {/* ── Header stats ── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>
+          <span className="text-xl font-bold text-gray-900 dark:text-white">
             {(stats.totalContributions || 0).toLocaleString()}
           </span>
-          <span style={{ fontSize: 13, color: '#9ca3af' }}>submissions in the past one year</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">submissions in the past one year</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 13, color: '#9ca3af', flexWrap: 'wrap' }}>
-          <span>Total active days: <b style={{ color: '#fff' }}>{stats.activeDays || 0}</b></span>
-          <span>Max streak: <b style={{ color: '#fff' }}>{stats.longestStreak || 0}</b></span>
-          <span>Current streak: <b style={{ color: '#fff' }}>{stats.currentStreak || 0}</b></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }} className="text-sm text-gray-600 dark:text-gray-400">
+          <span>Total active days: <b className="text-gray-900 dark:text-white">{stats.activeDays || 0}</b></span>
+          <span>Max streak: <b className="text-gray-900 dark:text-white">{stats.longestStreak || 0}</b></span>
+          <span>Current streak: <b className="text-gray-900 dark:text-white">{stats.currentStreak || 0}</b></span>
         </div>
       </div>
 
@@ -153,7 +158,7 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
             const hasFire = fireSet.has(key);
             return (
               <div key={i} style={{ position: 'absolute', left, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <span style={{ fontSize: 11, color: '#8b949e', whiteSpace: 'nowrap', lineHeight: 1 }}>{ml.label}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-500 whitespace-nowrap leading-none">{ml.label}</span>
                 {hasFire && <span style={{ fontSize: 10, lineHeight: 1 }}>🔥</span>}
               </div>
             );
@@ -163,20 +168,20 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
 
       {/* ── Legend ── */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, marginTop: 4 }}>
-        <span style={{ fontSize: 10, color: '#8b949e', marginRight: 2 }}>Less</span>
+        <span className="text-xs text-gray-500 dark:text-gray-500 mr-0.5">Less</span>
         {COLOR.map((c, i) => (
           <div key={i} style={{ width: cellPx, height: cellPx, borderRadius: 3, backgroundColor: c }} />
         ))}
-        <span style={{ fontSize: 10, color: '#8b949e', marginLeft: 2 }}>More</span>
+        <span className="text-xs text-gray-500 dark:text-gray-500 ml-0.5">More</span>
       </div>
 
       {/* ── Connected Platforms ── */}
       {connectedPlatforms.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #2a2a3e' }}>
+        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-800">
           {connectedPlatforms.map(p => (
-            <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, backgroundColor: '#1a1a2e', border: '1px solid #2a2a3e' }}>
+            <div key={p.key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 transition-colors">
               <PlatformIcon platform={p.key} className="w-4 h-4" color={getPlatformColor(p.key)} />
-              <span style={{ fontSize: 12, color: '#d1d5db', fontWeight: 500 }}>{getPlatformName(p.key)}</span>
+              <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">{getPlatformName(p.key)}</span>
             </div>
           ))}
         </div>

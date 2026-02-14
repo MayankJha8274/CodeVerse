@@ -348,7 +348,219 @@ const getBadges = async (req, res, next) => {
       }
     }
 
-    // Note: Codeforces doesn't have a badge API, but we could add more platforms here
+    // Generate Codeforces badges based on rating
+    const cfStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'codeforces'
+    });
+    
+    if (cfStats?.stats?.rating && cfStats.stats.rating > 0) {
+      const rating = cfStats.stats.rating;
+      const cfBadges = [];
+      
+      if (rating >= 1200) {
+        cfBadges.push({
+          platform: 'codeforces',
+          name: 'Specialist',
+          icon: '🎖️',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1400) {
+        cfBadges.push({
+          platform: 'codeforces',
+          name: 'Expert',
+          icon: '⭐',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1600) {
+        cfBadges.push({
+          platform: 'codeforces',
+          name: 'Candidate Master',
+          icon: '👑',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1900) {
+        cfBadges.push({
+          platform: 'codeforces',
+          name: 'Master',
+          icon: '💎',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 2200) {
+        cfBadges.push({
+          platform: 'codeforces',
+          name: 'International Master',
+          icon: '🌟',
+          earnedDate: new Date()
+        });
+      }
+      
+      allBadges.push(...cfBadges);
+    }
+
+    // Generate CodeChef badges based on rating
+    const ccStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'codechef'
+    });
+    
+    if (ccStats?.stats?.rating && ccStats.stats.rating > 0) {
+      const rating = ccStats.stats.rating;
+      const ccBadges = [];
+      
+      if (rating >= 1000) {
+        ccBadges.push({
+          platform: 'codechef',
+          name: '2⭐ Chef',
+          icon: '🌶️',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1200) {
+        ccBadges.push({
+          platform: 'codechef',
+          name: '3⭐ Chef',
+          icon: '🌶️🌶️',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1400) {
+        ccBadges.push({
+          platform: 'codechef',
+          name: '4⭐ Chef',
+          icon: '🏆',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1600) {
+        ccBadges.push({
+          platform: 'codechef',
+          name: '5⭐ Chef',
+          icon: '💫',
+          earnedDate: new Date()
+        });
+      }
+      
+      allBadges.push(...ccBadges);
+    }
+
+    // Generate Coding Ninjas badges based on rating
+    const cnStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'codingninjas'
+    });
+    
+    if (cnStats?.stats?.rating && cnStats.stats.rating > 0) {
+      const rating = cnStats.stats.rating;
+      const cnBadges = [];
+      
+      if (rating >= 800) {
+        cnBadges.push({
+          platform: 'codingninjas',
+          name: 'Rising Coder',
+          icon: '📈',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1200) {
+        cnBadges.push({
+          platform: 'codingninjas',
+          name: 'Intermediate Master',
+          icon: '⚡',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 1600) {
+        cnBadges.push({
+          platform: 'codingninjas',
+          name: 'Ace Programmer',
+          icon: '🎯',
+          earnedDate: new Date()
+        });
+      }
+      
+      allBadges.push(...cnBadges);
+    }
+
+    // Generate GeeksforGeeks badges based on rating
+    const gfgStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'geeksforgeeks'
+    });
+    
+    if (gfgStats?.stats?.rating && gfgStats.stats.rating > 0) {
+      const rating = gfgStats.stats.rating;
+      const gfgBadges = [];
+      
+      if (rating >= 100) {
+        gfgBadges.push({
+          platform: 'geeksforgeeks',
+          name: 'Learner',
+          icon: '📚',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 300) {
+        gfgBadges.push({
+          platform: 'geeksforgeeks',
+          name: 'Problem Solver',
+          icon: '🧩',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 500) {
+        gfgBadges.push({
+          platform: 'geeksforgeeks',
+          name: 'Expert',
+          icon: '🎓',
+          earnedDate: new Date()
+        });
+      }
+      
+      allBadges.push(...gfgBadges);
+    }
+
+    // Generate HackerRank badges based on rating
+    const hrStats = await PlatformStats.findOne({
+      userId: req.user.id,
+      platform: 'hackerrank'
+    });
+    
+    if (hrStats?.stats?.rating && hrStats.stats.rating > 0) {
+      const rating = hrStats.stats.rating;
+      const hrBadges = [];
+      
+      if (rating >= 50) {
+        hrBadges.push({
+          platform: 'hackerrank',
+          name: 'Problem Solver',
+          icon: '✅',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 150) {
+        hrBadges.push({
+          platform: 'hackerrank',
+          name: 'Advanced Problem Solver',
+          icon: '🚀',
+          earnedDate: new Date()
+        });
+      }
+      if (rating >= 300) {
+        hrBadges.push({
+          platform: 'hackerrank',
+          name: 'Expert Coder',
+          icon: '💻',
+          earnedDate: new Date()
+        });
+      }
+      
+      allBadges.push(...hrBadges);
+    }
 
     res.status(200).json({
       success: true,
@@ -369,68 +581,71 @@ const getAchievements = async (req, res, next) => {
     const user = await User.findById(req.user.id);
     const achievements = [];
 
-    // Get LeetCode rank
-    const lcStats = await PlatformStats.findOne({
-      userId: req.user.id,
-      platform: 'leetcode'
+    // Fetch ALL platform stats for this user
+    const allStats = await PlatformStats.find({
+      userId: req.user.id
     });
-    
-    if (lcStats?.stats?.rating) {
-      const lcRank = getLeetCodeRankTitle(lcStats.stats.rating);
-      achievements.push({
-        platform: 'leetcode',
-        title: lcRank.title,
-        color: lcRank.color,
-        rating: lcStats.stats.rating,
-        icon: '🏆'
-      });
-    }
 
-    // Get Codeforces rank
-    const cfStats = await PlatformStats.findOne({
-      userId: req.user.id,
-      platform: 'codeforces'
-    });
-    
-    if (cfStats?.stats?.rank) {
-      const cfRank = getCodeforcesRankInfo(cfStats.stats.rank, cfStats.stats.rating);
-      achievements.push({
-        platform: 'codeforces',
-        title: cfRank.title,
-        color: cfRank.color,
-        rating: cfRank.rating,
-        maxRating: cfStats.stats.maxRating,
-        icon: '⚔️'
-      });
-    }
+    // Define platform color mapping
+    const platformColors = {
+      leetcode: '#FFA116',
+      codeforces: '#1F8ACB',
+      codechef: '#5B4638',
+      codingninjas: '#F96D00',
+      geeksforgeeks: '#2F8D46',
+      hackerrank: '#1BA759',
+      github: '#FFFFFF'
+    };
 
-    // Get CodeChef stars (if available)
-    const ccStats = await PlatformStats.findOne({
-      userId: req.user.id,
-      platform: 'codechef'
-    });
-    
-    if (ccStats?.stats?.rating) {
-      const rating = ccStats.stats.rating;
-      let stars = 1;
-      let title = '1★';
-      let color = '#666666';
-      
-      if (rating >= 2000) { stars = 7; title = '7★'; color = '#FF7F00'; }
-      else if (rating >= 1800) { stars = 6; title = '6★'; color = '#FF7F00'; }
-      else if (rating >= 1600) { stars = 5; title = '5★'; color = '#FFDF00'; }
-      else if (rating >= 1400) { stars = 4; title = '4★'; color = '#7F00FF'; }
-      else if (rating >= 1200) { stars = 3; title = '3★'; color = '#0073E6'; }
-      else if (rating >= 1000) { stars = 2; title = '2★'; color = '#1E7D22'; }
-      
-      achievements.push({
-        platform: 'codechef',
-        title,
-        stars,
-        color,
-        rating: ccStats.stats.rating,
-        icon: '⭐'
-      });
+    // Process each platform that user has stats for
+    for (const stats of allStats) {
+      if (!stats.stats) continue;
+
+      // Only include platforms where rating > 0 (user attended at least 1 contest)
+      const rating = stats.stats.rating || 0;
+      if (rating <= 0) continue;
+
+      const platformData = {
+        platform: stats.platform,
+        rating: rating,
+        color: platformColors[stats.platform] || '#FFFFFF',
+        title: null
+      };
+
+      // Add maxRating if available (for all platforms that have it)
+      if (stats.stats.maxRating) {
+        platformData.maxRating = stats.stats.maxRating;
+      }
+
+      // Generate title/rank based on platform
+      if (stats.platform === 'leetcode' && stats.stats.rating) {
+        const lcRank = getLeetCodeRankTitle(stats.stats.rating);
+        platformData.title = lcRank.title;
+      } else if (stats.platform === 'codeforces' && stats.stats.ranking) {
+        const cfRank = getCodeforcesRankInfo(stats.stats.ranking, stats.stats.rating);
+        platformData.title = cfRank.title;
+      } else if (stats.platform === 'codechef' && stats.stats.rating) {
+        const rating = stats.stats.rating;
+        if (rating >= 2000) platformData.title = '7★';
+        else if (rating >= 1800) platformData.title = '6★';
+        else if (rating >= 1600) platformData.title = '5★';
+        else if (rating >= 1400) platformData.title = '4★';
+        else if (rating >= 1200) platformData.title = '3★';
+        else if (rating >= 1000) platformData.title = '2★';
+        else platformData.title = '1★';
+      } else if (stats.platform === 'codingninjas' && stats.stats.rating) {
+        const rating = stats.stats.rating;
+        if (rating >= 1600) platformData.title = 'Ace';
+        else if (rating >= 1200) platformData.title = 'Expert';
+        else if (rating >= 800) platformData.title = 'Intermediate';
+        else platformData.title = 'Beginner';
+      } else if (stats.platform === 'geeksforgeeks' && stats.stats.rating) {
+        platformData.title = `Level ${Math.floor(stats.stats.rating / 100) || 1}`;
+      } else if (stats.platform === 'hackerrank' && stats.stats.rating) {
+        platformData.title = `${Math.floor(stats.stats.rating / 100)} Stars`;
+      }
+
+      achievements.push(platformData);
     }
 
     res.status(200).json({

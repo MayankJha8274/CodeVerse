@@ -59,7 +59,8 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center px-6 py-12 transition-colors relative">
+      
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -68,28 +69,28 @@ const RegisterPage = () => {
               <Code2 className="w-7 h-7 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Create Account
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400">
             Start tracking your coding progress today
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#16161f] rounded-xl p-8">
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-8 transition-colors">
           {/* OAuth Buttons */}
           <div className="space-y-3 mb-6">
             <button
               onClick={() => handleOAuthRegister('github')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-900 dark:text-white transition-colors"
             >
               <Github className="w-5 h-5" />
               <span className="font-medium">Continue with GitHub</span>
             </button>
             <button
               onClick={() => handleOAuthRegister('google')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-900 dark:text-white transition-colors"
             >
               <Chrome className="w-5 h-5" />
               <span className="font-medium">Continue with Google</span>
@@ -102,7 +103,7 @@ const RegisterPage = () => {
               <div className="w-full border-t border-gray-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-[#16161f] text-gray-500">
+              <span className="px-2 bg-white dark:bg-[#16161f] text-gray-500 transition-colors">
                 Or register with email
               </span>
             </div>
@@ -118,7 +119,7 @@ const RegisterPage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Full Name
               </label>
               <div className="relative">
@@ -129,14 +130,14 @@ const RegisterPage = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="John Doe"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Username
               </label>
               <div className="relative">
@@ -147,14 +148,14 @@ const RegisterPage = () => {
                   value={formData.username}
                   onChange={handleChange}
                   required
-                  className="w-full pl-8 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-8 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="johndoe"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email
               </label>
               <div className="relative">
@@ -165,14 +166,14 @@ const RegisterPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -183,14 +184,14 @@ const RegisterPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="At least 8 characters"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Confirm Password
               </label>
               <div className="relative">
@@ -201,7 +202,7 @@ const RegisterPage = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
                   placeholder="Confirm your password"
                 />
               </div>
@@ -213,7 +214,7 @@ const RegisterPage = () => {
                 required
                 className="w-4 h-4 mt-1 text-amber-500 border-gray-700 rounded focus:ring-amber-500"
               />
-              <label className="ml-2 text-sm text-gray-400">
+              <label className="ml-2 text-sm text-gray-600 dark:text-gray-400">
                 I agree to the{' '}
                 <a href="#" className="text-amber-500 hover:text-amber-600">Terms of Service</a>
                 {' '}and{' '}

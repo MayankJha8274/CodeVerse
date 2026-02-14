@@ -18,8 +18,8 @@ const LeaderboardRow = ({ rank, user, totalProblems, weeklyProblems, avgRating, 
   };
 
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-lg hover:bg-[#1a1a2e] transition-colors ${getRankBg(rank)}`}>
-      <div className={`flex items-center justify-center w-10 h-10 rounded-full ${rank <= 3 ? 'bg-[#1a1a2e] shadow-sm' : ''}`}>
+    <div className={`flex items-center gap-4 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors ${getRankBg(rank)}`}>
+      <div className={`flex items-center justify-center w-10 h-10 rounded-full ${rank <= 3 ? 'bg-gray-50 dark:bg-[#1a1a2e] shadow-sm' : ''} transition-colors`}>
         {rank <= 3 ? (
           <Trophy className={`w-5 h-5 ${getRankColor(rank)}`} />
         ) : (
@@ -36,7 +36,7 @@ const LeaderboardRow = ({ rank, user, totalProblems, weeklyProblems, avgRating, 
       <div className="hidden md:flex items-center gap-8">
         <div className="text-center">
           <div className="text-xs text-gray-500 mb-1">Total</div>
-          <div className="text-sm font-semibold text-white">{totalProblems}</div>
+          <div className="text-sm font-semibold text-gray-900 dark:text-white">{totalProblems}</div>
         </div>
         <div className="text-center">
           <div className="text-xs text-gray-500 mb-1">Weekly</div>
@@ -50,7 +50,7 @@ const LeaderboardRow = ({ rank, user, totalProblems, weeklyProblems, avgRating, 
 
       <div className="text-right">
         <div className="text-xs text-gray-500 mb-1">Score</div>
-        <div className="text-lg font-bold text-white">{score}</div>
+        <div className="text-lg font-bold text-gray-900 dark:text-white">{score}</div>
       </div>
     </div>
   );

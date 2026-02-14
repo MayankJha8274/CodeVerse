@@ -239,20 +239,20 @@ const PlatformDetailPage = () => {
     return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Total Solved</div>
-          <div className="text-3xl font-bold text-white">{platformData?.totalSolved || 0}</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Solved</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.totalSolved || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Easy</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Easy</div>
           <div className="text-3xl font-bold text-green-500">{platformData?.easySolved || platformData?.easy || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Medium</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Medium</div>
           <div className="text-3xl font-bold text-yellow-500">{platformData?.mediumSolved || platformData?.medium || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Hard</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Hard</div>
           <div className="text-3xl font-bold text-red-500">{platformData?.hardSolved || platformData?.hard || 0}</div>
         </div>
       </div>
@@ -278,21 +278,21 @@ const PlatformDetailPage = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Recent Activity
           </h3>
           <div className="space-y-3">
             {platformData.recentActivity.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-white">
+                  <div className="font-medium text-gray-900 dark:text-white">
                     {activity.problem}
                   </div>
-                  <div className="text-sm text-gray-400">{activity.date}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{activity.date}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-sm font-medium ${getDifficultyColor(activity.difficulty)}`}>
@@ -322,22 +322,22 @@ const PlatformDetailPage = () => {
     return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Current Rating</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current Rating</div>
           <div className="text-3xl font-bold text-amber-500">{platformData?.rating || 0}</div>
-          <div className="text-sm text-gray-400 mt-1">Max: {platformData?.maxRating || 0}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Max: {platformData?.maxRating || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Rank</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Rank</div>
           <div className="text-3xl font-bold text-purple-500">{platformData?.rank || 'unrated'}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Contests</div>
-          <div className="text-3xl font-bold text-white">{platformData?.contestsParticipated || 0}</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Contests</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.contestsParticipated || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Problems</div>
-          <div className="text-3xl font-bold text-white">{platformData?.problemsSolved || 0}</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Problems</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.problemsSolved || 0}</div>
         </div>
       </div>
 
@@ -362,21 +362,21 @@ const PlatformDetailPage = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Recent Activity
           </h3>
           <div className="space-y-3">
             {(platformData?.recentActivity || []).map((activity, index) => (
               <div
                 key={activity?.id || index}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-white">
+                  <div className="font-medium text-gray-900 dark:text-white">
                     {activity?.problem || 'Unknown'}
                   </div>
-                  <div className="text-sm text-gray-400">{activity?.date || ''}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{activity?.date || ''}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-sm font-medium ${getDifficultyColor(activity?.difficulty)}`}>
@@ -393,7 +393,7 @@ const PlatformDetailPage = () => {
               </div>
             ))}
             {(!platformData?.recentActivity || platformData.recentActivity.length === 0) && (
-              <p className="text-gray-400 text-center py-4">No recent activity</p>
+              <p className="text-gray-600 dark:text-gray-400 text-center py-4">No recent activity</p>
             )}
           </div>
         </div>
@@ -409,20 +409,20 @@ const PlatformDetailPage = () => {
     return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Total Contributions</div>
-          <div className="text-3xl font-bold text-white">{platformData?.totalContributions || platformData?.allTimeContributions || 0}</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Contributions</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.totalContributions || platformData?.allTimeContributions || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Stars</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Stars</div>
           <div className="text-3xl font-bold text-yellow-500">{platformData?.totalStars || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Forks</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Forks</div>
           <div className="text-3xl font-bold text-blue-500">{platformData?.totalForks || 0}</div>
         </div>
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Repositories</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Repositories</div>
           <div className="text-3xl font-bold text-purple-500">{platformData?.totalRepos || 0}</div>
         </div>
       </div>
@@ -451,22 +451,22 @@ const PlatformDetailPage = () => {
         )}
 
         {platformData?.topRepos?.length > 0 && (
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Top Repositories
           </h3>
           <div className="space-y-3">
             {(platformData?.topRepos || []).map((repo, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-white flex items-center gap-2">
+                  <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                     {repo?.name || 'Unknown'}
-                    <ExternalLink className="w-4 h-4 text-gray-400" />
+                    <ExternalLink className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                   </div>
-                  <div className="text-sm text-gray-400">{repo?.language || ''}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{repo?.language || ''}</div>
                 </div>
                 <div className="flex items-center gap-1 text-yellow-500">
                   <Award className="w-4 h-4" />
@@ -489,41 +489,41 @@ const PlatformDetailPage = () => {
     return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-[#16161f] rounded-xl p-6">
-          <div className="text-sm text-gray-400 mb-2">Problems Solved</div>
-          <div className="text-3xl font-bold text-white">{platformData?.problemsSolved || 0}</div>
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Problems Solved</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.problemsSolved || 0}</div>
         </div>
         {platformData?.rating && (
-          <div className="bg-[#16161f] rounded-xl p-6">
-            <div className="text-sm text-gray-400 mb-2">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               {activeTab === 'codechef' ? 'Rating' : 'Score'}
             </div>
             <div className="text-3xl font-bold text-amber-500">{platformData?.rating || platformData?.totalScore || 0}</div>
           </div>
         )}
         {platformData?.rank && (
-          <div className="bg-[#16161f] rounded-xl p-6">
-            <div className="text-sm text-gray-400 mb-2">Rank</div>
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Rank</div>
             <div className="text-3xl font-bold text-purple-500">{platformData?.rank || '-'}</div>
           </div>
         )}
       </div>
 
-      <div className="bg-[#16161f] rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">
+      <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Recent Activity
         </h3>
         <div className="space-y-3">
           {(platformData?.recentActivity || []).map((activity, index) => (
             <div
               key={activity?.id || index}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
             >
               <div className="flex-1">
-                <div className="font-medium text-white">
+                <div className="font-medium text-gray-900 dark:text-white">
                   {activity?.problem || 'Unknown'}
                 </div>
-                <div className="text-sm text-gray-400">{activity?.date || ''}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{activity?.date || ''}</div>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`text-sm font-medium ${getDifficultyColor(activity?.difficulty)}`}>
@@ -540,7 +540,7 @@ const PlatformDetailPage = () => {
             </div>
           ))}
           {(!platformData?.recentActivity || platformData.recentActivity.length === 0) && (
-            <p className="text-gray-400 text-center py-4">No recent activity</p>
+            <p className="text-gray-600 dark:text-gray-400 text-center py-4">No recent activity</p>
           )}
         </div>
       </div>
@@ -578,10 +578,10 @@ const PlatformDetailPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Platform Details
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400">
             View detailed statistics for each platform
           </p>
         </div>
@@ -592,15 +592,15 @@ const PlatformDetailPage = () => {
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className={`bg-[#16161f] rounded-xl p-4 cursor-pointer transition-all ${
+            className={`bg-white dark:bg-[#16161f] rounded-xl p-4 cursor-pointer transition-all border ${
               activeTab === tab.id 
                 ? 'ring-2 ring-amber-500 border-amber-500' 
-                : 'hover:shadow-lg'
+                : 'border-gray-200 dark:border-gray-800 hover:shadow-lg'
             }`}
             onClick={() => handleTabChange(tab.id)}
           >
             <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-white flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <PlatformIcon platform={tab.id} className="w-5 h-5" />
                 {tab.label}
               </h3>
@@ -650,7 +650,7 @@ const PlatformDetailPage = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50'
-                : 'text-gray-400 hover:bg-[#1a1a2e]'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1a2e]'
             }`}
           >
             <PlatformIcon platform={tab.id} className="w-4 h-4" />
@@ -668,13 +668,13 @@ const PlatformDetailPage = () => {
           <SkeletonLoader type="chart" />
         </div>
       ) : !linkedPlatforms[activeTab] ? (
-        <div className="bg-[#16161f] rounded-xl p-12 text-center">
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-12 text-center border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="max-w-md mx-auto">
-            <LinkIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <LinkIcon className="w-16 h-16 mx-auto text-gray-600 dark:text-gray-400 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               Platform Not Linked
             </h3>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Link your {tabs.find(t => t.id === activeTab)?.label} account to view detailed statistics
             </p>
             <button
@@ -686,13 +686,13 @@ const PlatformDetailPage = () => {
           </div>
         </div>
       ) : !platformData ? (
-        <div className="bg-[#16161f] rounded-xl p-12 text-center">
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-12 text-center border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="max-w-md mx-auto">
-            <Award className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <Award className="w-16 h-16 mx-auto text-gray-600 dark:text-gray-400 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               No Data Available
             </h3>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               We couldn't fetch data for this platform. This might be because your profile is private, the username is incorrect, or data hasn't been synced yet.
             </p>
             <div className="flex gap-3 justify-center">

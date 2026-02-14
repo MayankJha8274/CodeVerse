@@ -13,13 +13,13 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, color
   };
 
   return (
-    <div className="bg-[#16161f] rounded-xl p-6 hover:bg-[#1a1a2e] transition-colors">
+    <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-gray-400 font-medium mb-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">
             {title}
           </p>
-          <p className="text-3xl font-bold text-white mb-1">
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
             {value}
           </p>
           {subtitle && (
@@ -29,7 +29,7 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, color
           )}
         </div>
         {Icon && (
-          <div className={`p-3 rounded-lg bg-[#1a1a2e] ${colorClasses[color]}`}>
+          <div className={`p-3 rounded-lg bg-gray-50 dark:bg-[#1a1a2e] ${colorClasses[color]} transition-colors`}>
             <Icon className={`w-6 h-6 ${colorClasses[color]}`} />
           </div>
         )}

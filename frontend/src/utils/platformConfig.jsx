@@ -123,7 +123,7 @@ const PLATFORM_CONFIG = {
   github: {
     name: 'GitHub',
     key: 'github',
-    color: '#FFFFFF',
+    color: '#24292f',
     bgColor: 'bg-gray-500/20',
     textColor: 'text-gray-300',
     borderColor: 'border-gray-500/30',

@@ -59,17 +59,17 @@ const ComparisonPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Compare Users
         </h1>
-        <p className="text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400">
           Compare your progress with up to 5 users
         </p>
       </div>
 
       {/* User Selection */}
-      <div className="bg-[#16161f] rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">
+      <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Selected Users ({selectedUsers.length}/5)
         </h3>
         
@@ -90,7 +90,7 @@ const ComparisonPage = () => {
             </div>
           ))}
           {selectedUsers.length === 0 && (
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
               No users selected. Search and add users to compare.
             </div>
           )}
@@ -104,7 +104,7 @@ const ComparisonPage = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search users by name or username..."
-              className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1a2e] text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none mb-4"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none mb-4 transition-colors"
             />
 
             <div className="space-y-2">
@@ -119,7 +119,7 @@ const ComparisonPage = () => {
                   <button
                     key={user.id}
                     onClick={() => addUser(user.id)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
                   >
                     <UserAvatar user={user} size="md" showName showUsername />
                     <Plus className="w-5 h-5 text-amber-500" />
@@ -134,15 +134,15 @@ const ComparisonPage = () => {
       {comparisonData.length > 0 && (
         <>
           {/* Stats Table */}
-          <div className="bg-[#16161f] rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Statistics Comparison
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">
+                  <tr className="border-b border-gray-300 dark:border-gray-700">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
                       Metric
                     </th>
                     {comparisonData.map(user => (
@@ -153,48 +153,48 @@ const ComparisonPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-300">
+                  <tr className="border-b border-gray-300 dark:border-gray-700">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Total Problems
                     </td>
                     {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">
+                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
                         {user.stats.totalProblems}
                       </td>
                     ))}
                   </tr>
-                  <tr className="border-b border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-300">
+                  <tr className="border-b border-gray-300 dark:border-gray-700">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
                       <span className="flex items-center gap-2"><PlatformIcon platform="leetcode" className="w-4 h-4" color="#FFA116" /> LeetCode</span>
                     </td>
                     {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">
+                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
                         {user.stats.leetcode}
                       </td>
                     ))}
                   </tr>
-                  <tr className="border-b border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-300">
+                  <tr className="border-b border-gray-300 dark:border-gray-700">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
                       <span className="flex items-center gap-2"><PlatformIcon platform="codeforces" className="w-4 h-4" color="#1F8ACB" /> Codeforces</span>
                     </td>
                     {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">
+                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
                         {user.stats.codeforces}
                       </td>
                     ))}
                   </tr>
-                  <tr className="border-b border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-300">
+                  <tr className="border-b border-gray-300 dark:border-gray-700">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
                       <span className="flex items-center gap-2"><PlatformIcon platform="codechef" className="w-4 h-4" color="#5B4638" /> CodeChef</span>
                     </td>
                     {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-white">
+                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
                         {user.stats.codechef}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-300">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Average Rating
                     </td>
                     {comparisonData.map(user => (

@@ -110,7 +110,7 @@ const ContestLandingPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0f] flex items-center justify-center transition-colors">
         <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
       </div>
     );
@@ -118,10 +118,10 @@ const ContestLandingPage = () => {
 
   if (error || !contest) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0f] flex flex-col items-center justify-center text-gray-900 dark:text-white">
         <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Contest Not Found</h1>
-        <p className="text-gray-400 mb-6">The contest you're looking for doesn't exist or has been removed.</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">The contest you're looking for doesn't exist or has been removed.</p>
         <Link to="/contests" className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg">
           Browse Contests
         </Link>
@@ -132,7 +132,7 @@ const ContestLandingPage = () => {
   const status = getContestStatus();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0f] text-gray-900 dark:text-white">
       {/* Hero Section */}
       <div 
         className="relative bg-gradient-to-b from-amber-500/20 to-transparent"

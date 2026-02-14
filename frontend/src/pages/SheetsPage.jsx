@@ -251,16 +251,16 @@ const NotesModal = ({ isOpen, onClose, problem, notes, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#16161f] rounded-xl border border-gray-700 w-full max-w-lg">
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="bg-white dark:bg-[#16161f] rounded-xl border border-gray-200 dark:border-gray-700 w-full max-w-lg transition-colors">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <StickyNote className="w-5 h-5 text-amber-500" />
             <div>
-              <h3 className="font-semibold text-white">Notes</h3>
-              <p className="text-sm text-gray-400">{problem?.name}</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Notes</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{problem?.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-900 dark:hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -269,13 +269,13 @@ const NotesModal = ({ isOpen, onClose, problem, notes, onSave }) => {
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="Add your notes here... (approach, time complexity, key insights)"
-            className="w-full h-48 bg-[#0d0d14] border border-gray-700 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 resize-none"
+            className="w-full h-48 bg-gray-50 dark:bg-[#0d0d14] border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 resize-none transition-colors"
           />
         </div>
-        <div className="flex justify-end gap-3 p-4 border-t border-gray-700">
+        <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             Cancel
           </button>
@@ -323,7 +323,7 @@ const CircularProgress = ({ completed, total, size = 60, color }) => {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-bold text-white">{Math.round(percent)}%</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{Math.round(percent)}%</span>
       </div>
     </div>
   );
@@ -570,14 +570,14 @@ const SheetsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d0d14] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center transition-colors">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-[#0d0d14] text-white">
+    <div className="min-h-full bg-white dark:bg-[#0d0d14] text-gray-900 dark:text-white transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Notes Modal */}
         <NotesModal
@@ -606,7 +606,7 @@ const SheetsPage = () => {
               placeholder="Search sheets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#16161f] border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
+              className="w-full bg-white dark:bg-[#16161f] border border-gray-300 dark:border-gray-700 rounded-lg pl-10 pr-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
           <div className="relative">
@@ -614,7 +614,7 @@ const SheetsPage = () => {
             <select
               value={filterDifficulty}
               onChange={(e) => setFilterDifficulty(e.target.value)}
-              className="bg-[#16161f] border border-gray-700 rounded-lg pl-10 pr-8 py-3 text-white appearance-none focus:outline-none focus:border-amber-500 cursor-pointer"
+              className="bg-white dark:bg-[#16161f] border border-gray-300 dark:border-gray-700 rounded-lg pl-10 pr-8 py-3 text-gray-900 dark:text-white appearance-none focus:outline-none focus:border-amber-500 cursor-pointer transition-colors"
             >
               <option value="all">All Difficulties</option>
               <option value="beginner">Beginner</option>
@@ -626,33 +626,33 @@ const SheetsPage = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="flex items-center gap-3 mb-2">
               <Target className="w-5 h-5 text-amber-500" />
               <span className="text-gray-400 text-sm">Total Sheets</span>
             </div>
             <p className="text-3xl font-bold text-white">{dsaSheets.length}</p>
           </div>
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="flex items-center gap-3 mb-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <span className="text-gray-400 text-sm">Problems Solved</span>
             </div>
-            <p className="text-3xl font-bold text-white">{stats.totalSolved}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalSolved}</p>
           </div>
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="flex items-center gap-3 mb-2">
               <Star className="w-5 h-5 text-yellow-500" />
-              <span className="text-gray-400 text-sm">For Revision</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">For Revision</span>
             </div>
-            <p className="text-3xl font-bold text-white">{stats.totalRevision}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalRevision}</p>
           </div>
-          <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="flex items-center gap-3 mb-2">
               <Flame className="w-5 h-5 text-orange-500" />
-              <span className="text-gray-400 text-sm">Streak</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Streak</span>
             </div>
-            <p className="text-3xl font-bold text-white">0 days</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">0 days</p>
           </div>
         </div>
 
@@ -665,7 +665,7 @@ const SheetsPage = () => {
                 <div
                   key={sheet.id}
                   onClick={() => setSelectedSheet(sheet)}
-                  className="bg-[#16161f] rounded-xl border border-gray-800 overflow-hidden cursor-pointer hover:border-gray-600 transition-all group"
+                  className="bg-white dark:bg-[#16161f] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all group transition-colors"
                 >
                   <div className={`h-2 bg-gradient-to-r ${sheet.color}`}></div>
                   
@@ -673,10 +673,10 @@ const SheetsPage = () => {
                     <div className="flex items-start gap-4 mb-4">
                       <div className="text-4xl">{sheet.icon}</div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white group-hover:text-amber-500 transition-colors">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-amber-500 transition-colors">
                           {sheet.name}
                         </h3>
-                        <p className="text-sm text-gray-400">by {sheet.author}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">by {sheet.author}</p>
                       </div>
                       <CircularProgress 
                         completed={prog.solved} 
@@ -685,11 +685,11 @@ const SheetsPage = () => {
                       />
                     </div>
 
-                    <p className="text-sm text-gray-400 mb-4 line-clamp-2">{sheet.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{sheet.description}</p>
 
                     <div className="flex items-center gap-4 text-sm mb-4">
-                      <div className="flex items-center gap-1 text-gray-400">
-                        <span className="font-semibold text-white">{sheet.totalProblems}</span> problems
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                        <span className="font-semibold text-gray-900 dark:text-white">{sheet.totalProblems}</span> problems
                       </div>
                       <div className="flex items-center gap-1 text-gray-400">
                         <Clock className="w-4 h-4" />
@@ -701,14 +701,14 @@ const SheetsPage = () => {
                       <span>{prog.solved} / {prog.total} solved</span>
                       <span>{Math.round((prog.solved / prog.total) * 100)}%</span>
                     </div>
-                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-200 dark:bg-[#1a1a2e] rounded-full overflow-hidden transition-colors">
                       <div 
                         className={`h-full bg-gradient-to-r ${sheet.color} transition-all`}
                         style={{ width: `${(prog.solved / prog.total) * 100}%` }}
                       ></div>
                     </div>
 
-                    <button className="mt-4 w-full bg-[#1a1a2e] hover:bg-[#252538] text-white py-2 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                    <button className="mt-4 w-full bg-white dark:bg-[#1a1a2e] hover:bg-gray-100 dark:hover:bg-[#252538] text-gray-900 dark:text-white py-2 rounded-lg flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700 transition-colors">
                       View Sheet <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -718,11 +718,11 @@ const SheetsPage = () => {
           </div>
         ) : (
           /* Sheet Detail View - Striver Style Table */
-          <div className="bg-[#16161f] rounded-xl border border-gray-800 overflow-hidden">
+          <div className="bg-white dark:bg-[#16161f] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors">
             <div className={`h-2 bg-gradient-to-r ${selectedSheet.color}`}></div>
             
             {/* Sheet Header */}
-            <div className="p-6 border-b border-gray-800">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 transition-colors">
               <button
                 onClick={() => setSelectedSheet(null)}
                 className="text-amber-500 hover:text-amber-400 mb-4 flex items-center gap-1"
@@ -733,9 +733,9 @@ const SheetsPage = () => {
               <div className="flex items-start gap-6">
                 <div className="text-6xl">{selectedSheet.icon}</div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-white mb-1">{selectedSheet.name}</h2>
-                  <p className="text-gray-400 mb-2">by {selectedSheet.author}</p>
-                  <p className="text-gray-400 text-sm mb-4">{selectedSheet.description}</p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{selectedSheet.name}</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">by {selectedSheet.author}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{selectedSheet.description}</p>
                   <div className="flex items-center gap-4">
                     <span className="px-3 py-1 bg-amber-500/20 text-amber-500 text-sm rounded-lg">
                       {selectedSheet.difficulty}

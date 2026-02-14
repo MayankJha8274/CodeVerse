@@ -7,19 +7,19 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
   const gradient = config?.gradient || 'from-gray-500 to-gray-700';
 
   return (
-    <div className="bg-[#16161f] rounded-xl overflow-hidden hover:bg-[#1a1a2e] transition-colors group">
+    <div className="bg-white dark:bg-[#16161f] rounded-xl overflow-hidden hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors group">
       <div className={`h-2 bg-gradient-to-r ${gradient}`}></div>
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <PlatformIcon platform={platform} className="w-8 h-8" color={config?.color} />
-            <h3 className="text-xl font-semibold text-white">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
               {getPlatformName(platform)}
             </h3>
           </div>
           <button
             onClick={onViewDetails}
-            className="text-gray-400 hover:text-amber-500 transition-colors"
+            className="text-gray-600 dark:text-gray-400 hover:text-amber-500 transition-colors"
           >
             <ExternalLink className="w-5 h-5" />
           </button>
@@ -29,8 +29,8 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
           {platform === 'leetcode' && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Total Solved</span>
-                <span className="text-lg font-bold text-white">{stats.totalSolved}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Total Solved</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{stats.totalSolved}</span>
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -46,8 +46,8 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
                   <div className="text-sm font-semibold text-red-500">{stats.hard}</div>
                 </div>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-700">
-                <span className="text-sm text-gray-400">Rating</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-300 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Rating</span>
                 <span className="text-lg font-bold text-amber-500">{stats.rating}</span>
               </div>
             </>
@@ -56,20 +56,20 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
           {platform === 'codeforces' && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Rating</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Rating</span>
                 <span className="text-lg font-bold text-amber-500">{stats.rating}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Max Rating</span>
-                <span className="text-sm font-semibold text-white">{stats.maxRating}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Max Rating</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{stats.maxRating}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Rank</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Rank</span>
                 <span className="text-sm font-semibold text-purple-500">{stats.rank}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-700">
-                <span className="text-sm text-gray-400">Problems Solved</span>
-                <span className="text-lg font-bold text-white">{stats.problemsSolved}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-300 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Problems Solved</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{stats.problemsSolved}</span>
               </div>
             </>
           )}
@@ -77,16 +77,16 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
           {platform === 'codechef' && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Rating</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Rating</span>
                 <span className="text-lg font-bold text-amber-500">{stats.rating}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Stars</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Stars</span>
                 <span className="text-sm font-semibold text-yellow-500">{stats.stars}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-700">
-                <span className="text-sm text-gray-400">Problems Solved</span>
-                <span className="text-lg font-bold text-white">{stats.problemsSolved}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-300 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Problems Solved</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{stats.problemsSolved}</span>
               </div>
             </>
           )}
@@ -94,16 +94,16 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
           {platform === 'github' && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Total Contributions</span>
-                <span className="text-lg font-bold text-white">{stats.totalContributions || stats.allTimeContributions || 0}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Total Contributions</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{stats.totalContributions || stats.allTimeContributions || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Pull Requests</span>
-                <span className="text-sm font-semibold text-white">{stats.totalPRs}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Pull Requests</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{stats.totalPRs}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-700">
-                <span className="text-sm text-gray-400">Repositories</span>
-                <span className="text-lg font-bold text-white">{stats.totalRepos}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-300 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Repositories</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{stats.totalRepos}</span>
               </div>
             </>
           )}
@@ -111,8 +111,8 @@ const PlatformCard = ({ platform, stats, onViewDetails }) => {
           {(platform === 'geeksforgeeks' || platform === 'hackerrank') && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Problems Solved</span>
-                <span className="text-lg font-bold text-white">{stats.problemsSolved || 0}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Problems Solved</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{stats.problemsSolved || 0}</span>
               </div>
               
               {platform === 'geeksforgeeks' && (

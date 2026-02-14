@@ -86,7 +86,7 @@ const ProblemSetPage = () => {
   };
 
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-full bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -305,7 +305,7 @@ const ProblemSetPage = () => {
                         {problem.tags.slice(0, 5).map((tag, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                            className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded transition-colors"
                           >
                             {tag}
                           </span>

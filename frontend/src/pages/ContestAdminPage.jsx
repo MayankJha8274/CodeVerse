@@ -70,21 +70,21 @@ const ContestAdminPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0f] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-[#0a0a0f] text-white">
+    <div className="min-h-full bg-white dark:bg-[#0a0a0f] text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="bg-[#0d0d14] border-b border-gray-800">
+      <div className="bg-gray-50 dark:bg-[#0d0d14] border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Administration</h1>
-              <p className="text-gray-400">Manage your coding contests and challenges</p>
+              <p className="text-gray-600 dark:text-gray-400">Manage your coding contests and challenges</p>
             </div>
             <button
               onClick={() => window.open('/contests/create', '_blank')}
@@ -97,12 +97,12 @@ const ContestAdminPage = () => {
 
           {/* Tabs */}
           <div className="flex gap-6 mt-8">
-            <button className="px-4 py-2 text-white border-b-2 border-amber-500 font-medium">
+            <button className="px-4 py-2 text-gray-900 dark:text-white border-b-2 border-amber-500 font-medium">
               Manage Contests
             </button>
             <button 
               onClick={() => navigate('/problem-set')}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               Manage Challenges
             </button>
@@ -114,24 +114,24 @@ const ContestAdminPage = () => {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Info Text & Search */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400">
             Contests you can edit are below. For more info, visit our FAQ or join our discussion forum.
           </p>
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Start typing..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#1a1a24] border border-gray-700 rounded-lg pl-10 pr-4 py-2 w-64 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
+                className="bg-white dark:bg-[#1a1a24] border border-gray-300 dark:border-gray-700 rounded-lg pl-10 pr-4 py-2 w-64 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-[#1a1a24] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-amber-500"
+              className="bg-white dark:bg-[#1a1a24] border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:border-amber-500"
             >
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
@@ -144,56 +144,56 @@ const ContestAdminPage = () => {
 
         {/* Contests Table */}
         {filteredContests.length > 0 ? (
-          <div className="bg-[#0d0d14] rounded-xl border border-gray-800 overflow-hidden">
+          <div className="bg-white dark:bg-[#0d0d14] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left px-6 py-4 text-gray-400 font-medium">Contest Name</th>
-                  <th className="text-left px-6 py-4 text-gray-400 font-medium">Contest Slug</th>
-                  <th className="text-left px-6 py-4 text-gray-400 font-medium">Contest Owner</th>
-                  <th className="text-left px-6 py-4 text-gray-400 font-medium">Start Date</th>
-                  <th className="text-left px-6 py-4 text-gray-400 font-medium">Status</th>
-                  <th className="text-center px-6 py-4 text-gray-400 font-medium">Signups</th>
-                  <th className="text-center px-6 py-4 text-gray-400 font-medium">Participants</th>
-                  <th className="text-center px-6 py-4 text-gray-400 font-medium">Actions</th>
+                <tr className="border-b border-gray-200 dark:border-gray-800">
+                  <th className="text-left px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Contest Name</th>
+                  <th className="text-left px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Contest Slug</th>
+                  <th className="text-left px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Contest Owner</th>
+                  <th className="text-left px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Start Date</th>
+                  <th className="text-left px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Status</th>
+                  <th className="text-center px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Signups</th>
+                  <th className="text-center px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Participants</th>
+                  <th className="text-center px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredContests.map((contest) => (
-                  <tr key={contest._id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                  <tr key={contest._id} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4">
-                      <span className="text-white font-medium hover:text-amber-500 cursor-pointer"
+                      <span className="text-gray-900 dark:text-white font-medium hover:text-amber-500 cursor-pointer"
                             onClick={() => navigate(`/contests/${contest.slug}/edit`)}>
                         {contest.name}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-400">{contest.slug}</td>
-                    <td className="px-6 py-4 text-gray-400">
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{contest.slug}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                       {contest.owner?.username || contest.owner?.name || 'Unknown'}
                     </td>
-                    <td className="px-6 py-4 text-gray-400">{formatDate(contest.startTime)}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{formatDate(contest.startTime)}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadge(contest.status)}`}>
                         {contest.status?.charAt(0).toUpperCase() + contest.status?.slice(1)}
                       </span>
                     </td>
-                    <td className="text-center px-6 py-4 text-gray-400">{contest.signups?.length || 0}</td>
-                    <td className="text-center px-6 py-4 text-gray-400">{contest.statistics?.totalParticipants || 0}</td>
+                    <td className="text-center px-6 py-4 text-gray-600 dark:text-gray-400">{contest.signups?.length || 0}</td>
+                    <td className="text-center px-6 py-4 text-gray-600 dark:text-gray-400">{contest.statistics?.totalParticipants || 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => navigate(`/contests/${contest.slug}/edit`)}
-                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Edit className="w-4 h-4 text-gray-400" />
+                          <Edit className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         </button>
                         <button
                           onClick={() => window.open(`/contest/${contest.slug}`, '_blank')}
-                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="Preview"
                         >
-                          <Eye className="w-4 h-4 text-gray-400" />
+                          <Eye className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         </button>
                         <button
                           onClick={() => handleDeleteContest(contest.slug)}
@@ -210,10 +210,10 @@ const ContestAdminPage = () => {
             </table>
           </div>
         ) : (
-          <div className="bg-[#0d0d14] rounded-xl border border-gray-800 p-12 text-center">
-            <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Contests Yet</h3>
-            <p className="text-gray-400 mb-6">
+          <div className="bg-white dark:bg-[#0d0d14] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+            <Trophy className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Contests Yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               {searchQuery || filterStatus !== 'all' 
                 ? 'No contests match your search criteria'
                 : 'Create your first coding contest and start hosting!'}

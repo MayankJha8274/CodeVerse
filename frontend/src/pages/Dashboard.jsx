@@ -37,7 +37,7 @@ const CircularProgress = ({ value, max, size = 120, strokeWidth = 10, color = '#
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#2a2a3e"
+          className="stroke-gray-200 dark:stroke-[#2a2a3e]"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -54,7 +54,7 @@ const CircularProgress = ({ value, max, size = 120, strokeWidth = 10, color = '#
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold text-white">{value}</span>
+        <span className="text-2xl font-bold text-gray-900 dark:text-white">{value}</span>
       </div>
     </div>
   );
@@ -317,7 +317,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d0d14] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center transition-colors">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     );
@@ -326,7 +326,7 @@ const Dashboard = () => {
   // Empty state for new users
   if (!connectedPlatforms.length) {
     return (
-      <div className="min-h-full bg-[#0d0d14]">
+      <div className="min-h-full bg-white dark:bg-[#0d0d14] transition-colors">
         <div className="max-w-2xl mx-auto text-center py-20">
           <div className="w-24 h-24 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
             <Code className="w-12 h-12 text-amber-500" />
@@ -347,17 +347,17 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-full bg-[#0d0d14] text-white">
+    <div className="min-h-full bg-white dark:bg-[#0d0d14] text-gray-900 dark:text-white transition-colors">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-12 gap-6">
           
           {/* Left Column - Profile Section */}
           <div className="col-span-12 lg:col-span-3">
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               {/* Avatar */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
-                  <div className="w-full h-full rounded-full bg-[#1a1a2e] flex items-center justify-center overflow-hidden">
+                  <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#1a1a2e] flex items-center justify-center overflow-hidden transition-colors">
                     {authUser?.avatar ? (
                       <img src={authUser.avatar} alt="avatar" className="w-full h-full object-cover" />
                     ) : (
@@ -365,23 +365,25 @@ const Dashboard = () => {
                     )}
                   </div>
                 </div>
-                <h2 className="text-xl font-bold text-white">{authUser?.fullName || 'User'}</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{authUser?.fullName || 'User'}</h2>
                 <p className="text-amber-500 text-sm flex items-center gap-1">
-                  @{authUser?.username} <Check className="w-4 h-4 text-green-500" />
+                  <span>@{authUser?.username}</span> <Check className="w-4 h-4 text-green-500" />
                 </p>
               </div>
-
-              {/* Edit Profile Button (opens full editable settings) */}
-              <button onClick={() => navigate('/settings')} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all">
+              {/* Edit Profile Button */}
+              <button 
+                onClick={() => navigate('/settings')} 
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all"
+              >
                 Edit Profile
               </button>
 
-              <div className="border-t border-gray-700 my-4"></div>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
 
               {/* Location Info */}
               <div className="space-y-3 mb-4 text-sm">
                 {authUser?.location && (
-                  <div className="flex items-center gap-2 text-gray-400">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <MapPin className="w-4 h-4" />
                     <span>{authUser.location}</span>
                   </div>
@@ -398,8 +400,8 @@ const Dashboard = () => {
 
               {/* About Section */}
               <div className="mb-4">
-                <h3 className="text-sm font-semibold text-white mb-2">About</h3>
-                <p className="text-sm text-gray-400">{authUser?.bio || 'Passionate about competitive programming and software development.'}</p>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{authUser?.bio || 'Passionate about competitive programming and software development.'}</p>
               </div>
 
               {/* Problem Solving Stats (non-GitHub) */}
@@ -408,24 +410,24 @@ const Dashboard = () => {
                   onClick={() => setOpenProblemStats(prev => !prev)}
                   className="w-full flex items-center justify-between mb-2"
                 >
-                  <h3 className="text-sm font-semibold text-white">Problem Solving Stats</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Problem Solving Stats</h3>
                   <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openProblemStats ? 'rotate-180' : ''}`} />
                 </button>
                 {openProblemStats && (
                   <div className="space-y-2">
                     {connectedPlatforms.filter(p => p.key !== 'github').map(platform => {
                       return (
-                        <div key={platform.key} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
+                        <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
                           <div className="flex items-center gap-2">
                             <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
-                            <span className="text-sm text-white">{platform.name}</span>
+                            <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <a
                               href={getPlatformUrl(platform.key, platform.username)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-gray-400 hover:text-white"
+                              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -443,24 +445,24 @@ const Dashboard = () => {
                   onClick={() => setOpenDevStats(prev => !prev)}
                   className="w-full flex items-center justify-between mb-2"
                 >
-                  <h3 className="text-sm font-semibold text-white">Development Stats</h3>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openDevStats ? 'rotate-180' : ''}`} />
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Development Stats</h3>
+                  <ChevronDown className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${openDevStats ? 'rotate-180' : ''}`} />
                 </button>
                 {openDevStats && (
                   <div className="space-y-2">
                     {connectedPlatforms.filter(p => p.key === 'github').map(platform => {
                       return (
-                        <div key={platform.key} className="flex items-center justify-between p-3 bg-[#1a1a2e] rounded-lg">
+                        <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
                           <div className="flex items-center gap-2">
                             <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
-                            <span className="text-sm text-white">{platform.name}</span>
+                            <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <a
                               href={getPlatformUrl(platform.key, platform.username)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-gray-400 hover:text-white"
+                              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -485,27 +487,27 @@ const Dashboard = () => {
           <div className="col-span-12 lg:col-span-6 space-y-6">
             {/* Stats Cards Row */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-                <p className="text-gray-400 text-sm mb-1">Total Questions</p>
-                <p className="text-4xl font-bold text-white">{getTotalProblems()}</p>
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Questions</p>
+                <p className="text-4xl font-bold text-gray-900 dark:text-white">{getTotalProblems()}</p>
               </div>
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-                <p className="text-gray-400 text-sm mb-1">Total Active Days</p>
-                <p className="text-4xl font-bold text-white">{contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0}</p>
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Active Days</p>
+                <p className="text-4xl font-bold text-gray-900 dark:text-white">{contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0}</p>
               </div>
             </div>
 
             {/* Contribution Calendar */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               <ContributionCalendar calendarData={contributionCalendar} connectedPlatforms={connectedPlatforms} />
             </div>
 
             {/* Total Contests */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Total Contests</p>
-                  <p className="text-5xl font-bold text-white">{getTotalContests()}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Total Contests</p>
+                  <p className="text-5xl font-bold text-gray-900 dark:text-white">{getTotalContests()}</p>
                 </div>
                 <div className="space-y-3">
                   {getContestsByPlatform().length > 0 ? (
@@ -513,9 +515,9 @@ const Dashboard = () => {
                       <div key={item.platform} className="flex items-center justify-between gap-8">
                         <div className="flex items-center gap-2">
                           <PlatformIcon platform={item.platform} className="w-4 h-4" color={getPlatformColor(item.platform)} />
-                          <span className="text-sm text-gray-300">{item.name}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
                         </div>
-                        <span className="text-sm font-semibold text-white">{item.count}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{item.count}</span>
                       </div>
                     ))
                   ) : (
@@ -526,16 +528,15 @@ const Dashboard = () => {
             </div>
 
             {/* Rating Chart - Multi-Platform (Codolio Style) */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               {/* Header with current rating */}
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-sm text-gray-400">Rating</p>
-                  <p className="text-3xl font-bold text-white">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Rating</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     {selectedRatingPlatform === 'all' 
                       ? (platformStats.leetcode?.rating || platformStats.codeforces?.rating || platformStats.codechef?.rating || 0)
-                      : (platformStats[selectedRatingPlatform]?.rating || 0)
-                    }
+                      : (platformStats[selectedRatingPlatform]?.rating || 0)}
                   </p>
                 </div>
                 <div className="text-right text-sm text-gray-400">
@@ -551,7 +552,7 @@ const Dashboard = () => {
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                     selectedRatingPlatform === 'all' 
                       ? 'bg-amber-500 text-black' 
-                      : 'bg-[#1a1a2e] text-gray-400 hover:bg-[#252536] border border-gray-700'
+                      : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#252536] border border-gray-300 dark:border-gray-700 transition-colors'
                   }`}
                 >
                   All Platforms
@@ -566,10 +567,10 @@ const Dashboard = () => {
                       disabled={!hasData}
                       className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
                         selectedRatingPlatform === platform 
-                          ? 'text-black' 
+                          ? 'bg-amber-500 text-black' 
                           : hasData 
-                            ? 'bg-[#1a1a2e] text-gray-400 hover:bg-[#252536] border border-gray-700'
-                            : 'bg-[#1a1a2e] text-gray-600 cursor-not-allowed opacity-50'
+                            ? 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#252536] border border-gray-300 dark:border-gray-700 transition-colors'
+                            : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50 transition-colors'
                       }`}
                       style={selectedRatingPlatform === platform ? { backgroundColor: platformRatingColors[platform] } : {}}
                     >
@@ -727,22 +728,18 @@ const Dashboard = () => {
 
             {/* Contest Achievements/Titles */}
             {achievements.length > 0 ? (
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <span className="text-xl">🏆</span> Contest Rankings
                   </h3>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span className="text-xs text-green-400">Live</span>
-                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-3">
                   {achievements.map((achievement, idx) => {
                     return (
                       <div 
                         key={idx}
-                        className="relative bg-gradient-to-br from-[#1a1a2e] to-[#12121a] rounded-xl p-5 border border-gray-700/50 text-center hover:border-gray-600 transition-all group overflow-hidden"
+                        className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a2e] dark:to-[#12121a] rounded-xl p-4 border border-gray-200 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all group overflow-hidden"
                       >
                         {/* Glow effect */}
                         <div 
@@ -752,32 +749,29 @@ const Dashboard = () => {
                           }}
                         />
                         
-                        <div className="relative z-10">
-                          {/* Platform icon */}
-                          <div className="flex justify-center mb-3">
-                            <PlatformIcon platform={achievement.platform} className="w-8 h-8" color={achievement.color} />
+                        <div className="relative z-10 flex items-center justify-between">
+                          {/* Left: Icon + Platform Name */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                              <PlatformIcon platform={achievement.platform} className="w-10 h-10" color={achievement.color} />
+                            </div>
+                            <div>
+                              <div className="text-sm text-gray-400 uppercase tracking-wide font-semibold">
+                                {getPlatformName(achievement.platform)}
+                              </div>
+                              {achievement.title && achievement.title !== 'N/A' && (
+                                <div className="text-sm font-medium mt-1" style={{ color: achievement.color }}>
+                                  {achievement.title}
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
-                          {/* Title/Rank */}
-                          <div 
-                            className="text-xl font-bold mb-1"
-                            style={{ color: achievement.color }}
-                          >
-                            {achievement.title}
-                          </div>
-                          
-                          {/* Platform name */}
-                          <div className="text-sm text-gray-400 mb-2 flex items-center justify-center gap-1.5">
-                            <PlatformIcon platform={achievement.platform} className="w-4 h-4" />
-                            {getPlatformName(achievement.platform)}
-                          </div>
-                          
-                          {/* Rating */}
-                          <div className="bg-[#0d0d14] rounded-lg py-2 px-3 inline-block">
-                            <span className="text-xs text-gray-500">Rating</span>
-                            <div className="text-lg font-semibold text-white">{achievement.rating}</div>
+                          {/* Right: Rating + Max */}
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-2xl font-bold text-white">{achievement.rating}</div>
                             {achievement.maxRating && (
-                              <span className="text-xs text-gray-500">Max: {achievement.maxRating}</span>
+                              <div className="text-xs text-gray-500 mt-1">max: {achievement.maxRating}</div>
                             )}
                           </div>
                         </div>
@@ -787,13 +781,13 @@ const Dashboard = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                   <span className="text-xl">🏆</span> Contest Rankings
                 </h3>
                 <div className="text-center py-6">
                   <div className="text-4xl mb-3">🎯</div>
-                  <p className="text-gray-400 text-sm mb-2">No contest ratings yet</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">No contest ratings yet</p>
                   <p className="text-gray-500 text-xs">Participate in LeetCode, Codeforces, or CodeChef contests to see your rankings</p>
                 </div>
               </div>
@@ -801,17 +795,13 @@ const Dashboard = () => {
 
             {/* DSA Topic Analysis */}
             {topicAnalysis.length > 0 ? (
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <PlatformIcon platform="leetcode" className="w-5 h-5" color="#FFA116" /> DSA Topic Analysis
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{topicAnalysis.length} topics</span>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                      <span className="text-[10px] text-green-400">Live</span>
-                    </div>
+                    <span className="text-xs text-gray-500">{ topicAnalysis.length} topics</span>
                   </div>
                 </div>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar-thin">
@@ -824,13 +814,13 @@ const Dashboard = () => {
                     return (
                       <div key={idx} className="group">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                          <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                             {idx < 3 && <span className="mr-1">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>}
                             {topic.name}
                           </span>
                           <span className="text-sm font-semibold" style={{ color: barColor }}>{topic.total}</span>
                         </div>
-                        <div className="h-2.5 bg-[#1a1a2e] rounded-full overflow-hidden">
+                        <div className="h-2.5 bg-gray-200 dark:bg-[#1a1a2e] rounded-full overflow-hidden transition-colors">
                           <div 
                             className="h-full rounded-full transition-all duration-700 ease-out"
                             style={{ 
@@ -860,61 +850,25 @@ const Dashboard = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                   <PlatformIcon platform="leetcode" className="w-5 h-5" color="#FFA116" /> DSA Topic Analysis
                 </h3>
                 <div className="text-center py-6">
-                  <div className="flex justify-center mb-3"><BookOpen className="w-10 h-10 text-gray-600" /></div>
-                  <p className="text-gray-400 text-sm mb-2">No topic data available</p>
+                  <div className="flex justify-center mb-3"><BookOpen className="w-10 h-10 text-gray-400 dark:text-gray-600" /></div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">No topic data available</p>
                   <p className="text-gray-500 text-xs">Connect LeetCode or Codeforces and sync to see your topic-wise progress</p>
                 </div>
               </div>
             )}
 
-            {/* Badges/Awards */}
-            {badges.length > 0 && (
-              <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span className="text-xl">🎖️</span> Badges & Awards
-                  </h3>
-                  <span className="text-xs text-gray-500">{badges.length} earned</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {badges.slice(0, 9).map((badge, idx) => (
-                    <div 
-                      key={idx}
-                      className="group relative bg-gradient-to-br from-[#1a1a2e] to-[#12121a] rounded-xl p-4 border border-gray-700/50 text-center hover:border-amber-500/30 transition-all cursor-pointer"
-                    >
-                      <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity" />
-                      <div className="relative z-10">
-                        {badge.icon ? (
-                          <img 
-                            src={badge.icon} 
-                            alt={badge.name}
-                            className="w-12 h-12 mx-auto mb-2 drop-shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-amber-500/30 to-orange-600/20 rounded-full flex items-center justify-center border border-amber-500/30">
-                            <span className="text-2xl">🏅</span>
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-300 truncate font-medium">{badge.name}</div>
-                        <div className="text-[10px] text-gray-500 capitalize mt-0.5">{badge.platform}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Column - Problem Breakdown */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             {/* Problems Solved */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4">Problems Solved</h3>
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Problems Solved</h3>
               
               {/* Fundamentals */}
               <div className="mb-6">
@@ -1033,28 +987,28 @@ const Dashboard = () => {
             </div>
 
             {/* Quick Links */}
-            <div className="bg-[#16161f] rounded-xl p-6 border border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Links</h3>
               <div className="space-y-2">
                 <button 
                   onClick={() => navigate('/platforms')}
-                  className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
+                  className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
                 >
-                  <span className="text-sm text-gray-300 flex items-center gap-2"><Code className="w-4 h-4" /> Platforms</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Code className="w-4 h-4" /> Platforms</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button 
                   onClick={() => navigate('/rooms')}
-                  className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
+                  className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
                 >
-                  <span className="text-sm text-gray-300 flex items-center gap-2"><Users className="w-4 h-4" /> Societies</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Users className="w-4 h-4" /> Societies</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button 
                   onClick={() => navigate('/daily-challenge')}
-                  className="w-full text-left p-3 bg-[#1a1a2e] rounded-lg hover:bg-[#252538] transition-colors flex items-center justify-between"
+                  className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
                 >
-                  <span className="text-sm text-gray-300 flex items-center gap-2"><Zap className="w-4 h-4" /> Daily Challenge</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Zap className="w-4 h-4" /> Daily Challenge</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
               </div>
