@@ -698,23 +698,42 @@ const Dashboard = () => {
               
               {/* Current Ratings Summary */}
               <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-gray-800">
-                {platformStats.leetcode?.rating > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold" style={{ color: platformRatingColors.leetcode }}>{platformStats.leetcode.rating}</div>
-                    <div className="text-xs text-gray-500">LeetCode</div>
-                  </div>
-                )}
-                {platformStats.codeforces?.rating > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold" style={{ color: platformRatingColors.codeforces }}>{platformStats.codeforces.rating}</div>
-                    <div className="text-xs text-gray-500">Codeforces</div>
-                  </div>
-                )}
-                {platformStats.codechef?.rating > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold" style={{ color: platformRatingColors.codechef }}>{platformStats.codechef.rating}</div>
-                    <div className="text-xs text-gray-500">CodeChef</div>
-                  </div>
+                {selectedRatingPlatform === 'all' ? (
+                  <>
+                    {platformStats.leetcode?.rating > 0 && (
+                      <div className="text-center">
+                        <div className="text-xl font-bold" style={{ color: platformRatingColors.leetcode }}>{platformStats.leetcode.rating}</div>
+                        <div className="text-xs text-gray-500"><PlatformIcon platform="leetcode" className="w-4 h-4 inline-block mr-2" />LeetCode</div>
+                      </div>
+                    )}
+                    {platformStats.codeforces?.rating > 0 && (
+                      <div className="text-center">
+                        <div className="text-xl font-bold" style={{ color: platformRatingColors.codeforces }}>{platformStats.codeforces.rating}</div>
+                        <div className="text-xs text-gray-500"><PlatformIcon platform="codeforces" className="w-4 h-4 inline-block mr-2" />Codeforces</div>
+                      </div>
+                    )}
+                    {platformStats.codechef?.rating > 0 && (
+                      <div className="text-center">
+                        <div className="text-xl font-bold" style={{ color: platformRatingColors.codechef }}>{platformStats.codechef.rating}</div>
+                        <div className="text-xs text-gray-500"><PlatformIcon platform="codechef" className="w-4 h-4 inline-block mr-2" />CodeChef</div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // Show only the selected platform's rating summary
+                  (() => {
+                    const p = selectedRatingPlatform;
+                    const stats = platformStats[p];
+                    if (!stats || !stats.rating) return null;
+                    const label = PLATFORM_CONFIG[p]?.name || p;
+                    const color = platformRatingColors[p] || '#f59e0b';
+                    return (
+                      <div className="text-center">
+                        <div className="text-xl font-bold" style={{ color }}>{stats.rating}</div>
+                        <div className="text-xs text-gray-500"><PlatformIcon platform={p} className="w-4 h-4 inline-block mr-2" />{label}</div>
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </div>
@@ -769,11 +788,7 @@ const Dashboard = () => {
                               <div className="text-sm text-gray-400 uppercase tracking-wide font-semibold">
                                 {getPlatformName(achievement.platform)}
                               </div>
-                              {achievement.title && achievement.title !== 'N/A' && (
-                                <div className="text-sm font-medium mt-1" style={{ color: achievement.color }}>
-                                  {achievement.title}
-                                </div>
-                              )}
+                              {/* Hide contest titles for now to avoid showing incorrect labels (e.g., 'Knight'). */}
                             </div>
                           </div>
                           
@@ -840,18 +855,13 @@ const Dashboard = () => {
                             }}
                           />
                         </div>
-                        {Object.keys(topic.platforms || {}).length > 1 && (
-                          <div className="flex gap-3 mt-1">
-                            {topic.platforms?.leetcode && (
-                              <span className="text-xs text-orange-400 flex items-center gap-1">
-                                <PlatformIcon platform="leetcode" className="w-3 h-3" /> {topic.platforms.leetcode}
+                        {Object.keys(topic.platforms || {}).length > 0 && (
+                          <div className="flex gap-3 mt-1 items-center">
+                            {Object.entries(topic.platforms || {}).map(([p, v]) => (
+                              <span key={p} className="text-xs flex items-center gap-1" style={{ color: PLATFORM_CONFIG[p]?.color || '#999' }}>
+                                <PlatformIcon platform={p} className="w-3 h-3" color={PLATFORM_CONFIG[p]?.color} /> {v}
                               </span>
-                            )}
-                            {topic.platforms?.codeforces && (
-                              <span className="text-xs text-blue-400 flex items-center gap-1">
-                                <PlatformIcon platform="codeforces" className="w-3 h-3" /> {topic.platforms.codeforces}
-                              </span>
-                            )}
+                            ))}
                           </div>
                         )}
                       </div>
