@@ -241,7 +241,7 @@ const PlatformDetailPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Solved</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.totalSolved || 0}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.totalSolved > 0 ? platformData.totalSolved : ''}</div>
         </div>
         <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Easy</div>
@@ -258,7 +258,7 @@ const PlatformDetailPage = () => {
       </div>
 
       {platformData?.submissions?.length > 0 && (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <ChartCard title="Submission Activity" subtitle="Last 6 days">
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={platformData.submissions}>
@@ -277,39 +277,6 @@ const PlatformDetailPage = () => {
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
-
-        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Activity
-          </h3>
-          <div className="space-y-3">
-            {platformData.recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {activity.problem}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">{activity.date}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${getDifficultyColor(activity.difficulty)}`}>
-                    {activity.difficulty}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    activity.status === 'solved'
-                      ? 'bg-green-900/20 text-green-400'
-                      : 'bg-yellow-900/20 text-yellow-400'
-                  }`}>
-                    {activity.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
       )}
     </div>
@@ -342,7 +309,7 @@ const PlatformDetailPage = () => {
       </div>
 
       {platformData?.ratingHistory?.length > 0 && (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <ChartCard title="Rating History" subtitle="Contest performance">
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={platformData.ratingHistory}>
@@ -361,42 +328,6 @@ const PlatformDetailPage = () => {
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
-
-        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Activity
-          </h3>
-          <div className="space-y-3">
-            {(platformData?.recentActivity || []).map((activity, index) => (
-              <div
-                key={activity?.id || index}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {activity?.problem || 'Unknown'}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">{activity?.date || ''}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${getDifficultyColor(activity?.difficulty)}`}>
-                    {activity?.difficulty || ''}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    activity?.status === 'solved'
-                      ? 'bg-green-900/20 text-green-400'
-                      : 'bg-yellow-900/20 text-yellow-400'
-                  }`}>
-                    {activity?.status || ''}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {(!platformData?.recentActivity || platformData.recentActivity.length === 0) && (
-              <p className="text-gray-600 dark:text-gray-400 text-center py-4">No recent activity</p>
-            )}
-          </div>
-        </div>
       </div>
       )}
     </div>
@@ -411,7 +342,7 @@ const PlatformDetailPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Contributions</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.totalContributions || platformData?.allTimeContributions || 0}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{(platformData?.totalContributions || platformData?.allTimeContributions) > 0 ? (platformData?.totalContributions || platformData?.allTimeContributions) : ''}</div>
         </div>
         <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Stars</div>
@@ -491,14 +422,14 @@ const PlatformDetailPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Problems Solved</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.problemsSolved || 0}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{platformData?.problemsSolved > 0 ? platformData.problemsSolved : ''}</div>
         </div>
-        {platformData?.rating && (
+        {( (platformData?.rating && platformData.rating > 0) || (platformData?.totalScore && platformData.totalScore > 0) ) && (
           <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               {activeTab === 'codechef' ? 'Rating' : 'Score'}
             </div>
-            <div className="text-3xl font-bold text-amber-500">{platformData?.rating || platformData?.totalScore || 0}</div>
+            <div className="text-3xl font-bold text-amber-500">{(platformData?.rating > 0 ? platformData.rating : (platformData?.totalScore > 0 ? platformData.totalScore : ''))}</div>
           </div>
         )}
         {platformData?.rank && (
@@ -509,41 +440,7 @@ const PlatformDetailPage = () => {
         )}
       </div>
 
-      <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Recent Activity
-        </h3>
-        <div className="space-y-3">
-          {(platformData?.recentActivity || []).map((activity, index) => (
-            <div
-              key={activity?.id || index}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
-            >
-              <div className="flex-1">
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {activity?.problem || 'Unknown'}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{activity?.date || ''}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`text-sm font-medium ${getDifficultyColor(activity?.difficulty)}`}>
-                  {activity?.difficulty || ''}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  activity?.status === 'solved'
-                    ? 'bg-green-900/20 text-green-400'
-                    : 'bg-yellow-900/20 text-yellow-400'
-                }`}>
-                  {activity?.status || ''}
-                </span>
-              </div>
-            </div>
-          ))}
-          {(!platformData?.recentActivity || platformData.recentActivity.length === 0) && (
-            <p className="text-gray-600 dark:text-gray-400 text-center py-4">No recent activity</p>
-          )}
-        </div>
-      </div>
+      {/* Recent Activity removed for other platforms */}
     </div>
   );
   };
