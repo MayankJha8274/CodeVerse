@@ -11,6 +11,16 @@ const DailyProgress = require('../models/DailyProgress');
 const User = require('../models/User');
 
 /**
+ * Helper: Get LOCAL date string 'YYYY-MM-DD' from a Date object.
+ * NEVER use toISOString().split('T')[0] — that gives UTC date which
+ * can be off by 1 day for users in UTC+ timezones (e.g. IST = UTC+5:30).
+ */
+const toLocalDateStr = (d) => {
+  const dt = d instanceof Date ? d : new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+};
+
+/**
  * Platform Aggregation Service
  * Combines data from all platforms and calculates overall statistics
  */
@@ -296,47 +306,60 @@ const calculateStreaks = async (userId) => {
     };
   }
 
+  // Build a Set of active date strings for O(1) lookup
+  const activeDates = new Set();
+  allProgress.forEach(p => {
+    const changes = p.changes;
+    if ((changes.problemsDelta > 0 || changes.commitsDelta > 0)) {
+      const dateKey = toLocalDateStr(new Date(p.date));
+      activeDates.add(dateKey);
+    }
+  });
+
+  // Calculate current streak: walk backwards from today (or yesterday if today has no activity yet)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = toLocalDateStr(today);
+
   let currentStreak = 0;
-  let longestStreak = 0;
-  let tempStreak = 0;
-  let yesterday = new Date();
-  yesterday.setHours(0, 0, 0, 0);
+  let checkDate = new Date(today);
 
-  // Calculate current streak (consecutive days from today/yesterday)
-  for (let i = 0; i < allProgress.length; i++) {
-    const progressDate = new Date(allProgress[i].date);
-    progressDate.setHours(0, 0, 0, 0);
-    
-    const changes = allProgress[i].changes;
-    const isActive = (changes.problemsDelta > 0 || changes.commitsDelta > 0);
+  // If today has no activity, start checking from yesterday (day isn't over)
+  if (!activeDates.has(todayKey)) {
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
 
-    if (i === 0) {
-      // Check if active today or yesterday
-      const diffDays = Math.floor((yesterday - progressDate) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 1 && isActive) {
-        currentStreak = 1;
-        tempStreak = 1;
-      }
+  while (true) {
+    const dateKey = toLocalDateStr(checkDate);
+    if (activeDates.has(dateKey)) {
+      currentStreak++;
+      checkDate.setDate(checkDate.getDate() - 1);
     } else {
-      const prevDate = new Date(allProgress[i - 1].date);
-      prevDate.setHours(0, 0, 0, 0);
-      const diffDays = Math.floor((prevDate - progressDate) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1 && isActive) {
-        if (i < 10) currentStreak++; // Only count current streak for recent days
-        tempStreak++;
-      } else {
-        if (tempStreak > longestStreak) {
-          longestStreak = tempStreak;
-        }
-        tempStreak = isActive ? 1 : 0;
-      }
+      break;
     }
   }
 
-  if (tempStreak > longestStreak) {
-    longestStreak = tempStreak;
+  // Calculate longest streak by walking through all progress records sorted ascending
+  let longestStreak = 0;
+  let tempStreak = 0;
+  const sortedDates = [...activeDates].sort();
+  
+  for (let i = 0; i < sortedDates.length; i++) {
+    if (i === 0) {
+      tempStreak = 1;
+    } else {
+      const prev = new Date(sortedDates[i - 1] + 'T00:00:00');
+      const curr = new Date(sortedDates[i] + 'T00:00:00');
+      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        tempStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak);
+        tempStreak = 1;
+      }
+    }
   }
+  longestStreak = Math.max(longestStreak, tempStreak);
 
   return {
     currentStreak,
@@ -429,12 +452,15 @@ const calculateWeeklyProgress = async (userId) => {
  * @returns {Object} Calendar data with stats
  */
 const getContributionCalendar = async (userId) => {
-  const endDate = new Date();
-  endDate.setHours(23, 59, 59, 999);
+  // Use LOCAL dates to avoid timezone issues
+  const now = new Date();
+  const todayStr = toLocalDateStr(now);
   
-  const startDate = new Date();
+  const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   startDate.setDate(startDate.getDate() - 365);
-  startDate.setHours(0, 0, 0, 0);
+  
+  console.log(`📅 Calendar range: ${toLocalDateStr(startDate)} to ${todayStr} (local time)`);
 
   // Create a map of dates to contributions
   const contributionMap = {};
@@ -470,10 +496,6 @@ const getContributionCalendar = async (userId) => {
         if (dayDate >= startDate && dayDate <= endDate) {
           addContribution(dateKey, day.count, type);
           merged++;
-          // Log specific dates for debugging
-          if (dateKey === '2025-10-31' || dateKey === '2025-11-01') {
-            console.log(`   🔍 ${dateKey}: Adding ${day.count} ${type}`);
-          }
         }
       }
     });
@@ -485,21 +507,95 @@ const getContributionCalendar = async (userId) => {
   const allPlatformStats = await PlatformStats.find({ userId, fetchStatus: 'success' });
 
   // ═══════════════════════════════════════════════════════
-  // 1. LEETCODE — Use stored data (live fetch causes inconsistent streaks)
+  // 1. LEETCODE — Use stored data PLUS live fetch for fresh today data
   // ═══════════════════════════════════════════════════════
   const leetcodeStats = allPlatformStats.find(ps => ps.platform === 'leetcode');
   if (leetcodeStats?.stats?.submissionCalendar) {
     const count = mergeCalendarArray(leetcodeStats.stats.submissionCalendar, 'problems');
     console.log(`📅 Calendar: Using stored LeetCode data (${count} active days)`);
   }
+  // Live-fetch LeetCode calendar to get fresh data for today and recent days
+  if (user?.platforms?.leetcode) {
+    try {
+      const liveCalResult = await fetchLeetCodeSubmissionCalendar(user.platforms.leetcode);
+      if (liveCalResult.success && liveCalResult.data?.length > 0) {
+        // Only merge last 7 days from live data for freshness
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        
+        const recentDays = liveCalResult.data.filter(d => {
+          const dayDate = new Date(d.date + 'T00:00:00');
+          return dayDate >= sevenDaysAgo;
+        });
+        
+        // IMPORTANT: Clear stored data for these days first, then add live data
+        // This ensures 0-count days overwrite stale stored data
+        recentDays.forEach(day => {
+          const dateKey = day.date;
+          const dayDate = new Date(dateKey + 'T00:00:00');
+          if (dayDate >= startDate && dayDate <= endDate) {
+            // Remove old LeetCode problems count if exists
+            if (contributionMap[dateKey]) {
+              const oldProblems = contributionMap[dateKey].problems || 0;
+              contributionMap[dateKey].count -= oldProblems;
+              contributionMap[dateKey].problems = 0;
+            }
+            // Add live data (even if 0)
+            if (day.count > 0) {
+              addContribution(dateKey, day.count, 'problems');
+            }
+          }
+        });
+        console.log(`📅 Calendar: Updated ${recentDays.length} days with live LeetCode data`);
+      }
+    } catch (err) {
+      console.warn(`⚠️ Live LeetCode calendar fetch failed: ${err.message}`);
+    }
+  }
 
   // ═══════════════════════════════════════════════════════
-  // 2. GITHUB — Use stored data for consistency
+  // 2. GITHUB — Use stored data + live fetch for today
   // ═══════════════════════════════════════════════════════
   const githubStats = allPlatformStats.find(ps => ps.platform === 'github');
   if (githubStats?.stats?.contributionCalendar) {
     const count = mergeCalendarArray(githubStats.stats.contributionCalendar, 'commits');
     console.log(`📅 Calendar: Using stored GitHub data (${count} active days)`);
+  }
+  // Live-fetch GitHub contributions for fresh data
+  if (user?.platforms?.github) {
+    try {
+      const liveGHResult = await fetchGitHubStats(user.platforms.github, process.env.GITHUB_TOKEN);
+      if (liveGHResult.success && liveGHResult.stats?.contributionCalendar?.length > 0) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        
+        const recentDays = liveGHResult.stats.contributionCalendar.filter(d => {
+          const dayDate = new Date(d.date + 'T00:00:00');
+          return dayDate >= sevenDaysAgo;
+        });
+        
+        // Clear old GitHub commits for these days, then add live data
+        recentDays.forEach(day => {
+          const dateKey = (day.date || '').split('T')[0];
+          const dayDate = new Date(dateKey + 'T00:00:00');
+          if (dayDate >= startDate && dayDate <= endDate) {
+            if (contributionMap[dateKey]) {
+              const oldCommits = contributionMap[dateKey].commits || 0;
+              contributionMap[dateKey].count -= oldCommits;
+              contributionMap[dateKey].commits = 0;
+            }
+            if (day.count > 0) {
+              addContribution(dateKey, day.count, 'commits');
+            }
+          }
+        });
+        console.log(`📅 Calendar: Updated ${recentDays.length} days with live GitHub data`);
+      }
+    } catch (err) {
+      console.warn(`⚠️ Live GitHub calendar fetch failed: ${err.message}`);
+    }
   }
 
   // ═══════════════════════════════════════════════════════
@@ -556,7 +652,7 @@ const getContributionCalendar = async (userId) => {
   }).sort({ date: 1 });
 
   progressData.forEach(day => {
-    const dateKey = day.date.toISOString().split('T')[0];
+    const dateKey = toLocalDateStr(new Date(day.date));
     if (!contributionMap[dateKey] || contributionMap[dateKey].count === 0) {
       const problems = day.changes?.problemsDelta || 0;
       const commits = day.changes?.commitsDelta || 0;
@@ -565,12 +661,14 @@ const getContributionCalendar = async (userId) => {
     }
   });
 
-  // Fill in all 366 days with zeros where no data exists
+  // Fill in all 366 days using LOCAL dates — guarantees today is always the last cell
   const calendar = [];
-  const current = new Date(startDate);
+  const loopStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const loopEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // today midnight local
+  const current = new Date(loopStart);
   
-  while (current <= endDate) {
-    const dateKey = current.toISOString().split('T')[0];
+  while (current <= loopEnd) {
+    const dateKey = toLocalDateStr(current);
     if (contributionMap[dateKey]) {
       calendar.push(contributionMap[dateKey]);
     } else {
@@ -584,6 +682,12 @@ const getContributionCalendar = async (userId) => {
     }
     current.setDate(current.getDate() + 1);
   }
+  
+  // Verify today is included
+  const lastDate = calendar[calendar.length - 1]?.date;
+  const todayData = calendar.find(d => d.date === todayStr);
+  console.log(`📅 Calendar: ${calendar.length} days (${calendar[0]?.date} → ${lastDate})`);
+  console.log(`📅 Today (${todayStr}): ${todayData ? `${todayData.count} contributions` : '⚠️ MISSING!'}`);
 
   // Calculate contribution levels (0-4) based on activity using percentiles
   const counts = calendar.map(d => d.count).filter(c => c > 0).sort((a, b) => a - b);
@@ -611,9 +715,14 @@ const getContributionCalendar = async (userId) => {
   const currentStreak = calculateCurrentStreak(calendar);
   const longestStreak = calculateLongestStreak(calendar);
 
-  // Debug: Show last 14 days to understand streak calculation
-  const last14 = calendar.slice(-14).map((d) => `${d.date.slice(5)}: ${d.count} (${d.problems || 0}p+${d.commits || 0}c)`).join(' | ');
-  console.log(`📅 Last 14 days: ${last14}`);
+  // Debug: show where the current streak starts (the first gap day)
+  const streakStartIdx = calendar.length - 1 - currentStreak;
+  if (streakStartIdx >= 0 && streakStartIdx < calendar.length) {
+    const gapDay = calendar[streakStartIdx];
+    const streakFirstDay = calendar[streakStartIdx + 1];
+    console.log(`📊 Streak start: ${streakFirstDay?.date} (gap before: ${gapDay?.date} count=${gapDay?.count})`);
+  }
+
   console.log(`📅 Calendar final: ${totalContributions} total (${totalProblems} problems + ${totalCommits} commits), ${activeDays} active days, streak: ${currentStreak}/${longestStreak}`);
 
   return {
@@ -631,42 +740,52 @@ const getContributionCalendar = async (userId) => {
 
 /**
  * Calculate current streak from calendar data
- * Counts days with ANY activity: at least 1 problem OR 1 commit (any platform)
- * Skips today if no activity yet (the day isn't over)
+ * Walks backwards from the end of the calendar.
+ * If today (last entry) has no activity, skips it (day isn't over yet).
  */
 const calculateCurrentStreak = (calendar) => {
+  if (!calendar || calendar.length === 0) return 0;
+  
+  const todayStr = toLocalDateStr(new Date());
   let streak = 0;
-  let i = calendar.length - 1;
-  // Skip today if no activity yet (day isn't over)
-  if (i >= 0 && (calendar[i].count || 0) === 0) {
-    i--;
-  }
-  for (; i >= 0; i--) {
-    if ((calendar[i].count || 0) > 0) {
+  
+  for (let i = calendar.length - 1; i >= 0; i--) {
+    const day = calendar[i];
+    const count = day.count || 0;
+    
+    // Skip today if no activity yet (day isn't over)
+    if (day.date === todayStr && count === 0) {
+      continue;
+    }
+    
+    if (count > 0) {
       streak++;
     } else {
-      break;
+      break; // First gap = streak ends
     }
   }
+  
   return streak;
 };
 
 /**
  * Calculate longest streak from calendar data
- * Counts days with ANY activity: at least 1 problem OR 1 commit (any platform)
+ * Simple scan: count consecutive active days, keep the maximum.
  */
 const calculateLongestStreak = (calendar) => {
-  let maxStreak = 0;
-  let currentStreak = 0;
+  if (!calendar || calendar.length === 0) return 0;
   
-  calendar.forEach(day => {
-    if ((day.count || 0) > 0) {
-      currentStreak++;
-      maxStreak = Math.max(maxStreak, currentStreak);
+  let maxStreak = 0;
+  let tempStreak = 0;
+  
+  for (let i = 0; i < calendar.length; i++) {
+    if ((calendar[i].count || 0) > 0) {
+      tempStreak++;
+      if (tempStreak > maxStreak) maxStreak = tempStreak;
     } else {
-      currentStreak = 0;
+      tempStreak = 0;
     }
-  });
+  }
   
   return maxStreak;
 };

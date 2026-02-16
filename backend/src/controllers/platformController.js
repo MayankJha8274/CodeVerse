@@ -94,7 +94,22 @@ const disconnectPlatform = async (req, res, next) => {
 const syncAllPlatforms = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    const { platform } = req.body;
+    const { platform, hardReset } = req.body;
+
+    // Hard reset: Clear all stored data and rebuild from scratch
+    if (hardReset === true || req.query.hardReset === 'true') {
+      console.log(`🔥 Hard reset requested for user ${user.username} - clearing all cached data`);
+      
+      // Delete all platform stats
+      await PlatformStats.deleteMany({ userId: user._id });
+      
+      // Delete all daily progress records (this clears corrupt streak data)
+      const DailyProgress = require('../models/DailyProgress');
+      await DailyProgress.deleteMany({ userId: user._id });
+      
+      console.log('✅ All cached data cleared - will rebuild from scratch');
+    }
+    // Normal sync: just fetch fresh data without wiping anything
 
     let results;
     

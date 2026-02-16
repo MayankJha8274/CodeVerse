@@ -621,23 +621,71 @@ const fetchLeetCodeSubmissionCalendar = async (username) => {
     // submissionCalendar is a JSON string: {"unix_timestamp": count, ...}
     const calendarJson = JSON.parse(calendarData.submissionCalendar);
     
-    // Convert to array of {date, count} objects
+    // Helper: local date string from Date object
+    const toLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    
+    // Convert to array of {date, count} objects using LOCAL dates
+    // (ensures consistency with the calendar display which uses local dates)
     const calendarArray = Object.entries(calendarJson).map(([timestamp, count]) => {
       const date = new Date(parseInt(timestamp) * 1000);
       return {
-        date: date.toISOString().split('T')[0],
+        date: toLocalDate(date),
         count: count
       };
     }).sort((a, b) => a.date.localeCompare(b.date));
 
-    console.log(`✅ LeetCode calendar: ${username} - ${calendarArray.length} days, streak: ${calendarData.streak}, active: ${calendarData.totalActiveDays}`);
-
+    // Calculate OUR OWN streak from calendar data (don't trust LeetCode's API streak)
+    const todayLocal = toLocalDate(new Date());
+    let calculatedCurrentStreak = 0;
+    let calculatedMaxStreak = 0;
+    let calculatedActiveDays = calendarArray.filter(d => d.count > 0).length;
+    
+    // Build a Set of active dates for O(1) lookup
+    const activeDateSet = new Set(calendarArray.filter(d => d.count > 0).map(d => d.date));
+    
+    // Current streak: walk backwards from today/yesterday
+    let checkDate = new Date();
+    if (!activeDateSet.has(todayLocal)) {
+      checkDate.setDate(checkDate.getDate() - 1); // Skip today if no activity
+    }
+    while (true) {
+      const key = toLocalDate(checkDate);
+      if (activeDateSet.has(key)) {
+        calculatedCurrentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    // Max streak: walk through all dates in order, checking for gaps
+    if (calendarArray.length > 0) {
+      let tempStreak = 1;
+      calculatedMaxStreak = 1;
+      for (let i = 1; i < calendarArray.length; i++) {
+        const prevDate = new Date(calendarArray[i-1].date + 'T00:00:00');
+        const currDate = new Date(calendarArray[i].date + 'T00:00:00');
+        const dayGap = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+        if (dayGap === 1 && calendarArray[i].count > 0) {
+          tempStreak++;
+          if (tempStreak > calculatedMaxStreak) calculatedMaxStreak = tempStreak;
+        } else {
+          tempStreak = calendarArray[i].count > 0 ? 1 : 0;
+        }
+      }
+    }
+    
+    console.log(`✅ LeetCode calendar: ${username} - ${calendarArray.length} days, streak: ${calculatedCurrentStreak}/${calculatedMaxStreak}, active: ${calculatedActiveDays} (API reported: streak=${calendarData.streak}, active=${calendarData.totalActiveDays})`);
+    
     return { 
       success: true, 
       data: calendarArray,
-      streak: calendarData.streak || 0,
-      totalActiveDays: calendarData.totalActiveDays || 0,
-      activeYears: calendarData.activeYears || []
+      streak: calculatedCurrentStreak,
+      maxStreak: calculatedMaxStreak,
+      totalActiveDays: calculatedActiveDays,
+      activeYears: calendarData.activeYears || [],
+      leetcodeApiStreak: calendarData.streak || 0,
+      leetcodeApiActiveDays: calendarData.totalActiveDays || 0
     };
   } catch (error) {
     console.error(`❌ LeetCode calendar error for ${username}:`, error.message);

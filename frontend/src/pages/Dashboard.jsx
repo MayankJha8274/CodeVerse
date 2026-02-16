@@ -79,7 +79,8 @@ const Dashboard = () => {
   const [achievements, setAchievements] = useState([]);
   const [contributionCalendar, setContributionCalendar] = useState(null);
 
-  const SYNC_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour in ms
+  const SYNC_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes in ms
+  const AUTO_REFRESH_MS = 15 * 60 * 1000; // Auto-refresh dashboard data every 15 minutes
 
   // Platform colors for rating graph
   const platformRatingColors = {
@@ -133,6 +134,15 @@ const Dashboard = () => {
       }
     };
     loadData();
+  }, [authUser?._id || authUser?.id]);
+
+  // ── Auto-refresh: silently re-fetch dashboard data every 15 minutes ──
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      console.log('🔄 Auto-refreshing dashboard data...');
+      fetchDashboardData(true); // silent refresh, no loading spinner
+    }, AUTO_REFRESH_MS);
+    return () => clearInterval(intervalId);
   }, [authUser?._id || authUser?.id]);
 
   const handleAutoSync = async () => {
