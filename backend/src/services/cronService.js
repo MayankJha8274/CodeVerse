@@ -73,17 +73,17 @@ const syncAllUsers = async () => {
 
 /**
  * Start the cron job
- * Default: Runs every day at 2 AM
+ * Default: Runs every 15 minutes to keep data fresh
  */
 const startCronJobs = () => {
-  // Schedule: Every day at 2 AM
+  // Schedule: Every 15 minutes for near-real-time data
   // Cron format: minute hour day month weekday
-  syncJob = cron.schedule('0 2 * * *', syncAllUsers, {
+  syncJob = cron.schedule('*/15 * * * *', syncAllUsers, {
     scheduled: true,
     timezone: 'UTC'
   });
 
-  console.log('⏰ Cron job started: Daily sync at 2:00 AM UTC');
+  console.log('⏰ Cron job started: Platform sync every 15 minutes');
 };
 
 /**
@@ -156,8 +156,8 @@ const generateAllWeeklyReports = async () => {
  * Start all cron jobs (daily sync + weekly reports + contest reminders)
  */
 const startAllCronJobs = () => {
-  // Daily sync at 2 AM UTC
-  const dailySyncJob = cron.schedule('0 2 * * *', syncAllUsers, {
+  // Platform sync every 15 minutes for near-real-time data
+  const dailySyncJob = cron.schedule('*/15 * * * *', syncAllUsers, {
     scheduled: true,
     timezone: 'UTC'
   });
@@ -184,7 +184,7 @@ const startAllCronJobs = () => {
   });
 
   console.log('⏰ Cron jobs started:');
-  console.log('   - Daily sync: Every day at 2:00 AM UTC');
+  console.log('   - Platform sync: Every 15 minutes');
   console.log('   - Weekly reports: Sundays at 4:00 AM UTC');
   console.log('   - Contest fetch: Every 6 hours');
   console.log('   - Reminder check: Every 5 minutes');
