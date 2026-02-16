@@ -116,7 +116,7 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
           <span className="text-xl font-bold text-gray-900 dark:text-white">
             {(stats.totalContributions || 0).toLocaleString()}
           </span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">submissions in the past one year</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">submissions + contributions in the past one year</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }} className="text-sm text-gray-600 dark:text-gray-400">
           <span>Total active days: <b className="text-gray-900 dark:text-white">{stats.activeDays || 0}</b></span>
