@@ -3,100 +3,17 @@ const User = require('../models/User');
 const { fetchLeetCodeSolvedProblems, fetchLeetCodeTodaySubmissions } = require('../services/platforms/leetcodeService');
 const { fetchCodeforcesSolvedProblems, fetchCodeforcesTodaySubmissions } = require('../services/platforms/codeforcesService');
 
-// Multi-platform DSA problem bank
-const dsaProblems = {
-  'Arrays': [
-    { name: 'Two Sum', link: 'https://leetcode.com/problems/two-sum/', difficulty: 'Easy', platform: 'leetcode', slug: 'two-sum' },
-    { name: 'Best Time to Buy and Sell Stock', link: 'https://leetcode.com/problems/best-time-to-buy-and-sell-stock/', difficulty: 'Easy', platform: 'leetcode', slug: 'best-time-to-buy-and-sell-stock' },
-    { name: 'Contains Duplicate', link: 'https://leetcode.com/problems/contains-duplicate/', difficulty: 'Easy', platform: 'leetcode', slug: 'contains-duplicate' },
-    { name: 'Watermelon', link: 'https://codeforces.com/problemset/problem/4/A', difficulty: 'Easy', platform: 'codeforces', problemId: '4-A' },
-    { name: 'Product of Array Except Self', link: 'https://leetcode.com/problems/product-of-array-except-self/', difficulty: 'Medium', platform: 'leetcode', slug: 'product-of-array-except-self' },
-    { name: 'Maximum Subarray', link: 'https://leetcode.com/problems/maximum-subarray/', difficulty: 'Medium', platform: 'leetcode', slug: 'maximum-subarray' },
-    { name: 'Container With Most Water', link: 'https://leetcode.com/problems/container-with-most-water/', difficulty: 'Medium', platform: 'leetcode', slug: 'container-with-most-water' },
-    { name: '3Sum', link: 'https://leetcode.com/problems/3sum/', difficulty: 'Medium', platform: 'leetcode', slug: '3sum' },
-    { name: 'Theatre Square', link: 'https://codeforces.com/problemset/problem/1/A', difficulty: 'Easy', platform: 'codeforces', problemId: '1-A' },
-    { name: 'First Missing Positive', link: 'https://leetcode.com/problems/first-missing-positive/', difficulty: 'Hard', platform: 'leetcode', slug: 'first-missing-positive' }
-  ],
-  'Strings': [
-    { name: 'Valid Anagram', link: 'https://leetcode.com/problems/valid-anagram/', difficulty: 'Easy', platform: 'leetcode', slug: 'valid-anagram' },
-    { name: 'Valid Palindrome', link: 'https://leetcode.com/problems/valid-palindrome/', difficulty: 'Easy', platform: 'leetcode', slug: 'valid-palindrome' },
-    { name: 'Way Too Long Words', link: 'https://codeforces.com/problemset/problem/71/A', difficulty: 'Easy', platform: 'codeforces', problemId: '71-A' },
-    { name: 'Longest Substring Without Repeating Characters', link: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/', difficulty: 'Medium', platform: 'leetcode', slug: 'longest-substring-without-repeating-characters' },
-    { name: 'Longest Palindromic Substring', link: 'https://leetcode.com/problems/longest-palindromic-substring/', difficulty: 'Medium', platform: 'leetcode', slug: 'longest-palindromic-substring' },
-    { name: 'Group Anagrams', link: 'https://leetcode.com/problems/group-anagrams/', difficulty: 'Medium', platform: 'leetcode', slug: 'group-anagrams' },
-    { name: 'Minimum Window Substring', link: 'https://leetcode.com/problems/minimum-window-substring/', difficulty: 'Hard', platform: 'leetcode', slug: 'minimum-window-substring' }
-  ],
-  'Linked List': [
-    { name: 'Reverse Linked List', link: 'https://leetcode.com/problems/reverse-linked-list/', difficulty: 'Easy', platform: 'leetcode', slug: 'reverse-linked-list' },
-    { name: 'Merge Two Sorted Lists', link: 'https://leetcode.com/problems/merge-two-sorted-lists/', difficulty: 'Easy', platform: 'leetcode', slug: 'merge-two-sorted-lists' },
-    { name: 'Linked List Cycle', link: 'https://leetcode.com/problems/linked-list-cycle/', difficulty: 'Easy', platform: 'leetcode', slug: 'linked-list-cycle' },
-    { name: 'Remove Nth Node From End of List', link: 'https://leetcode.com/problems/remove-nth-node-from-end-of-list/', difficulty: 'Medium', platform: 'leetcode', slug: 'remove-nth-node-from-end-of-list' },
-    { name: 'Reorder List', link: 'https://leetcode.com/problems/reorder-list/', difficulty: 'Medium', platform: 'leetcode', slug: 'reorder-list' },
-    { name: 'LRU Cache', link: 'https://leetcode.com/problems/lru-cache/', difficulty: 'Medium', platform: 'leetcode', slug: 'lru-cache' },
-    { name: 'Merge k Sorted Lists', link: 'https://leetcode.com/problems/merge-k-sorted-lists/', difficulty: 'Hard', platform: 'leetcode', slug: 'merge-k-sorted-lists' }
-  ],
-  'Trees': [
-    { name: 'Maximum Depth of Binary Tree', link: 'https://leetcode.com/problems/maximum-depth-of-binary-tree/', difficulty: 'Easy', platform: 'leetcode', slug: 'maximum-depth-of-binary-tree' },
-    { name: 'Same Tree', link: 'https://leetcode.com/problems/same-tree/', difficulty: 'Easy', platform: 'leetcode', slug: 'same-tree' },
-    { name: 'Invert Binary Tree', link: 'https://leetcode.com/problems/invert-binary-tree/', difficulty: 'Easy', platform: 'leetcode', slug: 'invert-binary-tree' },
-    { name: 'Binary Tree Level Order Traversal', link: 'https://leetcode.com/problems/binary-tree-level-order-traversal/', difficulty: 'Medium', platform: 'leetcode', slug: 'binary-tree-level-order-traversal' },
-    { name: 'Validate Binary Search Tree', link: 'https://leetcode.com/problems/validate-binary-search-tree/', difficulty: 'Medium', platform: 'leetcode', slug: 'validate-binary-search-tree' },
-    { name: 'Lowest Common Ancestor of a Binary Tree', link: 'https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/', difficulty: 'Medium', platform: 'leetcode', slug: 'lowest-common-ancestor-of-a-binary-tree' },
-    { name: 'Binary Tree Maximum Path Sum', link: 'https://leetcode.com/problems/binary-tree-maximum-path-sum/', difficulty: 'Hard', platform: 'leetcode', slug: 'binary-tree-maximum-path-sum' }
-  ],
-  'Dynamic Programming': [
-    { name: 'Climbing Stairs', link: 'https://leetcode.com/problems/climbing-stairs/', difficulty: 'Easy', platform: 'leetcode', slug: 'climbing-stairs' },
-    { name: 'House Robber', link: 'https://leetcode.com/problems/house-robber/', difficulty: 'Medium', platform: 'leetcode', slug: 'house-robber' },
-    { name: 'Coin Change', link: 'https://leetcode.com/problems/coin-change/', difficulty: 'Medium', platform: 'leetcode', slug: 'coin-change' },
-    { name: 'Longest Increasing Subsequence', link: 'https://leetcode.com/problems/longest-increasing-subsequence/', difficulty: 'Medium', platform: 'leetcode', slug: 'longest-increasing-subsequence' },
-    { name: 'Word Break', link: 'https://leetcode.com/problems/word-break/', difficulty: 'Medium', platform: 'leetcode', slug: 'word-break' },
-    { name: 'Boredom', link: 'https://codeforces.com/problemset/problem/455/A', difficulty: 'Medium', platform: 'codeforces', problemId: '455-A' },
-    { name: 'Edit Distance', link: 'https://leetcode.com/problems/edit-distance/', difficulty: 'Hard', platform: 'leetcode', slug: 'edit-distance' }
-  ],
-  'Graphs': [
-    { name: 'Number of Islands', link: 'https://leetcode.com/problems/number-of-islands/', difficulty: 'Medium', platform: 'leetcode', slug: 'number-of-islands' },
-    { name: 'Clone Graph', link: 'https://leetcode.com/problems/clone-graph/', difficulty: 'Medium', platform: 'leetcode', slug: 'clone-graph' },
-    { name: 'Course Schedule', link: 'https://leetcode.com/problems/course-schedule/', difficulty: 'Medium', platform: 'leetcode', slug: 'course-schedule' },
-    { name: 'Pacific Atlantic Water Flow', link: 'https://leetcode.com/problems/pacific-atlantic-water-flow/', difficulty: 'Medium', platform: 'leetcode', slug: 'pacific-atlantic-water-flow' },
-    { name: 'King Escape', link: 'https://codeforces.com/problemset/problem/1033/A', difficulty: 'Easy', platform: 'codeforces', problemId: '1033-A' },
-    { name: 'Word Ladder', link: 'https://leetcode.com/problems/word-ladder/', difficulty: 'Hard', platform: 'leetcode', slug: 'word-ladder' }
-  ],
-  'Binary Search': [
-    { name: 'Binary Search', link: 'https://leetcode.com/problems/binary-search/', difficulty: 'Easy', platform: 'leetcode', slug: 'binary-search' },
-    { name: 'Search Insert Position', link: 'https://leetcode.com/problems/search-insert-position/', difficulty: 'Easy', platform: 'leetcode', slug: 'search-insert-position' },
-    { name: 'Search in Rotated Sorted Array', link: 'https://leetcode.com/problems/search-in-rotated-sorted-array/', difficulty: 'Medium', platform: 'leetcode', slug: 'search-in-rotated-sorted-array' },
-    { name: 'Find Minimum in Rotated Sorted Array', link: 'https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/', difficulty: 'Medium', platform: 'leetcode', slug: 'find-minimum-in-rotated-sorted-array' },
-    { name: 'Koko Eating Bananas', link: 'https://leetcode.com/problems/koko-eating-bananas/', difficulty: 'Medium', platform: 'leetcode', slug: 'koko-eating-bananas' },
-    { name: 'Median of Two Sorted Arrays', link: 'https://leetcode.com/problems/median-of-two-sorted-arrays/', difficulty: 'Hard', platform: 'leetcode', slug: 'median-of-two-sorted-arrays' }
-  ],
-  'Backtracking': [
-    { name: 'Subsets', link: 'https://leetcode.com/problems/subsets/', difficulty: 'Medium', platform: 'leetcode', slug: 'subsets' },
-    { name: 'Combination Sum', link: 'https://leetcode.com/problems/combination-sum/', difficulty: 'Medium', platform: 'leetcode', slug: 'combination-sum' },
-    { name: 'Permutations', link: 'https://leetcode.com/problems/permutations/', difficulty: 'Medium', platform: 'leetcode', slug: 'permutations' },
-    { name: 'Letter Combinations of a Phone Number', link: 'https://leetcode.com/problems/letter-combinations-of-a-phone-number/', difficulty: 'Medium', platform: 'leetcode', slug: 'letter-combinations-of-a-phone-number' },
-    { name: 'Word Search', link: 'https://leetcode.com/problems/word-search/', difficulty: 'Medium', platform: 'leetcode', slug: 'word-search' },
-    { name: 'N-Queens', link: 'https://leetcode.com/problems/n-queens/', difficulty: 'Hard', platform: 'leetcode', slug: 'n-queens' }
-  ],
-  'Heap': [
-    { name: 'Kth Largest Element in an Array', link: 'https://leetcode.com/problems/kth-largest-element-in-an-array/', difficulty: 'Medium', platform: 'leetcode', slug: 'kth-largest-element-in-an-array' },
-    { name: 'Top K Frequent Elements', link: 'https://leetcode.com/problems/top-k-frequent-elements/', difficulty: 'Medium', platform: 'leetcode', slug: 'top-k-frequent-elements' },
-    { name: 'Task Scheduler', link: 'https://leetcode.com/problems/task-scheduler/', difficulty: 'Medium', platform: 'leetcode', slug: 'task-scheduler' },
-    { name: 'Find Median from Data Stream', link: 'https://leetcode.com/problems/find-median-from-data-stream/', difficulty: 'Hard', platform: 'leetcode', slug: 'find-median-from-data-stream' }
-  ],
-  'Stack': [
-    { name: 'Valid Parentheses', link: 'https://leetcode.com/problems/valid-parentheses/', difficulty: 'Easy', platform: 'leetcode', slug: 'valid-parentheses' },
-    { name: 'Min Stack', link: 'https://leetcode.com/problems/min-stack/', difficulty: 'Medium', platform: 'leetcode', slug: 'min-stack' },
-    { name: 'Daily Temperatures', link: 'https://leetcode.com/problems/daily-temperatures/', difficulty: 'Medium', platform: 'leetcode', slug: 'daily-temperatures' },
-    { name: 'Largest Rectangle in Histogram', link: 'https://leetcode.com/problems/largest-rectangle-in-histogram/', difficulty: 'Hard', platform: 'leetcode', slug: 'largest-rectangle-in-histogram' }
-  ],
-  'Math': [
-    { name: 'Next Round', link: 'https://codeforces.com/problemset/problem/158/A', difficulty: 'Easy', platform: 'codeforces', problemId: '158-A' },
-    { name: 'Team', link: 'https://codeforces.com/problemset/problem/231/A', difficulty: 'Easy', platform: 'codeforces', problemId: '231-A' },
-    { name: 'Beautiful Matrix', link: 'https://codeforces.com/problemset/problem/263/A', difficulty: 'Easy', platform: 'codeforces', problemId: '263-A' },
-    { name: 'Boy or Girl', link: 'https://codeforces.com/problemset/problem/236/A', difficulty: 'Easy', platform: 'codeforces', problemId: '236-A' },
-    { name: 'Nearly Lucky Number', link: 'https://codeforces.com/problemset/problem/110/A', difficulty: 'Easy', platform: 'codeforces', problemId: '110-A' }
-  ]
-};
+// Import comprehensive problem bank
+const { 
+  problemsBank, 
+  getAllTopics, 
+  getProblemsForTopic,
+  getRandomProblemFromTopics,
+  getRandomProblem 
+} = require('../data/problemsBank');
+
+// Use the comprehensive problem bank
+const dsaProblems = problemsBank;
 
 // Helper: Get today's date in YYYY-MM-DD format
 const getTodayDate = () => {
@@ -213,21 +130,52 @@ const wasChallengeSolvedToday = (challenge, todayProblems) => {
 };
 
 // Select a personalized problem that the user hasn't solved
-const selectDailyProblem = async (userId, solvedProblems) => {
+// Now smarter - prioritizes topics user has been practicing
+const selectDailyProblem = async (userId, solvedProblems, userTopics = []) => {
   // Get previously assigned challenges to avoid repetition
   const previousChallenges = await DailyChallenge.find({ 
     user: userId 
-  }).select('problemName').lean();
+  }).select('problemName topic').lean();
   
   const previousNames = new Set(previousChallenges.map(c => c.problemName.toLowerCase()));
   
-  // Get all topics and shuffle them
-  const topics = Object.keys(dsaProblems);
-  const shuffledTopics = topics.sort(() => Math.random() - 0.5);
+  // Analyze which topics user has been practicing
+  const topicFrequency = {};
+  previousChallenges.forEach(c => {
+    topicFrequency[c.topic] = (topicFrequency[c.topic] || 0) + 1;
+  });
   
-  // Try to find an unsolved problem
-  for (const topic of shuffledTopics) {
-    const problems = dsaProblems[topic];
+  // Get all available topics
+  const allTopics = getAllTopics();
+  
+  // Determine which topics to prioritize:
+  // 1. If user has practiced topics, prefer those (70% of the time)
+  // 2. Also introduce new topics gradually (30% of the time)
+  const practicedTopics = Object.keys(topicFrequency).filter(t => topicFrequency[t] >= 1);
+  const newTopics = allTopics.filter(t => !practicedTopics.includes(t));
+  
+  // Build priority topic list
+  let priorityTopics = [];
+  
+  if (practicedTopics.length > 0 && Math.random() > 0.3) {
+    // 70% chance: pick from practiced topics
+    // Sort by frequency (less practiced topics get priority)
+    priorityTopics = practicedTopics.sort((a, b) => topicFrequency[a] - topicFrequency[b]);
+  } else if (newTopics.length > 0) {
+    // 30% chance or if no practiced topics: introduce new topic
+    priorityTopics = newTopics.sort(() => Math.random() - 0.5);
+  } else {
+    // Fallback: all topics
+    priorityTopics = allTopics.sort(() => Math.random() - 0.5);
+  }
+  
+  // Add remaining topics at the end
+  const remainingTopics = allTopics.filter(t => !priorityTopics.includes(t));
+  const allOrderedTopics = [...priorityTopics, ...remainingTopics.sort(() => Math.random() - 0.5)];
+  
+  // Try to find an unsolved problem from prioritized topics
+  for (const topic of allOrderedTopics) {
+    const problems = dsaProblems[topic] || [];
     const shuffledProblems = [...problems].sort(() => Math.random() - 0.5);
     
     for (const problem of shuffledProblems) {
@@ -240,9 +188,9 @@ const selectDailyProblem = async (userId, solvedProblems) => {
     }
   }
   
-  // If all problems are solved, pick a random one for revision (prefer unsolved in previous challenges)
-  for (const topic of shuffledTopics) {
-    const problems = dsaProblems[topic];
+  // If all problems are solved, pick a random one from less practiced topics for revision
+  for (const topic of allOrderedTopics) {
+    const problems = dsaProblems[topic] || [];
     const shuffledProblems = [...problems].sort(() => Math.random() - 0.5);
     
     for (const problem of shuffledProblems) {
@@ -252,9 +200,9 @@ const selectDailyProblem = async (userId, solvedProblems) => {
     }
   }
   
-  // Fallback: random problem
-  const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-  const problems = dsaProblems[randomTopic];
+  // Ultimate fallback: random problem
+  const randomTopic = allTopics[Math.floor(Math.random() * allTopics.length)];
+  const problems = dsaProblems[randomTopic] || [];
   const randomProblem = problems[Math.floor(Math.random() * problems.length)];
   
   return { ...randomProblem, topic: randomTopic, isRevision: true };

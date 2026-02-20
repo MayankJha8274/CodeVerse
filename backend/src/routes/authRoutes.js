@@ -32,35 +32,57 @@ const upload = multer({
 router.post('/register', register);
 router.post('/login', login);
 
-// Google OAuth routes
-router.get('/google',
-  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
-);
+// Check if OAuth is configured
+const isGoogleOAuthConfigured = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+const isGitHubOAuthConfigured = process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET;
 
-router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed` }),
-  (req, res) => {
-    // Generate JWT token
-    const token = req.user.generateAuthToken();
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth-success?token=${token}`);
-  }
-);
+// Middleware to check OAuth availability
+const oauthNotConfigured = (provider) => (req, res) => {
+  res.status(501).json({
+    success: false,
+    message: `${provider} OAuth is not configured. Please set up ${provider.toUpperCase()}_CLIENT_ID and ${provider.toUpperCase()}_CLIENT_SECRET environment variables.`
+  });
+};
+
+// Google OAuth routes
+if (isGoogleOAuthConfigured) {
+  router.get('/google',
+    passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+  );
+
+  router.get('/google/callback',
+    passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed` }),
+    (req, res) => {
+      // Generate JWT token
+      const token = req.user.generateAuthToken();
+      // Redirect to frontend with token
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth-success?token=${token}`);
+    }
+  );
+} else {
+  router.get('/google', oauthNotConfigured('Google'));
+  router.get('/google/callback', oauthNotConfigured('Google'));
+}
 
 // GitHub OAuth routes
-router.get('/github',
-  passport.authenticate('github', { scope: ['user:email'], session: false })
-);
+if (isGitHubOAuthConfigured) {
+  router.get('/github',
+    passport.authenticate('github', { scope: ['user:email'], session: false })
+  );
 
-router.get('/github/callback',
-  passport.authenticate('github', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed` }),
-  (req, res) => {
-    // Generate JWT token
-    const token = req.user.generateAuthToken();
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth-success?token=${token}`);
-  }
-);
+  router.get('/github/callback',
+    passport.authenticate('github', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed` }),
+    (req, res) => {
+      // Generate JWT token
+      const token = req.user.generateAuthToken();
+      // Redirect to frontend with token
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth-success?token=${token}`);
+    }
+  );
+} else {
+  router.get('/github', oauthNotConfigured('GitHub'));
+  router.get('/github/callback', oauthNotConfigured('GitHub'));
+}
 
 // Protected routes
 router.get('/me', protect, getMe);
