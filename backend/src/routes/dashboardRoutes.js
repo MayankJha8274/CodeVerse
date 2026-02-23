@@ -2,11 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const dashboardController = require('../controllers/dashboardController');
+const combinedDashboardController = require('../controllers/combinedDashboardController');
 
 /**
  * Dashboard Routes
  * All routes require authentication
  */
+
+// Get all dashboard data in one call (optimized for performance)
+router.get('/combined', protect, combinedDashboardController.getCombinedDashboardData);
 
 // Get specific user's profile (public within app)
 router.get('/profile/:userId', protect, dashboardController.getUserProfile);

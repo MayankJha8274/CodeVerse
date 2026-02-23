@@ -40,12 +40,23 @@ const fetchCodeforcesStats = async (handle) => {
       const submissions = submissionsResponse.data.result;
       totalSubmissions = submissions.length;
 
-      // Count unique accepted problems
+      // Count unique accepted problems + extract topics
+      const topicMap = {};
+      const solvedSet = new Set();
       submissions.forEach(submission => {
         if (submission.verdict === 'OK' && submission.problem) {
           // Create unique problem ID
           const problemId = `${submission.problem.contestId || 'gym'}-${submission.problem.index}`;
           acceptedProblems.add(problemId);
+
+          // Extract topic tags from unique solved problems
+          if (!solvedSet.has(problemId)) {
+            solvedSet.add(problemId);
+            (submission.problem.tags || []).forEach(tag => {
+              const formattedTag = tag.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+              topicMap[formattedTag] = (topicMap[formattedTag] || 0) + 1;
+            });
+          }
         }
       });
 
@@ -85,6 +96,11 @@ const fetchCodeforcesStats = async (handle) => {
       console.warn(`⚠️ Codeforces rating API failed for ${handle}, using 0 contests`);
     }
 
+    // Build sorted topics array from tag map
+    const topics = Object.entries(topicMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
     const stats = {
       rating: user.rating || 0,
       maxRating: user.maxRating || 0,
@@ -94,8 +110,13 @@ const fetchCodeforcesStats = async (handle) => {
       totalSubmissions,
       contestsParticipated,
       friendsCount: user.friendOfCount || 0,
-      submissionCalendar
+      submissionCalendar,
+      topics
     };
+
+    if (topics.length > 0) {
+      console.log(`✅ Codeforces topics: ${handle} - ${topics.length} topics`);
+    }
 
     console.log(`✅ Codeforces: ${handle} - ${stats.problemsSolved} problems, Rating: ${stats.rating} (${stats.rank})`);
 

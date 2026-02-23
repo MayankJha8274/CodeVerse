@@ -1,7 +1,8 @@
 const { DailyChallenge, Streak } = require('../models/DailyChallenge');
 const User = require('../models/User');
-const { fetchLeetCodeSolvedProblems, fetchLeetCodeTodaySubmissions } = require('../services/platforms/leetcodeService');
-const { fetchCodeforcesSolvedProblems, fetchCodeforcesTodaySubmissions } = require('../services/platforms/codeforcesService');
+// Live API fetchers — only used for explicit user-triggered verify/complete actions
+const { fetchLeetCodeTodaySubmissions } = require('../services/platforms/leetcodeService');
+const { fetchCodeforcesTodaySubmissions } = require('../services/platforms/codeforcesService');
 
 // Import comprehensive problem bank
 const { 
@@ -28,37 +29,33 @@ const getYesterdayDate = () => {
   return yesterday.toISOString().split('T')[0];
 };
 
-// Fetch all solved problems from user's connected platforms
-const fetchUserSolvedProblems = async (user) => {
+// Build solved-problems set from DB (completed DailyChallenge records) — NO live API calls
+const fetchSolvedFromDB = async (userId) => {
   const solvedProblems = {
     leetcode: new Set(),
     codeforces: new Set()
   };
 
   try {
-    // Fetch LeetCode solved problems
-    if (user.platforms?.leetcode) {
-      const lcResult = await fetchLeetCodeSolvedProblems(user.platforms.leetcode);
-      if (lcResult.success) {
-        lcResult.data.forEach(p => {
-          solvedProblems.leetcode.add(p.titleSlug);
-          solvedProblems.leetcode.add(p.title.toLowerCase());
-        });
-      }
-    }
+    const completedChallenges = await DailyChallenge.find({
+      user: userId,
+      isCompleted: true
+    }).select('problemName problemLink').lean();
 
-    // Fetch Codeforces solved problems
-    if (user.platforms?.codeforces) {
-      const cfResult = await fetchCodeforcesSolvedProblems(user.platforms.codeforces);
-      if (cfResult.success) {
-        cfResult.data.forEach(p => {
-          solvedProblems.codeforces.add(p.problemId);
-          solvedProblems.codeforces.add(p.name.toLowerCase());
-        });
+    completedChallenges.forEach(c => {
+      if (!c.problemLink) return;
+      const slug = c.problemLink.split('/problems/')[1]?.replace(/\/$/, '') || '';
+      if (c.problemLink.includes('leetcode.com')) {
+        if (slug) solvedProblems.leetcode.add(slug);
+        solvedProblems.leetcode.add(c.problemName.toLowerCase());
+      } else if (c.problemLink.includes('codeforces.com')) {
+        const match = c.problemLink.match(/problem\/(\d+)\/([A-Z])/);
+        if (match) solvedProblems.codeforces.add(`${match[1]}-${match[2]}`);
+        solvedProblems.codeforces.add(c.problemName.toLowerCase());
       }
-    }
+    });
   } catch (error) {
-    console.error('Error fetching solved problems:', error.message);
+    console.error('Error building solved set from DB:', error.message);
   }
 
   return solvedProblems;
@@ -252,14 +249,11 @@ exports.getTodayChallenge = async (req, res) => {
     const userId = req.user._id;
     const today = getTodayDate();
     
-    // Get user with platform info
-    const user = await User.findById(userId);
-    
     // Check if challenge already exists for today
     let challenge = await DailyChallenge.findOne({ user: userId, date: today });
-    
-    // Fetch user's solved problems
-    const solvedProblems = await fetchUserSolvedProblems(user);
+
+    // Use DB-only solved set — no live external API calls
+    const solvedProblems = await fetchSolvedFromDB(userId);
     
     if (!challenge) {
       // Generate new challenge - personalized based on unsolved problems
@@ -299,26 +293,16 @@ exports.getTodayChallenge = async (req, res) => {
       }
     }
     
-    // Check if challenge was solved today (auto-complete)
-    if (!challenge.isCompleted) {
-      const todaySubmissions = await fetchTodaySubmissions(user);
-      
-      if (wasChallengeSolvedToday(challenge, todaySubmissions)) {
-        // Auto-complete the challenge
-        challenge.isCompleted = true;
-        challenge.completedAt = new Date();
-        challenge.autoCompleted = true;
-        await challenge.save();
-        
-        // Update streak
-        await updateStreak(userId, challenge);
-      }
-    }
-    
     // Get streak info
     let streak = await Streak.findOne({ user: userId });
     if (!streak) {
       streak = await Streak.create({ user: userId });
+    }
+
+    // Reset streak if it's stale (last completion was more than 1 day ago)
+    if (streak.lastCompletedDate && streak.lastCompletedDate !== today && streak.lastCompletedDate !== getYesterdayDate()) {
+      streak.currentStreak = 0;
+      await streak.save();
     }
     
     res.json({
@@ -370,7 +354,7 @@ exports.verifyAndComplete = async (req, res) => {
       });
     }
     
-    // Fetch today's submissions
+    // Fetch today's submissions via live API (user explicitly requested verification)
     const todaySubmissions = await fetchTodaySubmissions(user);
     
     // Check if challenge was solved today
@@ -478,8 +462,8 @@ exports.skipChallenge = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot skip completed challenge' });
     }
     
-    // Fetch solved problems
-    const solvedProblems = await fetchUserSolvedProblems(user);
+    // Use DB-only solved set for problem selection — no live external API calls
+    const solvedProblems = await fetchSolvedFromDB(userId);
     
     // Get new problem
     const newProblem = await selectDailyProblem(userId, solvedProblems);
@@ -526,6 +510,13 @@ exports.getStreakHistory = async (req, res) => {
           history: []
         }
       });
+    }
+
+    // Reset streak if it's stale (last completion was more than 1 day ago)
+    const today = getTodayDate();
+    if (streak.lastCompletedDate && streak.lastCompletedDate !== today && streak.lastCompletedDate !== getYesterdayDate()) {
+      streak.currentStreak = 0;
+      await streak.save();
     }
     
     res.json({

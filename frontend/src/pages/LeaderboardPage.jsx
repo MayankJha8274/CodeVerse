@@ -161,7 +161,7 @@ const LeaderboardPage = () => {
                 <div>
                   <div className="text-sm text-amber-400 font-medium mb-1">Your Rank</div>
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl font-bold text-white">#{currentUser.rank}</span>
+                    <span className="text-4xl font-bold text-gray-900 dark:text-white">#{currentUser.rank}</span>
                     <div className="text-sm text-gray-400">
                       out of {leaderboardData?.pagination?.totalUsers || 0} coders
                     </div>
@@ -222,7 +222,7 @@ const LeaderboardPage = () => {
         {/* Top 3 Podium */}
         {topThree.length >= 3 && (
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-500" />
               Top Performers
             </h2>

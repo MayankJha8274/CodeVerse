@@ -307,38 +307,27 @@ const getProgress = async (req, res, next) => {
  */
 const getTopicAnalysis = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    // Return cached topics from database instead of fetching from external APIs
+    const platformStats = await PlatformStats.find({
+      userId: req.user.id,
+      'stats.topics': { $exists: true, $ne: [] }
+    });
+
     const topicMap = {};
 
-    // Fetch LeetCode topics
-    if (user.platforms?.leetcode) {
-      const lcResult = await fetchLeetCodeSkillStats(user.platforms.leetcode);
-      if (lcResult.success) {
-        lcResult.data.forEach(topic => {
+    // Aggregate topics from all platforms
+    platformStats.forEach(ps => {
+      if (ps.stats.topics && Array.isArray(ps.stats.topics)) {
+        ps.stats.topics.forEach(topic => {
           const name = topic.name;
           if (!topicMap[name]) {
             topicMap[name] = { total: 0, platforms: {} };
           }
-          topicMap[name].total += topic.count;
-          topicMap[name].platforms.leetcode = topic.count;
+          topicMap[name].total += topic.count || 0;
+          topicMap[name].platforms[ps.platform] = topic.count || 0;
         });
       }
-    }
-
-    // Fetch Codeforces topics
-    if (user.platforms?.codeforces) {
-      const cfResult = await fetchCodeforcesTopicStats(user.platforms.codeforces);
-      if (cfResult.success) {
-        cfResult.data.forEach(topic => {
-          const name = topic.name;
-          if (!topicMap[name]) {
-            topicMap[name] = { total: 0, platforms: {} };
-          }
-          topicMap[name].total += topic.count;
-          topicMap[name].platforms.codeforces = topic.count;
-        });
-      }
-    }
+    });
 
     // Convert to sorted array
     const topics = Object.entries(topicMap)
@@ -366,29 +355,29 @@ const getTopicAnalysis = async (req, res, next) => {
  */
 const getBadges = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    // Return cached badges from database instead of fetching from external APIs
+    const platformStats = await PlatformStats.find({
+      userId: req.user.id
+    });
+
     const allBadges = [];
 
-    // Fetch LeetCode badges
-    if (user.platforms?.leetcode) {
-      const lcResult = await fetchLeetCodeBadges(user.platforms.leetcode);
-      if (lcResult.success) {
-        lcResult.data.badges.forEach(badge => {
+    // Collect badges from all platforms
+    platformStats.forEach(ps => {
+      if (ps.stats.badges && Array.isArray(ps.stats.badges)) {
+        ps.stats.badges.forEach(badge => {
           allBadges.push({
-            platform: 'leetcode',
+            platform: ps.platform,
             name: badge.name,
             icon: badge.icon,
             earnedDate: badge.earnedDate
           });
         });
       }
-    }
+    });
 
     // Generate Codeforces badges based on rating
-    const cfStats = await PlatformStats.findOne({
-      userId: req.user.id,
-      platform: 'codeforces'
-    });
+    const cfStats = platformStats.find(ps => ps.platform === 'codeforces');
     
     if (cfStats?.stats?.rating && cfStats.stats.rating > 0) {
       const rating = cfStats.stats.rating;
@@ -439,10 +428,7 @@ const getBadges = async (req, res, next) => {
     }
 
     // Generate CodeChef badges based on rating
-    const ccStats = await PlatformStats.findOne({
-      userId: req.user.id,
-      platform: 'codechef'
-    });
+    const ccStats = platformStats.find(ps => ps.platform === 'codechef');
     
     if (ccStats?.stats?.rating && ccStats.stats.rating > 0) {
       const rating = ccStats.stats.rating;

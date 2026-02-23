@@ -306,7 +306,7 @@ const CircularProgress = ({ completed, total, size = 60, color }) => {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#2a2a3e"
+          className="stroke-gray-200 dark:stroke-[#2a2a3e]"
           strokeWidth={6}
           fill="none"
         />
@@ -590,11 +590,11 @@ const SheetsPage = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
             <BookOpen className="w-8 h-8 text-amber-500" />
             DSA Sheets
           </h1>
-          <p className="text-gray-400">Track your progress on popular DSA preparation sheets</p>
+          <p className="text-gray-600 dark:text-gray-400">Track your progress on popular DSA preparation sheets</p>
         </div>
 
         {/* Search and Filter */}
@@ -629,14 +629,14 @@ const SheetsPage = () => {
           <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="flex items-center gap-3 mb-2">
               <Target className="w-5 h-5 text-amber-500" />
-              <span className="text-gray-400 text-sm">Total Sheets</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Total Sheets</span>
             </div>
-            <p className="text-3xl font-bold text-white">{dsaSheets.length}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{dsaSheets.length}</p>
           </div>
           <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="flex items-center gap-3 mb-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <span className="text-gray-400 text-sm">Problems Solved</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Problems Solved</span>
             </div>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalSolved}</p>
           </div>
@@ -764,7 +764,7 @@ const SheetsPage = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div className="px-6 py-3 border-b border-gray-800 flex items-center gap-2 overflow-x-auto">
+            <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2 overflow-x-auto">
               {[
                 { id: 'all', label: 'All Problems' },
                 { id: 'unsolved', label: 'Unsolved' },
@@ -778,7 +778,7 @@ const SheetsPage = () => {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id 
                       ? 'bg-amber-500 text-black' 
-                      : 'bg-[#1a1a2e] text-gray-400 hover:text-white'
+                      : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -787,7 +787,7 @@ const SheetsPage = () => {
             </div>
 
             {/* Topics List with Problem Tables */}
-            <div className="divide-y divide-gray-800">
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
               {selectedSheet.topics.map((topic, topicIndex) => {
                 const topicKey = `${selectedSheet.id}-${topicIndex}`;
                 const topicProblems = selectedSheet.problemsData?.[topic.name] || [];
@@ -799,25 +799,25 @@ const SheetsPage = () => {
                     {/* Topic Header */}
                     <div 
                       onClick={() => toggleTopic(topicKey)}
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#1a1a2e] transition-colors"
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1a2e] transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <span className="text-gray-500 font-mono text-sm w-8">
                           {String(topicIndex + 1).padStart(2, '0')}
                         </span>
                         <div>
-                          <span className="text-white font-medium">{topic.name}</span>
-                          <span className="text-sm text-gray-400 ml-2">
+                          <span className="text-gray-900 dark:text-white font-medium">{topic.name}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
                             ({topicProblems.length} problems)
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
                             {topicProg.solved}/{topicProg.total}
                           </span>
-                          <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div 
                               className={`h-full bg-gradient-to-r ${selectedSheet.color} transition-all`}
                               style={{ width: `${topicProg.total > 0 ? (topicProg.solved / topicProg.total) * 100 : 0}%` }}
@@ -834,9 +834,9 @@ const SheetsPage = () => {
 
                     {/* Problems Table */}
                     {isExpanded && topicProblems.length > 0 && (
-                      <div className="bg-[#0d0d14] border-t border-gray-800">
+                      <div className="bg-gray-50 dark:bg-[#0d0d14] border-t border-gray-200 dark:border-gray-800">
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                        <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                           <div className="col-span-1 text-center">Status</div>
                           <div className="col-span-4">Problem</div>
                           <div className="col-span-1 text-center">Solve</div>
@@ -847,7 +847,7 @@ const SheetsPage = () => {
                         </div>
 
                         {/* Table Body */}
-                        <div className="divide-y divide-gray-800/50">
+                        <div className="divide-y divide-gray-200/50 dark:divide-gray-800/50">
                           {topicProblems.map((problem, problemIndex) => {
                             const problemId = getProblemId(selectedSheet.id, topicIndex, problemIndex);
                             const prob = getProblemProgress(selectedSheet.id, problemId);
@@ -857,7 +857,7 @@ const SheetsPage = () => {
                             return (
                               <div 
                                 key={problemIndex}
-                                className="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-[#16161f]/50 transition-colors group"
+                                className="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-100/50 dark:hover:bg-[#16161f]/50 transition-colors group"
                               >
                                 {/* Status */}
                                 <div className="col-span-1 flex justify-center">
@@ -869,7 +869,7 @@ const SheetsPage = () => {
 
                                 {/* Problem Name */}
                                 <div className="col-span-4">
-                                  <span className={`text-sm ${prob.status === 'solved' ? 'text-gray-400' : 'text-white'}`}>
+                                  <span className={`text-sm ${prob.status === 'solved' ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                                     {problemIndex + 1}. {problem.name}
                                   </span>
                                 </div>
@@ -880,7 +880,7 @@ const SheetsPage = () => {
                                     href={problem.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1.5 rounded-lg bg-[#1a1a2e] hover:bg-amber-500/20 text-gray-400 hover:text-amber-500 transition-colors"
+                                    className="p-1.5 rounded-lg bg-gray-200 dark:bg-[#1a1a2e] hover:bg-amber-500/20 text-gray-500 dark:text-gray-400 hover:text-amber-500 transition-colors"
                                     title="Solve on LeetCode/GFG"
                                   >
                                     <ExternalLink className="w-4 h-4" />
@@ -890,13 +890,13 @@ const SheetsPage = () => {
                                 {/* Resources */}
                                 <div className="col-span-2 flex justify-center gap-2">
                                   <button
-                                    className="p-1.5 rounded-lg bg-[#1a1a2e] hover:bg-red-500/20 text-gray-400 hover:text-red-500 transition-colors"
+                                    className="p-1.5 rounded-lg bg-gray-200 dark:bg-[#1a1a2e] hover:bg-red-500/20 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors"
                                     title="Video Solution"
                                   >
                                     <Video className="w-4 h-4" />
                                   </button>
                                   <button
-                                    className="p-1.5 rounded-lg bg-[#1a1a2e] hover:bg-blue-500/20 text-gray-400 hover:text-blue-500 transition-colors"
+                                    className="p-1.5 rounded-lg bg-gray-200 dark:bg-[#1a1a2e] hover:bg-blue-500/20 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors"
                                     title="Article/Editorial"
                                   >
                                     <FileText className="w-4 h-4" />
@@ -917,7 +917,7 @@ const SheetsPage = () => {
                                     className={`p-1.5 rounded-lg transition-colors ${
                                       prob.notes 
                                         ? 'bg-amber-500/20 text-amber-500' 
-                                        : 'bg-[#1a1a2e] text-gray-400 hover:text-amber-500 hover:bg-amber-500/20'
+                                        : 'bg-gray-200 dark:bg-[#1a1a2e] text-gray-500 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/20'
                                     }`}
                                     title={prob.notes ? 'View/Edit Notes' : 'Add Notes'}
                                   >
@@ -932,7 +932,7 @@ const SheetsPage = () => {
                                     className={`p-1.5 rounded-lg transition-colors ${
                                       prob.revision 
                                         ? 'bg-yellow-500/20 text-yellow-500' 
-                                        : 'bg-[#1a1a2e] text-gray-400 hover:text-yellow-500 hover:bg-yellow-500/20'
+                                        : 'bg-gray-200 dark:bg-[#1a1a2e] text-gray-500 dark:text-gray-400 hover:text-yellow-500 hover:bg-yellow-500/20'
                                     }`}
                                     title={prob.revision ? 'Remove from Revision' : 'Add to Revision'}
                                   >
