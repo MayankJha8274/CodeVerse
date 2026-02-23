@@ -1,50 +1,40 @@
 const User = require('../models/User');
 const PlatformStats = require('../models/PlatformStats');
 
-// Calculate C-Score (Comprehensive Score) like Codolio
-const calculateCScore = (user, stats) => {
+// Calculate Coding-Score (Comprehensive Score)
+const calculateCodingScore = (user, stats) => {
   let score = 0;
-  
-  // Problems solved (max 400 points)
+
+  // Problems solved (max 400 points) — 0.5 pts each, capped at 400
   const totalProblems = stats?.totalProblems || 0;
   score += Math.min(400, totalProblems * 0.5);
-  
+
   // Platform ratings (max 300 points)
-  const platforms = user.platforms || {};
-  let ratingScore = 0;
-  
-  // LeetCode rating contribution
-  if (stats?.leetcode?.rating) {
-    ratingScore += Math.min(100, stats.leetcode.rating / 30);
-  }
-  
-  // Codeforces rating contribution
-  if (stats?.codeforces?.rating) {
-    ratingScore += Math.min(100, stats.codeforces.rating / 20);
-  }
-  
-  // CodeChef rating contribution
-  if (stats?.codechef?.rating) {
-    ratingScore += Math.min(100, stats.codechef.rating / 20);
-  }
-  
-  score += ratingScore;
-  
-  // GitHub contributions (max 150 points)
-  if (stats?.github?.contributions) {
-    score += Math.min(150, stats.github.contributions * 0.1);
-  }
-  
-  // Active days streak bonus (max 100 points)
-  if (stats?.streak) {
-    score += Math.min(100, stats.streak * 2);
-  }
-  
-  // Contests participated (max 50 points)
-  if (stats?.contestsParticipated) {
-    score += Math.min(50, stats.contestsParticipated * 5);
-  }
-  
+  // LeetCode rating: max 100 pts (rating/30), cap 3000 → 100
+  const lcRating = stats?.leetcode?.stats?.rating || 0;
+  if (lcRating) score += Math.min(100, lcRating / 30);
+
+  // Codeforces rating: max 100 pts (rating/20), cap 2000 → 100
+  const cfRating = stats?.codeforces?.stats?.rating || 0;
+  if (cfRating) score += Math.min(100, cfRating / 20);
+
+  // CodeChef rating: max 100 pts (rating/20)
+  const ccRating = stats?.codechef?.stats?.rating || 0;
+  if (ccRating) score += Math.min(100, ccRating / 20);
+
+  // GitHub contributions (max 150 points) — 0.1 pt each, cap 1500 → 150
+  const ghContribs = stats?.github?.stats?.totalContributions || stats?.github?.stats?.currentYearContributions || 0;
+  if (ghContribs) score += Math.min(150, ghContribs * 0.1);
+
+  // Consistency (max 150 points)
+  // Streak: up to 100 pts (2 pts/day, cap 50 days)
+  const streak = stats?.leetcode?.stats?.leetcodeStreak || 0;
+  if (streak) score += Math.min(100, streak * 2);
+
+  // Contests participated: up to 50 pts (5 pts each, cap 10 contests)
+  const contests = (stats?.codeforces?.stats?.contestsParticipated || 0) + (stats?.codechef?.stats?.contestsParticipated || 0);
+  if (contests) score += Math.min(50, contests * 5);
+
   return Math.round(score);
 };
 
@@ -53,7 +43,7 @@ const calculateCScore = (user, stats) => {
 // @access  Private
 const getGlobalLeaderboard = async (req, res, next) => {
   try {
-    const { limit = 100, page = 1, period = 'all-time', sortBy = 'cScore' } = req.query;
+    const { limit = 100, page = 1, period = 'all-time', sortBy = 'codingScore' } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     // Get all users with their platform data
@@ -63,13 +53,13 @@ const getGlobalLeaderboard = async (req, res, next) => {
     
     // Get platform stats for all users
     const userIds = users.map(u => u._id);
-    const platformStats = await PlatformStats.find({ user: { $in: userIds } }).lean();
+    const platformStats = await PlatformStats.find({ userId: { $in: userIds } }).lean();
     
     // Create a map of user stats
     const statsMap = {};
     platformStats.forEach(stat => {
-      if (!stat || !stat.user) return; // guard against malformed records
-      const userId = stat.user.toString();
+      if (!stat || !stat.userId) return; // guard against malformed records
+      const userId = stat.userId.toString();
       if (!statsMap[userId]) {
         statsMap[userId] = {
           totalProblems: 0,
@@ -82,14 +72,15 @@ const getGlobalLeaderboard = async (req, res, next) => {
         };
       }
       statsMap[userId][stat.platform] = stat;
-      statsMap[userId].totalProblems += stat.problemsSolved || 0;
+      // problems solved: LeetCode uses totalSolved, others use problemsSolved
+      const solved = stat.stats?.totalSolved || stat.stats?.problemsSolved || 0;
+      statsMap[userId].totalProblems += solved;
     });
-    
+
     // Calculate scores and build leaderboard
     const leaderboard = users.map(user => {
       const stats = statsMap[user._id.toString()] || { totalProblems: 0 };
-      const cScore = calculateCScore(user, stats);
-      // Return user data along with scores
+      const codingScore = calculateCodingScore(user, stats);
       return {
         id: user._id,
         username: user.username,
@@ -97,38 +88,38 @@ const getGlobalLeaderboard = async (req, res, next) => {
         avatar: user.avatar,
         institution: user.institution || 'Independent',
         country: user.country || 'IN',
-        cScore,
+        codingScore,
         totalProblems: stats.totalProblems,
-        leetcodeRating: stats.leetcode?.rating || 0,
-        leetcodeProblems: stats.leetcode?.problemsSolved || 0,
-        codeforcesRating: stats.codeforces?.rating || 0,
-        codeforcesProblems: stats.codeforces?.problemsSolved || 0,
-        codechefRating: stats.codechef?.rating || 0,
-        codechefProblems: stats.codechef?.problemsSolved || 0,
-        githubContributions: stats.github?.contributions || 0,
-        githubRepos: stats.github?.publicRepos || 0,
+        leetcodeRating: stats.leetcode?.stats?.rating || 0,
+        leetcodeProblems: stats.leetcode?.stats?.totalSolved || stats.leetcode?.stats?.problemsSolved || 0,
+        codeforcesRating: stats.codeforces?.stats?.rating || 0,
+        codeforcesProblems: stats.codeforces?.stats?.problemsSolved || 0,
+        codechefRating: stats.codechef?.stats?.rating || 0,
+        codechefProblems: stats.codechef?.stats?.problemsSolved || 0,
+        githubContributions: stats.github?.stats?.totalContributions || stats.github?.stats?.currentYearContributions || 0,
+        githubRepos: stats.github?.stats?.totalRepos || 0,
         platforms: {
-          leetcode: stats.leetcode?.problemsSolved || 0,
-          codeforces: stats.codeforces?.problemsSolved || 0,
-          codechef: stats.codechef?.problemsSolved || 0,
-          geeksforgeeks: stats.geeksforgeeks?.problemsSolved || 0,
-          hackerrank: stats.hackerrank?.problemsSolved || 0,
-          github: stats.github?.contributions || 0
+          leetcode: stats.leetcode?.stats?.totalSolved || stats.leetcode?.stats?.problemsSolved || 0,
+          codeforces: stats.codeforces?.stats?.problemsSolved || 0,
+          codechef: stats.codechef?.stats?.problemsSolved || 0,
+          geeksforgeeks: stats.geeksforgeeks?.stats?.problemsSolved || 0,
+          hackerrank: stats.hackerrank?.stats?.problemsSolved || 0,
+          github: stats.github?.stats?.totalContributions || stats.github?.stats?.currentYearContributions || 0
         }
       };
     });
-    
+
     // Sort based on sortBy parameter
     const sortFunctions = {
-      'cScore': (a, b) => b.cScore - a.cScore,
+      'codingScore': (a, b) => b.codingScore - a.codingScore,
       'problems': (a, b) => b.totalProblems - a.totalProblems,
       'leetcode': (a, b) => b.leetcodeRating - a.leetcodeRating,
       'codeforces': (a, b) => b.codeforcesRating - a.codeforcesRating,
       'codechef': (a, b) => b.codechefRating - a.codechefRating,
       'github': (a, b) => b.githubContributions - a.githubContributions
     };
-    
-    const sortFn = sortFunctions[sortBy] || sortFunctions['cScore'];
+
+    const sortFn = sortFunctions[sortBy] || sortFunctions['codingScore'];
     leaderboard.sort(sortFn);
     
     // Add ranks based on current sort
@@ -178,29 +169,30 @@ const getUserRank = async (req, res, next) => {
     
     const statsMap = {};
     platformStats.forEach(stat => {
-      if (!stat || !stat.user) return; // skip malformed entries
-      const uid = stat.user.toString();
+      if (!stat || !stat.userId) return; // skip malformed entries
+      const uid = stat.userId.toString();
       if (!statsMap[uid]) statsMap[uid] = { totalProblems: 0 };
       statsMap[uid][stat.platform] = stat;
-      statsMap[uid].totalProblems += stat.problemsSolved || 0;
+      const solved = stat.stats?.totalSolved || stat.stats?.problemsSolved || 0;
+      statsMap[uid].totalProblems += solved;
     });
     
     const scores = users.map(user => ({
       id: user._id.toString(),
-      cScore: calculateCScore(user, statsMap[user._id.toString()] || { totalProblems: 0 })
+      codingScore: calculateCodingScore(user, statsMap[user._id.toString()] || { totalProblems: 0 })
     }));
     
-    scores.sort((a, b) => b.cScore - a.cScore);
-    
+    scores.sort((a, b) => b.codingScore - a.codingScore);
+
     const userRank = scores.findIndex(s => s.id === userId.toString()) + 1;
-    const userScore = scores.find(s => s.id === userId.toString())?.cScore || 0;
-    
+    const userScore = scores.find(s => s.id === userId.toString())?.codingScore || 0;
+
     res.status(200).json({
       success: true,
       data: {
         rank: userRank,
         totalUsers: scores.length,
-        cScore: userScore,
+        codingScore: userScore,
         percentile: userRank > 0 ? Math.round(((scores.length - userRank) / scores.length) * 100) : 0
       }
     });
@@ -223,17 +215,18 @@ const getInstitutionLeaderboard = async (req, res, next) => {
     }).lean();
     
     const userIds = users.map(u => u._id);
-    const platformStats = await PlatformStats.find({ user: { $in: userIds } }).lean();
+    const platformStats = await PlatformStats.find({ userId: { $in: userIds } }).lean();
     
     const statsMap = {};
     platformStats.forEach(stat => {
-      if (!stat || !stat.user) return; // guard against missing user references
-      const userId = stat.user.toString();
+      if (!stat || !stat.userId) return; // guard against missing user references
+      const userId = stat.userId.toString();
       if (!statsMap[userId]) statsMap[userId] = { totalProblems: 0 };
       statsMap[userId][stat.platform] = stat;
-      statsMap[userId].totalProblems += stat.problemsSolved || 0;
+      const instSolved = stat.stats?.totalSolved || stat.stats?.problemsSolved || 0;
+      statsMap[userId].totalProblems += instSolved;
     });
-    
+
     const leaderboard = users.map(user => {
       const stats = statsMap[user._id.toString()] || { totalProblems: 0 };
       return {
@@ -241,19 +234,19 @@ const getInstitutionLeaderboard = async (req, res, next) => {
         username: user.username,
         fullName: user.fullName,
         avatar: user.avatar,
-        cScore: calculateCScore(user, stats),
+        codingScore: calculateCodingScore(user, stats),
         totalProblems: stats.totalProblems
       };
     });
-    
-    leaderboard.sort((a, b) => b.cScore - a.cScore);
+
+    leaderboard.sort((a, b) => b.codingScore - a.codingScore);
     leaderboard.forEach((entry, index) => {
       entry.rank = index + 1;
     });
-    
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const paginatedLeaderboard = leaderboard.slice(skip, skip + parseInt(limit));
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -271,5 +264,5 @@ module.exports = {
   getGlobalLeaderboard,
   getUserRank,
   getInstitutionLeaderboard,
-  calculateCScore
+  calculateCodingScore
 };
