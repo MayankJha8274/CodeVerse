@@ -149,6 +149,11 @@ export const api = {
   },
 
   // Stats APIs
+  async getCombinedDashboardData() {
+    const data = await authFetch('/dashboard/combined');
+    return data.data;
+  },
+
   async getStats() {
     const data = await authFetch('/dashboard/summary');
     return data.data;

@@ -465,7 +465,7 @@ const ContestsPage = () => {
           {/* Contests List */}
           <div className="md:col-span-2 space-y-6">
             <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 border border-gray-200 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="text-xl">📅</span>
                 Upcoming Contests
               </h2>
@@ -517,7 +517,7 @@ const ContestsPage = () => {
             {/* User's Reminders */}
             {user && userReminders.length > 0 && (
               <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 border border-gray-200 dark:border-gray-800">
-                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Bell className="w-5 h-5 text-amber-400" />
                   Your Reminders
                   <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">

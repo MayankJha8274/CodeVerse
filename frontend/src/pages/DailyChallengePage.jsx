@@ -72,7 +72,7 @@ const TopicProgressBar = ({ topic, completed, total }) => {
         <span className="text-gray-900 dark:text-white font-medium">{topic}</span>
         <span className="text-gray-600 dark:text-gray-400">{completed}/{total}</span>
       </div>
-      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
         <div 
           className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all"
           style={{ width: `${percent}%` }}
@@ -103,7 +103,7 @@ const CalendarHeatmap = ({ history }) => {
           className={`w-6 h-6 rounded flex items-center justify-center text-xs font-medium ${
             day.completed 
               ? 'bg-green-500 text-black' 
-              : 'bg-gray-800 text-gray-500'
+              : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
           }`}
           title={`${day.date}: ${day.completed ? 'Completed' : 'Not completed'}`}
         >
@@ -129,27 +129,24 @@ const DailyChallengePage = () => {
       try {
         setLoading(true);
         
-        // Fetch today's challenge (includes streak info, auto-completes if already solved)
-        const challengeRes = await api.getDailyChallenge();
+        // Fetch all data in PARALLEL for faster loading
+        const [challengeRes, topicsRes, historyRes, streakRes] = await Promise.all([
+          api.getDailyChallenge().catch(() => ({ success: false })),
+          api.getDailyChallengeTopics().catch(() => ({ success: false })),
+          api.getDailyChallengeHistory(30).catch(() => ({ success: false })),
+          api.getDailyChallengeStreak().catch(() => ({ success: false }))
+        ]);
+
         if (challengeRes.success) {
           setChallenge(challengeRes.challenge);
           setStreak(challengeRes.streak);
         }
-
-        // Fetch topic stats
-        const topicsRes = await api.getDailyChallengeTopics();
         if (topicsRes.success) {
           setTopicStats(topicsRes.topics);
         }
-
-        // Fetch history
-        const historyRes = await api.getDailyChallengeHistory(30);
         if (historyRes.success) {
           setChallengeHistory(historyRes.challenges);
         }
-
-        // Fetch streak details (for history)
-        const streakRes = await api.getDailyChallengeStreak();
         if (streakRes.success) {
           setStreak(prev => ({ ...prev, ...streakRes.streak }));
         }
@@ -247,8 +244,8 @@ const DailyChallengePage = () => {
           <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl p-6 border border-orange-500/30">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Current Streak</p>
-                <p className="text-4xl font-bold text-white">{streak.current}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Current Streak</p>
+                <p className="text-4xl font-bold text-gray-900 dark:text-white">{streak.current}</p>
                 <p className="text-orange-400 text-sm">days</p>
               </div>
               <StreakFire streak={streak.current} />
@@ -395,10 +392,10 @@ const DailyChallengePage = () => {
 
                     {/* Tips */}
                     <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                      <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                      <h4 className="text-blue-600 dark:text-blue-400 font-medium mb-2 flex items-center gap-2">
                         <Star className="w-4 h-4" /> Pro Tips
                       </h4>
-                      <ul className="text-gray-400 text-sm space-y-1">
+                      <ul className="text-gray-600 dark:text-gray-400 text-sm space-y-1">
                         <li>• Try to solve without looking at hints first</li>
                         <li>• Analyze time and space complexity</li>
                         <li>• Think of edge cases before coding</li>
@@ -427,7 +424,7 @@ const DailyChallengePage = () => {
               <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
                 <span>Less</span>
                 <div className="flex gap-1">
-                  <div className="w-4 h-4 bg-gray-800 rounded"></div>
+                  <div className="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded"></div>
                   <div className="w-4 h-4 bg-green-800 rounded"></div>
                   <div className="w-4 h-4 bg-green-600 rounded"></div>
                   <div className="w-4 h-4 bg-green-500 rounded"></div>

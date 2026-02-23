@@ -201,6 +201,17 @@ const fetchLeetCodeStats = async (username) => {
         console.warn(`⚠️ LeetCode calendar fetch failed during stats: ${calErr.message}`);
       }
 
+      // Fetch topic/skill stats and embed in stats
+      try {
+        const topicResult = await fetchLeetCodeSkillStats(username);
+        if (topicResult.success && topicResult.data.length > 0) {
+          stats.topics = topicResult.data; // [{name, count}, ...]
+          console.log(`✅ LeetCode topics: ${username} - ${stats.topics.length} topics`);
+        }
+      } catch (topicErr) {
+        console.warn(`⚠️ LeetCode topics fetch failed during stats: ${topicErr.message}`);
+      }
+
       return {
         success: true,
         platform: 'leetcode',

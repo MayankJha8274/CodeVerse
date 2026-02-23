@@ -80,7 +80,7 @@ const Dashboard = () => {
   const [contributionCalendar, setContributionCalendar] = useState(null);
 
   const SYNC_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes in ms
-  const AUTO_REFRESH_MS = 15 * 60 * 1000; // Auto-refresh dashboard data every 15 minutes
+  const AUTO_REFRESH_MS = 5 * 60 * 1000; // Auto-refresh dashboard data every 5 minutes (reduced from 15)
 
   // Platform colors for rating graph
   const platformRatingColors = {
@@ -164,27 +164,47 @@ const Dashboard = () => {
   const fetchDashboardData = async (skipLoadingSpinner = false) => {
     try {
       if (!skipLoadingSpinner) setLoading(true);
-      const [summaryData, allStats, ratingsData, allRatingsData, topicsData, badgesData, achievementsData, calendarData] = await Promise.all([
-        api.getStats().catch(() => null),
-        api.getAllPlatformStats().catch(() => ({})),
-        api.getRatingGrowth().catch(() => []),
-        api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] })),
-        api.getTopicAnalysis().catch(() => []),
-        api.getBadges().catch(() => []),
-        api.getAchievements().catch(() => []),
-        api.getContributionCalendar().catch(() => null)
-      ]);
+      
+      // Use the combined endpoint for much faster loading (1 call instead of 8)
+      const dashboardData = await api.getCombinedDashboardData();
 
-      setUserData(summaryData);
-      setPlatformStats(allStats || {});
-      setRatingHistory(ratingsData || []);
-      setAllRatingHistory(allRatingsData || { chartData: [], platforms: [] });
-      setTopicAnalysis(topicsData || []);
-      setBadges(badgesData || []);
-      setAchievements(achievementsData || []);
-      setContributionCalendar(calendarData);
+      setUserData(dashboardData);
+      setPlatformStats(dashboardData.platforms || {});
+      setRatingHistory(dashboardData.ratingHistory || []);
+      setAllRatingHistory({ 
+        chartData: dashboardData.ratingHistory || [], 
+        platforms: Object.keys(dashboardData.platforms || {}) 
+      });
+      setTopicAnalysis(dashboardData.topics || []);
+      setBadges(dashboardData.badges || []);
+      setAchievements(dashboardData.achievements || []);
+      setContributionCalendar(dashboardData.contributionCalendar || null);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      // Fallback to individual API calls if combined endpoint fails
+      try {
+        const [summaryData, allStats, ratingsData, allRatingsData, topicsData, badgesData, achievementsData, calendarData] = await Promise.all([
+          api.getStats().catch(() => null),
+          api.getAllPlatformStats().catch(() => ({})),
+          api.getRatingGrowth().catch(() => []),
+          api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] })),
+          api.getTopicAnalysis().catch(() => []),
+          api.getBadges().catch(() => []),
+          api.getAchievements().catch(() => []),
+          api.getContributionCalendar().catch(() => null)
+        ]);
+
+        setUserData(summaryData);
+        setPlatformStats(allStats || {});
+        setRatingHistory(ratingsData || []);
+        setAllRatingHistory(allRatingsData || { chartData: [], platforms: [] });
+        setTopicAnalysis(topicsData || []);
+        setBadges(badgesData || []);
+        setAchievements(achievementsData || []);
+        setContributionCalendar(calendarData);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       if (!skipLoadingSpinner) setLoading(false);
     }
@@ -340,8 +360,8 @@ const Dashboard = () => {
           <div className="w-24 h-24 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
             <Code className="w-12 h-12 text-amber-500" />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-4">Welcome to CodeVerse!</h2>
-          <p className="text-gray-400 mb-8 text-lg">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to CodeVerse!</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
             Connect your coding platforms to see your comprehensive stats, track progress, and compete with friends!
           </p>
           <button
@@ -747,8 +767,8 @@ const Dashboard = () => {
                   <BookOpen className="w-6 h-6 text-black" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white">DSA Sheets</h3>
-                  <p className="text-sm text-gray-400">Track your progress on popular DSA sheets like Striver's A to Z</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">DSA Sheets</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Track your progress on popular DSA sheets like Striver's A to Z</p>
                 </div>
                 <ChevronRight className="w-6 h-6 text-amber-500" />
               </div>
@@ -793,7 +813,7 @@ const Dashboard = () => {
                           
                           {/* Right: Rating + Max */}
                           <div className="text-right flex-shrink-0">
-                            <div className="text-2xl font-bold text-white">{achievement.rating}</div>
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{achievement.rating}</div>
                             {achievement.maxRating && (
                               <div className="text-xs text-gray-500 mt-1">max: {achievement.maxRating}</div>
                             )}

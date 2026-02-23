@@ -49,7 +49,11 @@ const platformStatsSchema = new mongoose.Schema({
     submissionCalendar: { type: mongoose.Schema.Types.Mixed, default: null },
     contributionCalendar: { type: mongoose.Schema.Types.Mixed, default: null },
     leetcodeStreak: { type: Number, default: 0 },
-    leetcodeActiveDays: { type: Number, default: 0 }
+    leetcodeActiveDays: { type: Number, default: 0 },
+    
+    // Cached data to avoid external API calls on every page load
+    topics: { type: [{ name: String, count: Number }], default: [] },
+    badges: { type: [{ name: String, icon: String, earnedDate: Date }], default: [] }
   },
   // Store daily data for trend analysis
   history: [{
