@@ -236,9 +236,9 @@ const RoomsPage = () => {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
           {/* Rooms List */}
-          <div className="lg:col-span-1 space-y-3">
+          <div className="md:col-span-1 space-y-3">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Your Rooms ({rooms.length})</h3>
             {rooms.map((room) => (
               <button
@@ -276,7 +276,7 @@ const RoomsPage = () => {
           </div>
 
           {/* Leaderboard */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="md:col-span-3 space-y-6">
             {selectedRoom && (
               <>
                 {/* Room Info */}
@@ -342,7 +342,7 @@ const RoomsPage = () => {
                   </div>
 
                   {/* Filters */}
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex flex-wrap gap-2 mt-4">
                     {['daily', 'weekly', 'monthly', 'all-time'].map((f) => (
                       <button
                         key={f}

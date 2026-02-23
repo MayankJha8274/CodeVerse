@@ -1,6 +1,6 @@
 import React from 'react';
 
-const UserAvatar = ({ user, size = 'md', showName = false, showUsername = false }) => {
+const UserAvatar = ({ user, size = 'md', showName = false, showUsername = false, responsiveName = false }) => {
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
@@ -30,7 +30,7 @@ const UserAvatar = ({ user, size = 'md', showName = false, showUsername = false 
         </div>
       )}
       {(showName || showUsername) && (
-        <div className="flex flex-col">
+        <div className={`flex-col ${responsiveName ? 'hidden sm:flex' : 'flex'}`}>
           {showName && (
             <span className="text-sm font-semibold text-white">
               {displayName}

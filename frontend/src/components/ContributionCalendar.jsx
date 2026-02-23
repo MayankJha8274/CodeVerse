@@ -126,7 +126,7 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
       </div>
 
       {/* ── Grid ── */}
-      <div style={{ width: '100%', overflowX: 'hidden', overflowY: 'visible' }}>
+      <div style={{ width: '100%', overflowX: 'auto', overflowY: 'visible' }}>
         {/* cells */}
         <div style={{ display: 'flex', gap: GAP, width: gridW }}>
           {weeks.map((wk, wi) => (

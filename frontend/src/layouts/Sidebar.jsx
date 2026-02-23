@@ -95,7 +95,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
     <NavLink
       to={item.to}
       end={item.to === '/contests'} // Only match exact path for /contests to avoid conflict with /contests/admin
-      onClick={() => window.innerWidth < 1024 && onClose()}
+      onClick={() => window.innerWidth < 1280 && onClose()}
       className={({ isActive }) => `
         flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
         ${isActive 
@@ -128,7 +128,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 xl:hidden"
           onClick={onClose}
         />
       )}
@@ -137,11 +137,11 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       <aside
         className={`
           fixed top-0 left-0 h-full z-50 bg-white dark:bg-[#111118] border-r border-gray-200 dark:border-gray-800/50
-          transition-all duration-300 ease-in-out
-          ${isOpen ? 'w-60' : 'w-0 lg:w-0'}
-          lg:relative
+          transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden
+          ${isOpen ? 'w-60 translate-x-0' : 'w-60 -translate-x-full'}
+          xl:relative xl:translate-x-0
+          ${isOpen ? 'xl:w-60' : 'xl:w-0'}
         `}
-        style={{ overflow: 'hidden' }}
       >
         <div className="flex flex-col h-full w-60">
           {/* Logo */}
@@ -205,7 +205,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
             <div className="flex gap-2">
               <NavLink
                 to="/settings"
-                onClick={() => window.innerWidth < 1024 && onClose()}
+                onClick={() => window.innerWidth < 1280 && onClose()}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-all"
               >
                 <UserPen className="w-3.5 h-3.5" />

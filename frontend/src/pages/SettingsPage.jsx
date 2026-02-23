@@ -228,7 +228,7 @@ const SettingsPage = () => {
 
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Basic Details</h3>
 
-        <div className="flex items-start gap-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-start gap-6 mb-6">
           <div className="relative">
               <UserAvatar user={{ avatar: user.avatar, name: user.name }} size="2xl" />
               <div className="absolute -bottom-4 left-0 right-0 flex items-center justify-between px-2">

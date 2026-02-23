@@ -66,7 +66,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-white dark:bg-[#0d0d14] transition-colors">
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#16161f] transition-colors">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
               <Code2 className="w-5 h-5 text-white" />
@@ -86,23 +86,11 @@ const LandingPage = () => {
               Demo
             </a>
           </nav>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-600 dark:text-gray-400 transition-colors"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a.75.75 0 01.743.648L10.75 2.75V4a.75.75 0 01-1.493.102L9.25 4V2.75A.75.75 0 0110 2zM10 16a.75.75 0 01.743.648L10.75 16.75V18a.75.75 0 01-1.493.102L9.25 18v-1.25A.75.75 0 0110 16zM4.222 4.222a.75.75 0 011.06 0l.884.884a.75.75 0 11-1.06 1.06l-.884-.884a.75.75 0 010-1.06zM14.834 14.834a.75.75 0 011.06 0l.884.884a.75.75 0 11-1.06 1.06l-.884-.884a.75.75 0 010-1.06zM2 10a.75.75 0 01.648-.743L2.75 9.25H4a.75.75 0 01.102 1.493L4 10.75H2.75A.75.75 0 012 10zM16 10a.75.75 0 01.648-.743L16.75 9.25H18a.75.75 0 01.102 1.493L18 10.75h-1.25A.75.75 0 0116 10zM4.222 15.778a.75.75 0 010 1.06l-.884.884a.75.75 0 11-1.06-1.06l.884-.884a.75.75 0 011.06 0zM15.778 5.166a.75.75 0 010 1.06l-.884.884a.75.75 0 11-1.06-1.06l.884-.884a.75.75 0 011.06 0z"/></svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707 8 8 0 1017.293 13.293z"/></svg>
-              )}
-            </button>
-
-            <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link to="/login" className="hidden sm:block text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium">
               Sign In
             </Link>
-            <Link to="/register" className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors">
+            <Link to="/register" className="px-3 sm:px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors text-sm sm:text-base">
               Get Started
             </Link>
           </div>
@@ -110,24 +98,24 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-6">
+      <section className="py-12 sm:py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 text-amber-400 text-sm font-medium mb-6">
             <Zap className="w-4 h-4" />
             Join 50,000+ developers
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
             One Dashboard.
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">
               Every Coding Platform.
             </span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
             Aggregate stats from LeetCode, Codeforces, CodeChef, GitHub, and more.
             Get personalized analytics, daily challenges, and compete with your team.
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/register" className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors text-lg flex items-center gap-2">
               Connect Your Profiles
               <ArrowRight className="w-5 h-5" />
@@ -156,7 +144,7 @@ const LandingPage = () => {
       </section>
 
       {/* Platforms Section */}
-      <section id="platforms" className="py-20 px-6 bg-gray-50 dark:bg-[#16161f] transition-colors">
+      <section id="platforms" className="py-12 sm:py-20 px-4 sm:px-6 bg-gray-50 dark:bg-[#16161f] transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -185,7 +173,7 @@ const LandingPage = () => {
 
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-6">
+      <section id="features" className="py-12 sm:py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -217,7 +205,7 @@ const LandingPage = () => {
       </section>
 
       {/* Demo Section */}
-      <section id="demo" className="py-20 px-6 bg-gray-100 dark:bg-[#16161f] transition-colors">
+      <section id="demo" className="py-12 sm:py-20 px-4 sm:px-6 bg-gray-100 dark:bg-[#16161f] transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -235,13 +223,13 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
+      <section className="py-12 sm:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="rounded-xl p-12 bg-gradient-to-r from-amber-500 to-purple-600">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <div className="rounded-xl p-8 sm:p-12 bg-gradient-to-r from-amber-500 to-purple-600">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
               Ready to Track Your Progress?
             </h2>
-            <p className="text-lg text-white/90 mb-8">
+            <p className="text-base sm:text-lg text-white/90 mb-8">
               Start aggregating your coding stats today. Connect your platforms, join societies, and compete with developers worldwide.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
