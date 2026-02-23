@@ -26,10 +26,10 @@ exports.getUserProfile = async (req, res) => {
       });
     }
 
-    // Get all platform stats
+    // Get all platform stats (include all platforms that have data)
     const platformStats = await PlatformStats.find({
       userId,
-      fetchStatus: 'success'
+      stats: { $exists: true, $ne: null }
     });
 
     // Get last 30 days activity
@@ -114,10 +114,10 @@ exports.getUserSummary = async (req, res) => {
       });
     }
 
-    // Get platform stats
+    // Get platform stats (include all platforms that have data, even if last fetch failed)
     const platformStats = await PlatformStats.find({
       userId,
-      fetchStatus: 'success'
+      stats: { $exists: true, $ne: null }
     });
 
     // Calculate totals
