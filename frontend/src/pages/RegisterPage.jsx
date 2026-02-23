@@ -59,7 +59,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center px-6 py-12 transition-colors relative">
+    <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center px-4 sm:px-6 py-12 transition-colors relative">
       
       <div className="w-full max-w-md">
         {/* Logo */}

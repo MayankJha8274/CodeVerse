@@ -169,7 +169,7 @@ const LeaderboardPage = () => {
                 </div>
               </div>
               
-              <div className="flex items-center gap-8">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-8">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-amber-500">{currentUser.cScore}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">C-Score</div>
@@ -339,7 +339,7 @@ const LeaderboardPage = () => {
         {/* Leaderboard Table */}
         <div className="bg-white dark:bg-[#16161f] rounded-xl overflow-hidden transition-colors">
           {/* Header */}
-          <div className="grid grid-cols-12 gap-4 p-4 bg-gray-100 dark:bg-[#1a1a2e] text-sm font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 transition-colors">
+          <div className="hidden sm:grid grid-cols-12 gap-4 p-4 bg-gray-100 dark:bg-[#1a1a2e] text-sm font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 transition-colors">
             <div className="col-span-1">Rank</div>
             <div className="col-span-4">User</div>
             <div className="col-span-2 text-center">{getRankingLabel()}</div>
@@ -352,7 +352,7 @@ const LeaderboardPage = () => {
             {filteredLeaderboard.map((entry, index) => (
               <div 
                 key={entry.id || index}
-                className={`grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-[#1a1a2e] transition-colors ${
+                className={`grid grid-cols-3 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center hover:bg-gray-50 dark:hover:bg-[#1a1a2e] transition-colors ${
                   entry.id === authUser?.id ? 'bg-amber-500/10 border-l-4 border-amber-500' : ''
                 }`}
               >
@@ -372,10 +372,10 @@ const LeaderboardPage = () => {
                 </div>
 
                 {/* User Info */}
-                <div className="col-span-4 flex items-center gap-3">
+                <div className="col-span-2 sm:col-span-4 flex items-center gap-2 sm:gap-3 min-w-0">
                   <UserAvatar user={{ avatar: entry.avatar, name: entry.fullName }} size="md" />
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-white">{entry.fullName || entry.username}</div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-900 dark:text-white truncate">{entry.fullName || entry.username}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       @{entry.username}
                       {entry.institution && (
@@ -386,7 +386,7 @@ const LeaderboardPage = () => {
                 </div>
 
                 {/* Primary Ranking Value */}
-                <div className="col-span-2 text-center">
+                <div className="col-span-1 sm:col-span-2 text-center">
                   <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg ${getRankingColor()}`}>
                     {rankingType === 'cScore' && <Zap className="w-4 h-4" />}
                     {rankingType === 'problems' && <Target className="w-4 h-4" />}
@@ -395,7 +395,7 @@ const LeaderboardPage = () => {
                 </div>
 
                 {/* Secondary Value */}
-                <div className="col-span-2 text-center">
+                <div className="hidden sm:block col-span-2 text-center">
                   <div className="flex items-center justify-center gap-1">
                     {rankingType === 'problems' ? (
                       <>
@@ -412,7 +412,7 @@ const LeaderboardPage = () => {
                 </div>
 
                 {/* Platform Stats */}
-                <div className="col-span-3">
+                <div className="hidden sm:block col-span-3">
                   <div className="flex items-center justify-center gap-4">
                     {entry.platforms?.leetcode > 0 && (
                       <div className="flex items-center gap-1 text-orange-400" title="LeetCode">

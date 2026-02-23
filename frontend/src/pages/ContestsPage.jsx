@@ -201,6 +201,9 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
         </div>
       </div>
       
+      {/* Day Names + Calendar Grid — scrollable on small screens */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[420px]">
       {/* Day Names */}
       <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800">
         {dayNames.map(day => (
@@ -254,6 +257,8 @@ const ContestCalendar = ({ calendarData, currentMonth, currentYear, onMonthChang
             )}
           </div>
         ))}
+      </div>
+      </div>
       </div>
     </div>
   );
@@ -456,9 +461,9 @@ const ContestsPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           {/* Contests List */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="md:col-span-2 space-y-6">
             <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 border border-gray-200 dark:border-gray-800">
               <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <span className="text-xl">📅</span>
@@ -544,7 +549,7 @@ const ContestsPage = () => {
           </div>
 
           {/* Calendar */}
-          <div className="lg:col-span-3">
+          <div className="md:col-span-3">
             <ContestCalendar
               calendarData={calendarData}
               currentMonth={currentMonth}

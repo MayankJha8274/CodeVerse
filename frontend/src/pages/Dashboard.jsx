@@ -358,14 +358,14 @@ const Dashboard = () => {
   return (
     <div className="min-h-full bg-white dark:bg-[#0d0d14] text-gray-900 dark:text-white transition-colors">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6">
           
           {/* Left Column - Profile Section */}
           <div className="col-span-12 lg:col-span-3">
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               {/* Avatar */}
               <div className="flex flex-col items-center mb-6">
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
                   <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#1a1a2e] flex items-center justify-center overflow-hidden transition-colors">
                     {authUser?.avatar ? (
                       <img src={authUser.avatar} alt="avatar" className="w-full h-full object-cover" />
@@ -495,28 +495,28 @@ const Dashboard = () => {
           {/* Middle Column - Stats & Charts */}
           <div className="col-span-12 lg:col-span-6 space-y-6">
             {/* Stats Cards Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Questions</p>
-                <p className="text-4xl font-bold text-gray-900 dark:text-white">{getTotalProblems()}</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">{getTotalProblems()}</p>
               </div>
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+              <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Active Days</p>
-                <p className="text-4xl font-bold text-gray-900 dark:text-white">{contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0}</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">{contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0}</p>
               </div>
             </div>
 
             {/* Contribution Calendar */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               <ContributionCalendar calendarData={contributionCalendar} connectedPlatforms={connectedPlatforms} />
             </div>
 
             {/* Total Contests */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-              <div className="flex items-start justify-between">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Total Contests</p>
-                  <p className="text-5xl font-bold text-gray-900 dark:text-white">{getTotalContests()}</p>
+                  <p className="text-3xl sm:text-5xl font-bold text-gray-900 dark:text-white">{getTotalContests()}</p>
                 </div>
                 <div className="space-y-3">
                   {getContestsByPlatform().length > 0 ? (
@@ -537,12 +537,12 @@ const Dashboard = () => {
             </div>
 
             {/* Rating Chart - Multi-Platform (Codolio Style) */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
               {/* Header with current rating */}
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Rating</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                     {selectedRatingPlatform === 'all' 
                       ? (platformStats.leetcode?.rating || platformStats.codeforces?.rating || platformStats.codechef?.rating || 0)
                       : (platformStats[selectedRatingPlatform]?.rating || 0)}
@@ -696,7 +696,7 @@ const Dashboard = () => {
               </div>
               
               {/* Current Ratings Summary */}
-              <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-gray-800">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-4 pt-4 border-t border-gray-800">
                 {selectedRatingPlatform === 'all' ? (
                   <>
                     {platformStats.leetcode?.rating > 0 && (
@@ -886,7 +886,7 @@ const Dashboard = () => {
           {/* Right Column - Problem Breakdown */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             {/* Problems Solved */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 transition-colors">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Problems Solved</h3>
               
               {/* Fundamentals */}

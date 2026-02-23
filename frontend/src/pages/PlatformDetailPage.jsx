@@ -359,7 +359,7 @@ const PlatformDetailPage = () => {
       </div>
 
       {(platformData?.contributions?.length > 0 || platformData?.topRepos?.length > 0) && (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {platformData?.contributions?.length > 0 && (
         <ChartCard title="Contribution Activity" subtitle="Last 6 days">
           <ResponsiveContainer width="100%" height={250}>

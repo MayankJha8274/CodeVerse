@@ -315,9 +315,9 @@ const ProblemSetEditorPage = () => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Details Tab */}
         {activeTab === 'details' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="md:col-span-2 space-y-6">
               {/* Basic Info */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Basic Information</h2>
