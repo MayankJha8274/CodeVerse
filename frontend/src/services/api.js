@@ -391,7 +391,7 @@ export const api = {
   },
 
   // Leaderboard APIs
-  async getGlobalLeaderboard(page = 1, sortBy = 'cScore', limit = 100) {
+  async getGlobalLeaderboard(page = 1, sortBy = 'codingScore', limit = 100) {
     const data = await authFetch(`/leaderboard?page=${page}&limit=${limit}&sortBy=${sortBy}`);
     return data.data;
   },
@@ -401,7 +401,7 @@ export const api = {
     return data.data;
   },
 
-  async getInstitutionLeaderboard(institution, page = 1, sortBy = 'cScore', limit = 50) {
+  async getInstitutionLeaderboard(institution, page = 1, sortBy = 'codingScore', limit = 50) {
     const data = await authFetch(`/leaderboard/institution/${encodeURIComponent(institution)}?page=${page}&limit=${limit}&sortBy=${sortBy}`);
     return data.data;
   },

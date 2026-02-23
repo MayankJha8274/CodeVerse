@@ -8,7 +8,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Building2,
   Globe,
   Star,
   Zap,
@@ -23,7 +22,7 @@ import { PlatformIcon } from '../utils/platformConfig';
 
 // Ranking type configurations
 const rankingTypes = [
-  { id: 'cScore', label: 'C-Score', icon: Zap, color: 'amber', description: 'Comprehensive Score' },
+  { id: 'codingScore', label: 'Coding-Score', icon: Zap, color: 'amber', description: 'Comprehensive Score' },
   { id: 'problems', label: 'Problems', icon: Target, color: 'green', description: 'Total Questions Solved' },
   { id: 'leetcode', label: 'LeetCode', icon: null, color: 'orange', description: 'LeetCode Rating' },
   { id: 'codeforces', label: 'Codeforces', icon: null, color: 'blue', description: 'Codeforces Rating' },
@@ -37,31 +36,16 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterType, setFilterType] = useState('global'); // global, institution
-  const [institutionFilter, setInstitutionFilter] = useState('');
-  const [rankingType, setRankingType] = useState('cScore'); // cScore, problems, leetcode, codeforces, codechef, github
+  const [rankingType, setRankingType] = useState('codingScore'); // codingScore, problems, leetcode, codeforces, codechef, github
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [currentPage, filterType, institutionFilter, rankingType]);
+  }, [currentPage, rankingType]);
 
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      let data;
-      if (filterType === 'institution' && institutionFilter) {
-        data = await api.getInstitutionLeaderboard(institutionFilter, currentPage, rankingType);
-        // Transform institution data to match global structure
-        data = {
-          leaderboard: data.leaderboard,
-          topThree: data.leaderboard.slice(0, 3),
-          currentUser: leaderboardData?.currentUser,
-          sortBy: rankingType,
-          pagination: { page: currentPage, totalPages: Math.ceil(data.totalUsers / 100) }
-        };
-      } else {
-        data = await api.getGlobalLeaderboard(currentPage, rankingType);
-      }
+      const data = await api.getGlobalLeaderboard(currentPage, rankingType);
       setLeaderboardData(data);
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);
@@ -73,13 +57,13 @@ const LeaderboardPage = () => {
   // Get the value to display based on ranking type
   const getRankingValue = (entry) => {
     switch (rankingType) {
-      case 'cScore': return entry.cScore;
+      case 'codingScore': return entry.codingScore;
       case 'problems': return entry.totalProblems;
       case 'leetcode': return entry.leetcodeRating;
       case 'codeforces': return entry.codeforcesRating;
       case 'codechef': return entry.codechefRating;
       case 'github': return entry.githubContributions;
-      default: return entry.cScore;
+      default: return entry.codingScore;
     }
   };
 
@@ -171,8 +155,8 @@ const LeaderboardPage = () => {
               
               <div className="flex flex-wrap items-center gap-4 sm:gap-8">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-500">{currentUser.cScore}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">C-Score</div>
+                  <div className="text-3xl font-bold text-amber-500">{currentUser.codingScore}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Coding-Score</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">{currentUser.totalProblems}</div>
@@ -196,7 +180,7 @@ const LeaderboardPage = () => {
                 onClick={() => { setRankingType(type.id); setCurrentPage(1); }}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   rankingType === type.id 
-                    ? type.id === 'cScore' ? 'bg-amber-500 text-black font-semibold' :
+                    ? type.id === 'codingScore' ? 'bg-amber-500 text-black font-semibold' :
                       type.id === 'problems' ? 'bg-green-500 text-black font-semibold' :
                       type.id === 'leetcode' ? 'bg-orange-500 text-black font-semibold' :
                       type.id === 'codeforces' ? 'bg-blue-500 text-black font-semibold' :
@@ -226,7 +210,7 @@ const LeaderboardPage = () => {
               <Award className="w-5 h-5 text-amber-500" />
               Top Performers
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
               {/* 2nd Place */}
               <div className={`bg-gradient-to-br ${getRankColor(2)} border rounded-xl p-6 order-1 md:order-1`}>
                 <div className="flex flex-col items-center text-center">
@@ -245,7 +229,7 @@ const LeaderboardPage = () => {
               </div>
 
               {/* 1st Place */}
-              <div className={`bg-gradient-to-br ${getRankColor(1)} border rounded-xl p-6 order-0 md:order-2 transform md:scale-110`}>
+              <div className={`bg-gradient-to-br ${getRankColor(1)} border-2 rounded-xl p-8 order-0 md:order-2`}>
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-4">
                     <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
@@ -284,43 +268,15 @@ const LeaderboardPage = () => {
         {/* Filters and Search */}
         <div className="bg-gray-50 dark:bg-[#16161f] rounded-xl p-4 mb-6 transition-colors">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Filter Type Tabs */}
-            <div className="flex gap-2">
+            {/* Filter Type Label */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => { setFilterType('global'); setInstitutionFilter(''); }}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                  filterType === 'global' 
-                    ? 'bg-amber-500 text-black' 
-                    : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536] transition-colors'
-                }`}
+                className="px-4 py-2 rounded-lg flex items-center gap-2 bg-amber-500 text-black"
               >
                 <Globe className="w-4 h-4" />
                 Global
               </button>
-              <button
-                onClick={() => setFilterType('institution')}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                  filterType === 'institution' 
-                    ? 'bg-amber-500 text-black' 
-                    : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536] transition-colors'
-                }`}
-              >
-                <Building2 className="w-4 h-4" />
-                By Institution
-              </button>
             </div>
-
-            {/* Institution Filter Input */}
-            {filterType === 'institution' && (
-              <input
-                type="text"
-                placeholder="Enter institution name..."
-                value={institutionFilter}
-                onChange={(e) => setInstitutionFilter(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchLeaderboard()}
-                className="flex-1 bg-gray-50 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-colors"
-              />
-            )}
 
             {/* Search */}
             <div className="flex-1 md:max-w-xs relative">
@@ -343,7 +299,7 @@ const LeaderboardPage = () => {
             <div className="col-span-1">Rank</div>
             <div className="col-span-4">User</div>
             <div className="col-span-2 text-center">{getRankingLabel()}</div>
-            <div className="col-span-2 text-center">{rankingType === 'problems' ? 'C-Score' : 'Problems'}</div>
+            <div className="col-span-2 text-center">{rankingType === 'problems' ? 'Coding-Score' : 'Problems'}</div>
             <div className="col-span-3 text-center">Platform Stats</div>
           </div>
 
@@ -388,7 +344,7 @@ const LeaderboardPage = () => {
                 {/* Primary Ranking Value */}
                 <div className="col-span-1 sm:col-span-2 text-center">
                   <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg ${getRankingColor()}`}>
-                    {rankingType === 'cScore' && <Zap className="w-4 h-4" />}
+                    {rankingType === 'codingScore' && <Zap className="w-4 h-4" />}
                     {rankingType === 'problems' && <Target className="w-4 h-4" />}
                     <span className="font-bold">{getRankingValue(entry)}</span>
                   </div>
@@ -400,7 +356,7 @@ const LeaderboardPage = () => {
                     {rankingType === 'problems' ? (
                       <>
                         <Zap className="w-4 h-4 text-amber-500" />
-                        <span className="font-semibold text-amber-500">{entry.cScore}</span>
+                        <span className="font-semibold text-amber-500">{entry.codingScore}</span>
                       </>
                     ) : (
                       <>
@@ -413,26 +369,44 @@ const LeaderboardPage = () => {
 
                 {/* Platform Stats */}
                 <div className="hidden sm:block col-span-3">
-                  <div className="flex items-center justify-center gap-4">
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
                     {entry.platforms?.leetcode > 0 && (
-                      <div className="flex items-center gap-1 text-orange-400" title="LeetCode">
+                      <div className="flex items-center gap-1 text-orange-400" title={`LeetCode: ${entry.platforms.leetcode} solved`}>
                         <PlatformIcon platform="leetcode" className="w-4 h-4" />
                         <span className="text-sm">{entry.platforms.leetcode}</span>
                       </div>
                     )}
                     {entry.platforms?.codeforces > 0 && (
-                      <div className="flex items-center gap-1 text-blue-400" title="Codeforces">
+                      <div className="flex items-center gap-1 text-blue-400" title={`Codeforces: ${entry.platforms.codeforces} solved`}>
                         <PlatformIcon platform="codeforces" className="w-4 h-4" />
                         <span className="text-sm">{entry.platforms.codeforces}</span>
                       </div>
                     )}
+                    {entry.platforms?.codechef > 0 && (
+                      <div className="flex items-center gap-1 text-amber-500" title={`CodeChef: ${entry.platforms.codechef} solved`}>
+                        <PlatformIcon platform="codechef" className="w-4 h-4" />
+                        <span className="text-sm">{entry.platforms.codechef}</span>
+                      </div>
+                    )}
+                    {entry.platforms?.geeksforgeeks > 0 && (
+                      <div className="flex items-center gap-1 text-green-500" title={`GFG: ${entry.platforms.geeksforgeeks} solved`}>
+                        <PlatformIcon platform="geeksforgeeks" className="w-4 h-4" />
+                        <span className="text-sm">{entry.platforms.geeksforgeeks}</span>
+                      </div>
+                    )}
+                    {entry.platforms?.hackerrank > 0 && (
+                      <div className="flex items-center gap-1 text-emerald-400" title={`HackerRank: ${entry.platforms.hackerrank} solved`}>
+                        <PlatformIcon platform="hackerrank" className="w-4 h-4" />
+                        <span className="text-sm">{entry.platforms.hackerrank}</span>
+                      </div>
+                    )}
                     {entry.platforms?.github > 0 && (
-                      <div className="flex items-center gap-1 text-gray-300" title="GitHub Contributions">
+                      <div className="flex items-center gap-1 text-gray-400 dark:text-gray-300" title={`GitHub: ${entry.platforms.github} contributions`}>
                         <PlatformIcon platform="github" className="w-4 h-4" />
                         <span className="text-sm">{entry.platforms.github}</span>
                       </div>
                     )}
-                    {(!entry.platforms?.leetcode && !entry.platforms?.codeforces && !entry.platforms?.github) && (
+                    {(!entry.platforms?.leetcode && !entry.platforms?.codeforces && !entry.platforms?.codechef && !entry.platforms?.geeksforgeeks && !entry.platforms?.hackerrank && !entry.platforms?.github) && (
                       <span className="text-gray-500 text-sm">No platforms linked</span>
                     )}
                   </div>
@@ -450,7 +424,7 @@ const LeaderboardPage = () => {
         </div>
 
         {/* Pagination */}
-        {leaderboardData?.pagination && (
+        {leaderboardData?.pagination && leaderboardData.pagination.totalPages > 1 && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-400">
               Page {leaderboardData.pagination.page} of {leaderboardData.pagination.totalPages}
@@ -481,7 +455,7 @@ const LeaderboardPage = () => {
         <div className="mt-8 bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-amber-500" />
-            How C-Score is Calculated
+            How Coding-Score is Calculated
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-4 transition-colors">
