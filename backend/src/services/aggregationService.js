@@ -73,19 +73,40 @@ const fetchAllPlatformStats = async (user) => {
           .then(async (result) => {
             // Save to database
             if (result.success) {
-              await PlatformStats.findOneAndUpdate(
-                { userId: user._id, platform },
-                {
-                  userId: user._id,
-                  platform,
-                  stats: result.stats,
-                  lastFetched: new Date(),
-                  fetchStatus: 'success',
-                  errorMessage: null
-                },
-                { upsert: true, new: true }
-              );
+              // Guard: don't overwrite good stored data with an empty/zero API response.
+              // Some platforms return success=true but with 0 problems on rate-limit or partial
+              // responses; accepting that would wipe valid historical data.
+              const existingRecord = await PlatformStats.findOne({ userId: user._id, platform });
+              const newProblems = result.stats?.totalSolved || result.stats?.problemsSolved || 0;
+              const oldProblems = existingRecord?.stats?.totalSolved || existingRecord?.stats?.problemsSolved || 0;
+              const isSuspiciousZero = newProblems === 0 && oldProblems > 0;
+
+              if (isSuspiciousZero) {
+                // Keep old stats, only update the timestamp so we know we tried
+                console.warn(`⚠️  ${platform}: API returned 0 problems but stored data has ${oldProblems} — keeping old data to prevent data loss`);
+                await PlatformStats.findOneAndUpdate(
+                  { userId: user._id, platform },
+                  { lastFetched: new Date(), fetchStatus: 'success', errorMessage: null },
+                  { upsert: true, new: true }
+                );
+              } else {
+                await PlatformStats.findOneAndUpdate(
+                  { userId: user._id, platform },
+                  {
+                    userId: user._id,
+                    platform,
+                    stats: result.stats,
+                    lastFetched: new Date(),
+                    fetchStatus: 'success',
+                    errorMessage: null
+                  },
+                  { upsert: true, new: true }
+                );
+                console.log(`✅ ${platform}: Successfully synced for user ${user.username}`);
+              }
             } else {
+              // When sync fails, update only the status and error, preserve existing stats
+              const existingStats = await PlatformStats.findOne({ userId: user._id, platform });
               await PlatformStats.findOneAndUpdate(
                 { userId: user._id, platform },
                 {
@@ -93,16 +114,34 @@ const fetchAllPlatformStats = async (user) => {
                   platform,
                   lastFetched: new Date(),
                   fetchStatus: 'failed',
-                  errorMessage: result.error
+                  errorMessage: result.error,
+                  // Preserve existing stats if they exist
+                  ...(existingStats?.stats && { stats: existingStats.stats })
                 },
                 { upsert: true, new: true }
               );
+              console.warn(`⚠️  ${platform}: Failed to sync for user ${user.username} - ${result.error} (keeping old data)`);
             }
             
             results.push(result);
             return result;
           })
-          .catch(error => {
+          .catch(async error => {
+            console.error(`❌ ${platform}: Exception during sync for user ${user.username} - ${error.message}`);
+            // Preserve existing stats on exception too
+            const existingStats = await PlatformStats.findOne({ userId: user._id, platform });
+            await PlatformStats.findOneAndUpdate(
+              { userId: user._id, platform },
+              {
+                userId: user._id,
+                platform,
+                lastFetched: new Date(),
+                fetchStatus: 'failed',
+                errorMessage: error.message,
+                ...(existingStats?.stats && { stats: existingStats.stats })
+              },
+              { upsert: true }
+            );
             results.push({
               success: false,
               platform,
@@ -123,9 +162,9 @@ const fetchAllPlatformStats = async (user) => {
  * @returns {Object} Aggregated stats
  */
 const calculateAggregatedStats = async (userId) => {
+  // Get all platform stats, including failed ones to preserve old data
   const platformStats = await PlatformStats.find({
-    userId,
-    fetchStatus: 'success'
+    userId
   });
 
   const aggregated = {
@@ -141,6 +180,11 @@ const calculateAggregatedStats = async (userId) => {
   let ratingCount = 0;
 
   platformStats.forEach(ps => {
+    // Only count platforms that have successfully fetched data at least once
+    if (!ps.stats || Object.keys(ps.stats).length === 0) {
+      return; // Skip platforms with no data
+    }
+    
     aggregated.platformsActive++;
 
     const breakdown = {
@@ -148,7 +192,9 @@ const calculateAggregatedStats = async (userId) => {
       problemsSolved: 0,
       commits: 0,
       contests: 0,
-      rating: 0
+      rating: 0,
+      lastFetched: ps.lastFetched,
+      fetchStatus: ps.fetchStatus
     };
 
     // LeetCode
@@ -203,9 +249,14 @@ const calculateAggregatedStats = async (userId) => {
     }
 
     aggregated.breakdown.push(breakdown);
+    
+    // Log each platform's contribution for debugging
+    console.log(`   ${ps.platform}: ${breakdown.problemsSolved} problems, ${breakdown.commits} commits, ${breakdown.contests} contests (status: ${ps.fetchStatus})`);
   });
 
   aggregated.averageRating = ratingCount > 0 ? Math.round(totalRating / ratingCount) : 0;
+  
+  console.log(`📊 Aggregation complete for user - Total: ${aggregated.totalProblemsSolved} problems from ${aggregated.platformsActive} platforms`);
 
   // Save daily progress snapshot
   await saveDailyProgress(userId, aggregated);

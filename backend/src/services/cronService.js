@@ -84,6 +84,13 @@ const startCronJobs = () => {
   });
 
   console.log('⏰ Cron job started: Platform sync every 15 minutes');
+  console.log('⏰ Next sync will occur in ~15 minutes');
+  
+  // Run first sync after 1 minute to ensure data is fresh on startup
+  setTimeout(() => {
+    console.log('🚀 Running initial sync after startup...');
+    syncAllUsers().catch(err => console.error('Initial sync failed:', err.message));
+  }, 60000); // 1 minute delay
 };
 
 /**
@@ -188,6 +195,12 @@ const startAllCronJobs = () => {
   console.log('   - Weekly reports: Sundays at 4:00 AM UTC');
   console.log('   - Contest fetch: Every 6 hours');
   console.log('   - Reminder check: Every 5 minutes');
+  
+  // Run first sync after 1 minute to ensure data is fresh on startup
+  setTimeout(() => {
+    console.log('🚀 Running initial sync after startup...');
+    syncAllUsers().catch(err => console.error('Initial sync failed:', err.message));
+  }, 60000); // 1 minute delay
 
   return { dailySyncJob, weeklyReportJob, contestFetchJob, reminderJob };
 };

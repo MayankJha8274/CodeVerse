@@ -211,12 +211,11 @@ const Dashboard = () => {
 
   // Calculate totals — use summary which has actual unique problems solved
   const getTotalProblems = () => {
-    // Summary endpoint (userData) provides actual unique problems solved per platform
-    // NOT calendar which counts submissions (can count same problem multiple times)
-    if (userData?.totalProblemsSolved !== undefined) {
-      return userData.totalProblemsSolved;
+    // Primary: use the summary endpoint's totals (most accurate, unique problems per platform)
+    if (userData?.totals?.problems !== undefined) {
+      return userData.totals.problems;
     }
-    // Fallback to stored platform stats
+    // Fallback: sum from individual platform stats
     let total = 0;
     Object.values(platformStats).forEach(stats => {
       total += stats?.totalSolved || stats?.problemsSolved || 0;

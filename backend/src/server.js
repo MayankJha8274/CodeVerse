@@ -53,13 +53,11 @@ const startServer = async () => {
     await connectDB();
 
     // Start cron jobs for auto-sync and weekly reports
-    if (process.env.NODE_ENV === 'production') {
-      startAllCronJobs();
-      console.log('✅ Auto-sync and weekly report cron jobs enabled');
-    } else {
-      console.log('ℹ️  Cron jobs disabled in development mode');
-      console.log('   Use POST /api/platforms/sync to manually sync data');
-    }
+    // Enable in all environments to keep data fresh
+    startAllCronJobs();
+    console.log('✅ Auto-sync and weekly report cron jobs enabled');
+    console.log('⏰ Platform data will sync automatically every 15 minutes');
+    console.log('   You can also manually sync using "Sync All Platforms" button');
 
     // Start server
     server = app.listen(PORT, '0.0.0.0', () => {

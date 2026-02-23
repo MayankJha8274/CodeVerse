@@ -130,19 +130,36 @@ const syncAllPlatforms = async (req, res, next) => {
       // Save to database
       const PlatformStats = require('../models/PlatformStats');
       if (result.success) {
-        await PlatformStats.findOneAndUpdate(
-          { userId: user._id, platform },
-          {
-            userId: user._id,
-            platform,
-            stats: result.stats,
-            lastFetched: new Date(),
-            fetchStatus: 'success',
-            errorMessage: null
-          },
-          { upsert: true, new: true }
-        );
+        // Guard: don't overwrite valid stored data with a zero/empty API response
+        const existingRecord = await PlatformStats.findOne({ userId: user._id, platform });
+        const newProblems = result.stats?.totalSolved || result.stats?.problemsSolved || 0;
+        const oldProblems = existingRecord?.stats?.totalSolved || existingRecord?.stats?.problemsSolved || 0;
+        const isSuspiciousZero = newProblems === 0 && oldProblems > 0;
+
+        if (isSuspiciousZero) {
+          console.warn(`⚠️  ${platform}: API returned 0 problems but stored data has ${oldProblems} — keeping old data`);
+          await PlatformStats.findOneAndUpdate(
+            { userId: user._id, platform },
+            { lastFetched: new Date(), fetchStatus: 'success', errorMessage: null },
+            { upsert: true, new: true }
+          );
+        } else {
+          await PlatformStats.findOneAndUpdate(
+            { userId: user._id, platform },
+            {
+              userId: user._id,
+              platform,
+              stats: result.stats,
+              lastFetched: new Date(),
+              fetchStatus: 'success',
+              errorMessage: null
+            },
+            { upsert: true, new: true }
+          );
+        }
       } else {
+        // Preserve existing stats on failure
+        const existingStats = await PlatformStats.findOne({ userId: user._id, platform });
         await PlatformStats.findOneAndUpdate(
           { userId: user._id, platform },
           {
@@ -150,7 +167,9 @@ const syncAllPlatforms = async (req, res, next) => {
             platform,
             lastFetched: new Date(),
             fetchStatus: 'failed',
-            errorMessage: result.error
+            errorMessage: result.error,
+            // Keep old stats if they exist
+            ...(existingStats?.stats && { stats: existingStats.stats })
           },
           { upsert: true, new: true }
         );
@@ -192,10 +211,12 @@ const getAggregatedStats = async (req, res, next) => {
   try {
     const aggregated = await calculateAggregatedStats(req.user.id);
 
-    // Also fetch individual platform stats for the dashboard
+    // Also fetch individual platform stats for the dashboard.
+    // Include ALL platforms that have stats data (even if the last fetch failed),
+    // so a transient sync failure never drops counts on the dashboard.
     const platformStatsData = await PlatformStats.find({
       userId: req.user.id,
-      fetchStatus: 'success'
+      stats: { $exists: true, $ne: null }
     });
 
     // Convert array to object keyed by platform name
