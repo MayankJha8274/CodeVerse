@@ -17,17 +17,13 @@ import DailyChallengePage from './pages/DailyChallengePage';
 import ContestsPage from './pages/ContestsPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
-// Contest Hosting Pages
-import ContestAdminPage from './pages/ContestAdminPage';
-import ContestEditPage from './pages/ContestEditPage';
-import ChallengeEditorPage from './pages/ChallengeEditorPage';
+// Contest Hosting Pages (admin routes show Coming Soon)
 import ContestLandingPage from './pages/ContestLandingPage';
 import ContestParticipationPage from './pages/ContestParticipationPage';
 import ContestLeaderboardPage from './pages/ContestLeaderboardPage';
 
-// Problem Set Pages
-import ProblemSetPage from './pages/ProblemSetPage';
-import ProblemSetEditorPage from './pages/ProblemSetEditorPage';
+// Problem Set Pages (Coming Soon)
+import { ProblemSetComingSoon, HostContestComingSoon } from './pages/ComingSoonPage';
 
 function App() {
   return (
@@ -64,18 +60,18 @@ function App() {
             <Route path="contests" element={<ContestsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             
-            {/* Contest Admin Routes */}
-            <Route path="contests/admin" element={<ContestAdminPage />} />
-            <Route path="contests/create" element={<ContestEditPage />} />
-            <Route path="contests/:slug/edit" element={<ContestEditPage />} />
-            <Route path="contests/:contestSlug/problems/create" element={<ChallengeEditorPage />} />
-            <Route path="contests/:contestSlug/problems/:problemSlug/edit" element={<ChallengeEditorPage />} />
+            {/* Contest Admin Routes — Coming Soon */}
+            <Route path="contests/admin" element={<HostContestComingSoon />} />
+            <Route path="contests/create" element={<HostContestComingSoon />} />
+            <Route path="contests/:slug/edit" element={<HostContestComingSoon />} />
+            <Route path="contests/:contestSlug/problems/create" element={<HostContestComingSoon />} />
+            <Route path="contests/:contestSlug/problems/:problemSlug/edit" element={<HostContestComingSoon />} />
             
-            {/* Problem Set Routes */}
-            <Route path="problem-set" element={<ProblemSetPage />} />
-            <Route path="problem-set/create" element={<ProblemSetEditorPage />} />
-            <Route path="problem-set/:slug" element={<ProblemSetEditorPage />} />
-            <Route path="problem-set/:slug/edit" element={<ProblemSetEditorPage />} />
+            {/* Problem Set Routes — Coming Soon */}
+            <Route path="problem-set" element={<ProblemSetComingSoon />} />
+            <Route path="problem-set/create" element={<ProblemSetComingSoon />} />
+            <Route path="problem-set/:slug" element={<ProblemSetComingSoon />} />
+            <Route path="problem-set/:slug/edit" element={<ProblemSetComingSoon />} />
           </Route>
 
           {/* Fallback Route */}
