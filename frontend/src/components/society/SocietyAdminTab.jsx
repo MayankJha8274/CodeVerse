@@ -137,7 +137,7 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
               {/* Overview Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatCard label="Total Members" value={analytics.overview?.totalMembers || 0} icon={Users} />
-                <StatCard label="New (7d)" value={analytics.overview?.newMembers || 0} icon={Users} color="text-green-500" />
+                <StatCard label="New (30d)" value={analytics.overview?.newMembers || 0} icon={Users} color="text-green-500" />
                 <StatCard label="Total Messages" value={analytics.overview?.totalMessages || 0} icon={MessageSquare} color="text-blue-500" />
                 <StatCard label="Total Events" value={analytics.overview?.totalEvents || 0} icon={Calendar} color="text-purple-500" />
               </div>

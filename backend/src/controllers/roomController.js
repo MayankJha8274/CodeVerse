@@ -405,7 +405,8 @@ const getRoomLeaderboard = async (req, res, next) => {
     }
 
     // Get stats for all members
-    const memberIds = room.members.map(m => m.user._id);
+    const validMembers = room.members.filter(m => m.user != null);
+    const memberIds = validMembers.map(m => m.user._id);
     
     const leaderboardData = await Promise.all(
       memberIds.map(async (memberId) => {
@@ -442,7 +443,7 @@ const getRoomLeaderboard = async (req, res, next) => {
           return sum + (day.aggregatedStats?.totalProblemsSolved || 0);
         }, 0);
 
-        const member = room.members.find(m => m.user._id.toString() === memberId.toString());
+        const member = validMembers.find(m => m.user._id.toString() === memberId.toString());
 
         return {
           userId: memberId,
@@ -502,7 +503,8 @@ const getRoomAnalytics = async (req, res, next) => {
       });
     }
 
-    const memberIds = room.members.map(m => m.user._id);
+    const validAnalyticsMembers = room.members.filter(m => m.user != null);
+    const memberIds = validAnalyticsMembers.map(m => m.user._id);
 
     // Get all platform stats
     const allPlatformStats = await PlatformStats.find({

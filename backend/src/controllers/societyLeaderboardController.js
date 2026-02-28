@@ -3,6 +3,7 @@ const LeaderboardSnapshot = require('../models/LeaderboardSnapshot');
 const PlatformStats = require('../models/PlatformStats');
 const SocietyStreak = require('../models/SocietyStreak');
 const UserBadge = require('../models/UserBadge');
+const { calculateCodingScore } = require('./leaderboardController');
 
 // @desc    Get society leaderboard (live)
 // @route   GET /api/societies/:societyId/leaderboard
@@ -80,6 +81,19 @@ const getLeaderboard = async (req, res, next) => {
       const ps = statsMap[uid] || { totalSolved: 0, contestRating: 0, maxRating: 0, totalCommits: 0, totalContributions: 0, totalSubmissions: 0, contestsParticipated: 0, platforms: {}, easySolved: 0, mediumSolved: 0, hardSolved: 0 };
       const streak = streakMap[uid] || { currentStreak: 0, totalActiveDays: 0 };
 
+      // Build stats object that matches what calculateCodingScore expects
+      const statsForCodingScore = {
+        totalProblems: ps.totalSolved,
+        leetcode: platformStats.find(s => s.userId.toString() === uid && s.platform === 'leetcode') || {},
+        codeforces: platformStats.find(s => s.userId.toString() === uid && s.platform === 'codeforces') || {},
+        codechef: platformStats.find(s => s.userId.toString() === uid && s.platform === 'codechef') || {},
+        github: platformStats.find(s => s.userId.toString() === uid && s.platform === 'github') || {},
+      };
+      const codingScore = calculateCodingScore(m.user, statsForCodingScore);
+
+      // Current rating: best current rating across platforms
+      const currentRating = ps.contestRating || 0;
+
       const breakdown = {
         problemsSolved: ps.totalSolved,
         contestScore: Math.floor(ps.contestRating / 10),
@@ -89,14 +103,13 @@ const getLeaderboard = async (req, res, next) => {
         consistency: streak.totalActiveDays || 0
       };
 
-      const score = Object.keys(WEIGHTS).reduce((total, key) => {
-        return total + (breakdown[key] * WEIGHTS[key]);
-      }, 0);
+      const score = codingScore;
 
       return {
         user: m.user,
         role: m.role,
         score,
+        codingScore,
         breakdown,
         codingProfile: {
           totalSolved: ps.totalSolved,
@@ -104,6 +117,7 @@ const getLeaderboard = async (req, res, next) => {
           mediumSolved: ps.mediumSolved,
           hardSolved: ps.hardSolved,
           contestRating: ps.contestRating,
+          currentRating,
           maxRating: ps.maxRating,
           totalCommits: ps.totalCommits,
           totalContributions: ps.totalContributions,

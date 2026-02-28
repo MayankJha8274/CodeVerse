@@ -1,18 +1,29 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Trophy, Flame, Medal, Loader2, Code2, GitCommit,
-  Swords, ChevronDown, ChevronUp, Target, Users
+  Swords, ChevronDown, ChevronUp, Target, Users, Zap, Filter
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { PlatformIcon } from '../../utils/platformConfig';
 
 const SORT_OPTIONS = [
-  { key: 'score', label: 'Overall Score', icon: Trophy },
-  { key: 'totalSolved', label: 'Total Solved', icon: Code2 },
-  { key: 'contestRating', label: 'Max Rating', icon: Swords },
+  { key: 'score', label: 'Coding Score', icon: Zap },
+  { key: 'totalSolved', label: 'Total Questions', icon: Code2 },
+  { key: 'currentRating', label: 'Current Rating', icon: Swords },
   { key: 'totalContributions', label: 'Contributions', icon: GitCommit },
   { key: 'totalSubmissions', label: 'Submissions', icon: Target },
   { key: 'currentStreak', label: 'Streak', icon: Flame },
+];
+
+const PLATFORM_FILTERS = [
+  { key: 'all', label: 'All Platforms' },
+  { key: 'leetcode', label: 'LeetCode' },
+  { key: 'codeforces', label: 'Codeforces' },
+  { key: 'codechef', label: 'CodeChef' },
+  { key: 'geeksforgeeks', label: 'GFG' },
+  { key: 'hackerrank', label: 'HackerRank' },
+  { key: 'github', label: 'GitHub' },
 ];
 
 const PLATFORM_COLORS = {
@@ -33,6 +44,7 @@ const SocietyLeaderboardTab = ({ societyId }) => {
   const [streak, setStreak] = useState(null);
   const [badges, setBadges] = useState([]);
   const [sortBy, setSortBy] = useState('score');
+  const [platformFilter, setPlatformFilter] = useState('all');
   const [expandedUser, setExpandedUser] = useState(null);
 
   const loadData = useCallback(async () => {
@@ -60,16 +72,22 @@ const SocietyLeaderboardTab = ({ societyId }) => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Helper to get platform-specific solved count
+  const getPlatformSolved = useCallback((entry, platform) => {
+    if (platform === 'all') return entry.codingProfile?.totalSolved || 0;
+    return entry.codingProfile?.platforms?.[platform]?.solved || 0;
+  }, []);
+
   // Re-sort rankings on client side
   const sortedRankings = useMemo(() => {
     if (!data?.rankings) return [];
     const sorted = [...data.rankings];
     if (sortBy === 'score') {
-      sorted.sort((a, b) => b.score - a.score);
+      sorted.sort((a, b) => (b.codingScore || b.score || 0) - (a.codingScore || a.score || 0));
     } else if (sortBy === 'totalSolved') {
-      sorted.sort((a, b) => (b.codingProfile?.totalSolved || 0) - (a.codingProfile?.totalSolved || 0));
-    } else if (sortBy === 'contestRating') {
-      sorted.sort((a, b) => (b.codingProfile?.contestRating || 0) - (a.codingProfile?.contestRating || 0));
+      sorted.sort((a, b) => getPlatformSolved(b, platformFilter) - getPlatformSolved(a, platformFilter));
+    } else if (sortBy === 'currentRating') {
+      sorted.sort((a, b) => (b.codingProfile?.currentRating || b.codingProfile?.contestRating || 0) - (a.codingProfile?.currentRating || a.codingProfile?.contestRating || 0));
     } else if (sortBy === 'totalContributions') {
       sorted.sort((a, b) => (b.codingProfile?.totalContributions || 0) - (a.codingProfile?.totalContributions || 0));
     } else if (sortBy === 'totalSubmissions') {
@@ -79,7 +97,7 @@ const SocietyLeaderboardTab = ({ societyId }) => {
     }
     sorted.forEach((r, i) => { r.displayRank = i + 1; });
     return sorted;
-  }, [data, sortBy]);
+  }, [data, sortBy, platformFilter, getPlatformSolved]);
 
   const getRankStyle = (rank) => {
     if (rank === 1) return 'from-yellow-500 to-amber-500 text-black';
@@ -142,7 +160,7 @@ const SocietyLeaderboardTab = ({ societyId }) => {
         {SORT_OPTIONS.map(opt => {
           const Icon = opt.icon;
           return (
-            <button key={opt.key} onClick={() => setSortBy(opt.key)}
+            <button key={opt.key} onClick={() => { setSortBy(opt.key); if (opt.key !== 'totalSolved') setPlatformFilter('all'); }}
               className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-lg font-medium transition-all ${
                 sortBy === opt.key
                   ? 'bg-amber-500 text-black'
@@ -154,6 +172,25 @@ const SocietyLeaderboardTab = ({ societyId }) => {
         })}
       </div>
 
+      {/* Platform filter (shown when Total Questions is selected) */}
+      {sortBy === 'totalSolved' && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-4">
+          <Filter className="w-3 h-3 text-gray-400" />
+          <span className="text-[10px] text-gray-400 mr-1">Platform:</span>
+          {PLATFORM_FILTERS.map(pf => (
+            <button key={pf.key} onClick={() => setPlatformFilter(pf.key)}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded-md font-medium transition-all ${
+                platformFilter === pf.key
+                  ? 'bg-green-500 text-black'
+                  : 'bg-gray-100 dark:bg-[#111118] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}>
+              {pf.key !== 'all' && <PlatformIcon platform={pf.key} className="w-3 h-3" />}
+              {pf.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Comparison Table */}
       <div className="bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
         {/* Header */}
@@ -161,9 +198,9 @@ const SocietyLeaderboardTab = ({ societyId }) => {
           <div className="col-span-1">#</div>
           <div className="col-span-3">Member</div>
           <div className="col-span-2 text-center">Questions</div>
-          <div className="col-span-2 text-center">Rating</div>
+          <div className="col-span-2 text-center">Current Rating</div>
           <div className="col-span-2 text-center">Contributions</div>
-          <div className="col-span-2 text-center">Score</div>
+          <div className="col-span-2 text-center">Coding Score</div>
         </div>
 
         {/* Rows */}
@@ -205,18 +242,27 @@ const SocietyLeaderboardTab = ({ societyId }) => {
 
                   {/* Questions */}
                   <div className="hidden md:block md:col-span-2 text-center">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">{cp.totalSolved || 0}</div>
-                    <div className="flex justify-center gap-0.5 mt-0.5">
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/10 text-green-500">{cp.easySolved || 0}E</span>
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-500">{cp.mediumSolved || 0}M</span>
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/10 text-red-500">{cp.hardSolved || 0}H</span>
-                    </div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">{getPlatformSolved(entry, platformFilter)}</div>
+                    {platformFilter === 'all' ? (
+                      <div className="flex justify-center gap-0.5 mt-0.5">
+                        <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/10 text-green-500">{cp.easySolved || 0}E</span>
+                        <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-500">{cp.mediumSolved || 0}M</span>
+                        <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/10 text-red-500">{cp.hardSolved || 0}H</span>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-gray-400">{PLATFORM_FILTERS.find(p => p.key === platformFilter)?.label}</div>
+                    )}
                   </div>
 
-                  {/* Rating */}
+                  {/* Current Rating */}
                   <div className="hidden md:block md:col-span-2 text-center">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">{cp.contestRating || 0}</div>
-                    <div className="text-[10px] text-gray-400">{cp.contestsParticipated || 0} contests</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">{cp.currentRating || cp.contestRating || 0}</div>
+                    <div className="text-[10px] text-gray-400">
+                      {cp.maxRating > (cp.currentRating || cp.contestRating || 0) && (
+                        <span className="text-amber-500">max: {cp.maxRating} · </span>
+                      )}
+                      {cp.contestsParticipated || 0} contests
+                    </div>
                   </div>
 
                   {/* Contributions */}
@@ -225,10 +271,10 @@ const SocietyLeaderboardTab = ({ societyId }) => {
                     <div className="text-[10px] text-gray-400">{cp.totalCommits || 0} commits</div>
                   </div>
 
-                  {/* Score */}
+                  {/* Coding Score */}
                   <div className="md:col-span-2 flex items-center justify-between ml-auto">
                     <div>
-                      <div className="text-sm font-bold text-amber-500">{entry.score?.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-amber-500">{(entry.codingScore || entry.score || 0).toLocaleString()}</div>
                       <div className="text-[10px] text-gray-400">🔥{entry.currentStreak || 0}d</div>
                     </div>
                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
@@ -243,10 +289,13 @@ const SocietyLeaderboardTab = ({ societyId }) => {
                       <div className="space-y-3">
                         <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Coding Profile Comparison</h4>
                         <ComparisonBar label="Questions Solved" value={cp.totalSolved || 0} max={maxVals.totalSolved} color="bg-amber-500" />
-                        <ComparisonBar label="Max Rating" value={cp.contestRating || 0} max={maxVals.contestRating} color="bg-blue-500" />
+                        <ComparisonBar label="Current Rating" value={cp.currentRating || cp.contestRating || 0} max={maxVals.contestRating} color="bg-blue-500" />
+                        {(cp.maxRating > (cp.currentRating || cp.contestRating || 0)) && (
+                          <div className="text-[10px] text-gray-400 -mt-1 ml-1">Max Rating: <span className="text-amber-500 font-semibold">{cp.maxRating}</span></div>
+                        )}
                         <ComparisonBar label="Contributions" value={cp.totalContributions || cp.totalCommits || 0} max={maxVals.totalContributions || maxVals.totalCommits} color="bg-green-500" />
                         <ComparisonBar label="Submissions" value={cp.totalSubmissions || 0} max={maxVals.totalSubmissions} color="bg-purple-500" />
-                        <ComparisonBar label="Overall Score" value={entry.score || 0} max={maxVals.score} color="bg-amber-500" />
+                        <ComparisonBar label="Coding Score" value={entry.codingScore || entry.score || 0} max={maxVals.score} color="bg-amber-500" />
                       </div>
 
                       {/* Platform Breakdown */}
