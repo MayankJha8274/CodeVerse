@@ -9,16 +9,12 @@ export const useTheme = () => {
   useEffect(() => {
     const root = document.documentElement;
     
-    console.log('Theme changing to:', theme);
-    console.log('HTML element classes before:', root.className);
-    
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
     
-    console.log('HTML element classes after:', root.className);
     localStorage.setItem('theme', theme);
   }, [theme]);
 

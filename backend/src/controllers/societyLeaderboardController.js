@@ -23,21 +23,52 @@ const getLeaderboard = async (req, res, next) => {
     };
 
     // Get all active members
-    const members = await SocietyMember.find({ society: societyId, isBanned: false })
+    const membersRaw = await SocietyMember.find({ society: societyId, isBanned: false, isActive: true })
       .populate('user', 'username fullName avatar platforms')
       .lean();
 
+    // Filter out members whose user was deleted (populate returns null)
+    const members = membersRaw.filter(m => m.user != null);
+
     // Get platform stats for all members
     const userIds = members.map(m => m.user._id || m.user);
-    const platformStats = await PlatformStats.find({ user: { $in: userIds } }).lean();
+    const platformStats = await PlatformStats.find({ userId: { $in: userIds } }).lean();
     const streaks = await SocietyStreak.find({ society: societyId, user: { $in: userIds } }).lean();
 
     const statsMap = {};
     platformStats.forEach(ps => {
-      const uid = ps.user.toString();
-      if (!statsMap[uid]) statsMap[uid] = { totalSolved: 0, contestRating: 0 };
-      statsMap[uid].totalSolved += (ps.stats?.totalSolved || 0);
-      statsMap[uid].contestRating = Math.max(statsMap[uid].contestRating, ps.stats?.rating || 0);
+      const uid = ps.userId.toString();
+      if (!statsMap[uid]) statsMap[uid] = {
+        totalSolved: 0,
+        contestRating: 0,
+        maxRating: 0,
+        totalCommits: 0,
+        totalContributions: 0,
+        totalSubmissions: 0,
+        contestsParticipated: 0,
+        platforms: {},
+        easySolved: 0,
+        mediumSolved: 0,
+        hardSolved: 0
+      };
+      const s = statsMap[uid];
+      s.totalSolved += (ps.stats?.totalSolved || ps.stats?.problemsSolved || 0);
+      s.easySolved += (ps.stats?.easySolved || 0);
+      s.mediumSolved += (ps.stats?.mediumSolved || 0);
+      s.hardSolved += (ps.stats?.hardSolved || 0);
+      s.contestRating = Math.max(s.contestRating, ps.stats?.rating || 0);
+      s.maxRating = Math.max(s.maxRating, ps.stats?.maxRating || ps.stats?.rating || 0);
+      s.totalCommits += (ps.stats?.totalCommits || 0);
+      s.totalContributions += (ps.stats?.totalContributions || 0);
+      s.totalSubmissions += (ps.stats?.submissions || 0);
+      s.contestsParticipated += (ps.stats?.contestsParticipated || 0);
+      s.platforms[ps.platform] = {
+        solved: ps.stats?.totalSolved || ps.stats?.problemsSolved || 0,
+        rating: ps.stats?.rating || 0,
+        submissions: ps.stats?.submissions || 0,
+        commits: ps.stats?.totalCommits || 0,
+        contributions: ps.stats?.totalContributions || 0
+      };
     });
 
     const streakMap = {};
@@ -46,15 +77,15 @@ const getLeaderboard = async (req, res, next) => {
     // Calculate scores
     let rankings = members.map(m => {
       const uid = (m.user._id || m.user).toString();
-      const ps = statsMap[uid] || { totalSolved: 0, contestRating: 0 };
+      const ps = statsMap[uid] || { totalSolved: 0, contestRating: 0, maxRating: 0, totalCommits: 0, totalContributions: 0, totalSubmissions: 0, contestsParticipated: 0, platforms: {}, easySolved: 0, mediumSolved: 0, hardSolved: 0 };
       const streak = streakMap[uid] || { currentStreak: 0, totalActiveDays: 0 };
 
       const breakdown = {
         problemsSolved: ps.totalSolved,
         contestScore: Math.floor(ps.contestRating / 10),
-        chatContribution: m.gamification?.messagesCount || 0,
-        eventParticipation: m.gamification?.eventsAttended || 0,
-        helpfulness: m.gamification?.helpfulnessScore || 0,
+        chatContribution: m.messagesCount || 0,
+        eventParticipation: m.eventsAttended || 0,
+        helpfulness: m.helpfulnessScore || 0,
         consistency: streak.totalActiveDays || 0
       };
 
@@ -67,6 +98,19 @@ const getLeaderboard = async (req, res, next) => {
         role: m.role,
         score,
         breakdown,
+        codingProfile: {
+          totalSolved: ps.totalSolved,
+          easySolved: ps.easySolved,
+          mediumSolved: ps.mediumSolved,
+          hardSolved: ps.hardSolved,
+          contestRating: ps.contestRating,
+          maxRating: ps.maxRating,
+          totalCommits: ps.totalCommits,
+          totalContributions: ps.totalContributions,
+          totalSubmissions: ps.totalSubmissions,
+          contestsParticipated: ps.contestsParticipated,
+          platforms: ps.platforms
+        },
         currentStreak: streak.currentStreak || 0,
         joinedAt: m.createdAt
       };

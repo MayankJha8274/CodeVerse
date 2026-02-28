@@ -268,7 +268,7 @@ const SettingsPage = () => {
                   name="firstName" 
                   value={firstName} 
                   onChange={handleFirstNameChange} 
-                  placeholder="Mayank"
+                  placeholder="e.g., John"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white outline-none focus:border-amber-500 transition-colors" 
                 />
               </div>
@@ -278,7 +278,7 @@ const SettingsPage = () => {
                   name="lastName" 
                   value={lastName} 
                   onChange={handleLastNameChange} 
-                  placeholder="Jha"
+                  placeholder="e.g., Doe"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white outline-none focus:border-amber-500 transition-colors" 
                 />
               </div>
@@ -383,7 +383,7 @@ const SettingsPage = () => {
               name="institution" 
               value={user.institution} 
               onChange={handleUserChange} 
-              placeholder="Bhagwan Parshuram Institute of Technology"
+              placeholder="e.g., Stanford University"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white outline-none focus:border-amber-500 transition-colors" 
             />
           </div>

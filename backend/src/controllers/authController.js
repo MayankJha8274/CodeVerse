@@ -46,7 +46,8 @@ const register = async (req, res, next) => {
           username: user.username,
           email: user.email,
           fullName: user.fullName,
-          avatar: user.avatar
+          avatar: user.avatar,
+          platforms: user.platforms || {}
         }
       }
     });

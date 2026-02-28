@@ -4,6 +4,7 @@ import {
   ChevronRight, X, Loader2, CheckCircle, AlertCircle
 } from 'lucide-react';
 import api from '../../services/api';
+import DateTimePicker from '../DateTimePicker';
 
 const SocietyEventsTab = ({ societyId, userRole }) => {
   const [events, setEvents] = useState([]);
@@ -34,6 +35,14 @@ const SocietyEventsTab = ({ societyId, userRole }) => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!createForm.startTime || !createForm.endTime) {
+      alert('Please select both start and end time');
+      return;
+    }
+    if (new Date(createForm.endTime) <= new Date(createForm.startTime)) {
+      alert('End time must be after start time');
+      return;
+    }
     setCreating(true);
     try {
       await api.createSocietyEvent(societyId, createForm);
@@ -120,11 +129,11 @@ const SocietyEventsTab = ({ societyId, userRole }) => {
         <div className="space-y-3">
           {events.map(evt => (
             <div key={evt._id} className="bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800/50 rounded-xl p-5 hover:border-amber-500/30 transition-all">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getEventTypeColor(evt.eventType)}`}>
-                      {evt.eventType?.replace('_', ' ')}
+                      {evt.eventType?.replace(/_/g, ' ')}
                     </span>
                     {evt.status === 'cancelled' && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-medium">Cancelled</span>
@@ -152,7 +161,7 @@ const SocietyEventsTab = ({ societyId, userRole }) => {
                 </div>
 
                 {/* RSVP Buttons */}
-                <div className="flex gap-1 ml-4">
+                <div className="flex flex-wrap gap-1">
                   {['going', 'maybe', 'not_going'].map(status => (
                     <button
                       key={status}
@@ -196,23 +205,27 @@ const SocietyEventsTab = ({ societyId, userRole }) => {
                 <textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={3}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white resize-none" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Time *</label>
-                  <input type="datetime-local" required value={createForm.startTime} onChange={e => setCreateForm(f => ({ ...f, startTime: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Time *</label>
-                  <input type="datetime-local" required value={createForm.endTime} onChange={e => setCreateForm(f => ({ ...f, endTime: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <DateTimePicker
+                  label="Start Time"
+                  required
+                  value={createForm.startTime}
+                  onChange={(v) => setCreateForm(f => ({ ...f, startTime: v }))}
+                  minDate={new Date().toISOString()}
+                />
+                <DateTimePicker
+                  label="End Time"
+                  required
+                  value={createForm.endTime}
+                  onChange={(v) => setCreateForm(f => ({ ...f, endTime: v }))}
+                  minDate={createForm.startTime || new Date().toISOString()}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mode</label>
                   <select value={createForm.mode} onChange={e => setCreateForm(f => ({ ...f, mode: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white">
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-white">
                     <option value="online">Online</option>
                     <option value="offline">Offline</option>
                     <option value="hybrid">Hybrid</option>
@@ -221,7 +234,7 @@ const SocietyEventsTab = ({ societyId, userRole }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
                   <select value={createForm.eventType} onChange={e => setCreateForm(f => ({ ...f, eventType: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white">
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-white">
                     <option value="meetup">Meetup</option>
                     <option value="workshop">Workshop</option>
                     <option value="contest">Contest</option>

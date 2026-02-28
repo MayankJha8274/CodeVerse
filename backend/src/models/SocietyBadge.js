@@ -58,11 +58,10 @@ const societyBadgeSchema = new mongoose.Schema({
   timestamps: true
 });
 
-societyBadgeSchema.pre('save', function(next) {
+societyBadgeSchema.pre('save', function() {
   if (!this.slug) {
     this.slug = this.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
-  next();
 });
 
 societyBadgeSchema.index({ category: 1, tier: 1 });

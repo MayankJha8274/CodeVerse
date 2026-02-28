@@ -276,23 +276,29 @@ exports.getUserRooms = async (req, res) => {
     const userId = req.user.id;
 
     const rooms = await Room.find({
-      'members.userId': userId
-    }).populate('members.userId', 'username email');
+      'members.user': userId
+    }).populate('members.user', 'username email fullName avatar');
 
     const formattedRooms = rooms.map(room => {
-      const isAdmin = room.admins.some(adminId => adminId.toString() === userId);
+      const member = room.members.find(m => (m.user?._id || m.user).toString() === userId);
+      const isAdmin = member?.role === 'admin' || member?.role === 'owner';
       const isOwner = room.owner.toString() === userId;
 
       return {
+        _id: room._id,
         id: room._id,
         name: room.name,
         description: room.description,
         inviteCode: room.inviteCode,
-        isPrivate: room.isPrivate,
+        isPrivate: room.settings?.isPrivate || false,
         memberCount: room.members.length,
+        members: room.members,
+        owner: room.owner,
+        settings: room.settings,
+        stats: room.stats,
         isOwner,
         isAdmin,
-        joinedAt: room.members.find(m => m.userId._id.toString() === userId)?.joinedAt,
+        joinedAt: member?.joinedAt,
         createdAt: room.createdAt
       };
     });

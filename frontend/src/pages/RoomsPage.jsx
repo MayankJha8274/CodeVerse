@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Plus, 
@@ -141,9 +141,10 @@ const RoomsPage = () => {
 
     try {
       await api.leaveRoom(roomId);
-      setRooms(prev => prev.filter(r => (r._id || r.id) !== roomId));
+      const remaining = rooms.filter(r => (r._id || r.id) !== roomId);
+      setRooms(remaining);
       if ((selectedRoom?._id || selectedRoom?.id) === roomId) {
-        setSelectedRoom(rooms.length > 1 ? rooms.find(r => (r._id || r.id) !== roomId) : null);
+        setSelectedRoom(remaining[0] || null);
       }
     } catch (error) {
       console.error('Failed to leave room:', error);
@@ -155,9 +156,10 @@ const RoomsPage = () => {
 
     try {
       await api.deleteRoom(roomId);
-      setRooms(prev => prev.filter(r => (r._id || r.id) !== roomId));
+      const remaining = rooms.filter(r => (r._id || r.id) !== roomId);
+      setRooms(remaining);
       if ((selectedRoom?._id || selectedRoom?.id) === roomId) {
-        setSelectedRoom(rooms.length > 1 ? rooms.find(r => (r._id || r.id) !== roomId) : null);
+        setSelectedRoom(remaining[0] || null);
       }
     } catch (error) {
       console.error('Failed to delete room:', error);
@@ -174,7 +176,7 @@ const RoomsPage = () => {
 
   const getMemberRole = (room) => {
     const member = room?.members?.find(m => 
-      (m.user?._id || m.user) === (authUser?._id || authUser?.id)
+      (m.user?._id || m.user)?.toString() === (authUser?._id || authUser?.id)?.toString()
     );
     return member?.role || 'member';
   };
@@ -197,14 +199,14 @@ const RoomsPage = () => {
         </div>
         <div className="flex gap-2">
           <button 
-            onClick={() => setShowJoinModal(true)}
-            className="px-4 py-2 bg-white dark:bg-[#16161f] transition-colors hover:bg-gray-100 dark:hover:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 transition-colors text-gray-900 dark:text-white font-medium rounded-lg flex items-center gap-2"
+            onClick={() => { setError(null); setShowJoinModal(true); }}
+            className="px-4 py-2 bg-white dark:bg-[#16161f] transition-colors hover:bg-gray-100 dark:hover:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700  text-gray-900 dark:text-white font-medium rounded-lg flex items-center gap-2"
           >
             <UserPlus className="w-5 h-5" />
             Join Room
           </button>
           <button 
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => { setError(null); setShowCreateModal(true); }}
             className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg flex items-center gap-2 transition-colors"
           >
             <Plus className="w-5 h-5" />
@@ -222,7 +224,7 @@ const RoomsPage = () => {
             <div className="flex gap-2">
               <button 
                 onClick={() => setShowJoinModal(true)}
-                className="px-4 py-2 bg-white dark:bg-[#16161f] transition-colors hover:bg-gray-100 dark:hover:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 transition-colors text-gray-900 dark:text-white font-medium rounded-lg"
+                className="px-4 py-2 bg-white dark:bg-[#16161f] transition-colors hover:bg-gray-100 dark:hover:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700  text-gray-900 dark:text-white font-medium rounded-lg"
               >
                 Join Room
               </button>
@@ -343,17 +345,17 @@ const RoomsPage = () => {
 
                   {/* Filters */}
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {['daily', 'weekly', 'monthly', 'all-time'].map((f) => (
+                    {[{ key: 'daily', label: 'Daily' }, { key: 'weekly', label: 'Weekly' }, { key: 'monthly', label: 'Monthly' }, { key: 'alltime', label: 'All Time' }].map((f) => (
                       <button
-                        key={f}
-                        onClick={() => setFilter(f)}
+                        key={f.key}
+                        onClick={() => setFilter(f.key)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          filter === f
+                          filter === f.key
                             ? 'bg-amber-500 text-black'
-                            : 'bg-gray-50 dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536]'
+                            : 'bg-gray-50 dark:bg-[#1a1a2e] text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536]'
                         }`}
                       >
-                        {f.charAt(0).toUpperCase() + f.slice(1).replace('-', ' ')}
+                        {f.label}
                       </button>
                     ))}
                   </div>
@@ -370,11 +372,11 @@ const RoomsPage = () => {
                     <div className="space-y-2">
                       {leaderboard.map((entry) => (
                         <LeaderboardRow
-                          key={entry.rank || entry.user?.username}
+                          key={entry.rank || entry.username}
                           rank={entry.rank}
-                          user={entry.user}
+                          user={{ username: entry.username, fullName: entry.fullName, avatar: entry.avatar }}
                           totalProblems={entry.totalProblems}
-                          weeklyProblems={entry.weeklyProblems}
+                          weeklyProblems={entry.problemsInPeriod}
                           avgRating={entry.avgRating}
                           score={entry.score}
                         />
@@ -435,8 +437,8 @@ const RoomsPage = () => {
 
       {/* Create Room Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#16161f] transition-colors rounded-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white dark:bg-[#16161f] rounded-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create Room</h2>
               <button
@@ -463,7 +465,7 @@ const RoomsPage = () => {
                   value={newRoom.name}
                   onChange={(e) => setNewRoom(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., DSA Warriors"
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e]  text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                   required
                 />
               </div>
@@ -477,7 +479,7 @@ const RoomsPage = () => {
                   onChange={(e) => setNewRoom(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="What's your room about?"
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e]  text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -488,7 +490,7 @@ const RoomsPage = () => {
                 <select
                   value={newRoom.maxMembers}
                   onChange={(e) => setNewRoom(prev => ({ ...prev, maxMembers: parseInt(e.target.value) }))}
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-white"
                 >
                   <option value={10}>10 members</option>
                   <option value={25}>25 members</option>
@@ -522,7 +524,7 @@ const RoomsPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-[#252536] transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-[#252536] "
                 >
                   Cancel
                 </button>
@@ -541,8 +543,8 @@ const RoomsPage = () => {
 
       {/* Join Room Modal */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#16161f] transition-colors rounded-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowJoinModal(false)}>
+          <div className="bg-white dark:bg-[#16161f] rounded-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Join Room</h2>
               <button
@@ -569,7 +571,7 @@ const RoomsPage = () => {
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                   placeholder="Enter 8-character code"
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none font-mono text-center text-lg tracking-widest uppercase"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 transition-colors rounded-lg bg-white dark:bg-[#1a1a2e]  text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none font-mono text-center text-lg tracking-widest uppercase"
                   maxLength={8}
                   required
                 />
@@ -582,7 +584,7 @@ const RoomsPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowJoinModal(false)}
-                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-[#252536] transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#1a1a2e] transition-colors text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-[#252536] "
                 >
                   Cancel
                 </button>

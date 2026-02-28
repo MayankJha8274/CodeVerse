@@ -66,14 +66,13 @@ societySchema.index({ 'stats.totalMembers': -1 });
 societySchema.index({ isActive: 1, isVerified: 1 });
 
 // Auto-generate slug
-societySchema.pre('save', function(next) {
+societySchema.pre('save', function() {
   if (this.isModified('name') || !this.slug) {
     this.slug = this.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') + '-' + crypto.randomBytes(2).toString('hex');
   }
-  next();
 });
 
 module.exports = mongoose.model('Society', societySchema);

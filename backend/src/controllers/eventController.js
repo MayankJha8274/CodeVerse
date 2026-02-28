@@ -130,9 +130,24 @@ const createEvent = async (req, res, next) => {
 // @access  Private (moderator+)
 const updateEvent = async (req, res, next) => {
   try {
+    const { title, description, startTime, endTime, mode, location, meetingLink, eventType, maxParticipants, tags, bannerImage, status } = req.body;
+    const update = {};
+    if (title !== undefined) update.title = title;
+    if (description !== undefined) update.description = description;
+    if (startTime !== undefined) update.startTime = new Date(startTime);
+    if (endTime !== undefined) update.endTime = new Date(endTime);
+    if (mode !== undefined) update.mode = mode;
+    if (location !== undefined) update.location = location;
+    if (meetingLink !== undefined) update.meetingLink = meetingLink;
+    if (eventType !== undefined) update.eventType = eventType;
+    if (maxParticipants !== undefined) update.maxParticipants = maxParticipants;
+    if (tags !== undefined) update.tags = tags;
+    if (bannerImage !== undefined) update.bannerImage = bannerImage;
+    if (status !== undefined) update.status = status;
+
     const event = await SocietyEvent.findOneAndUpdate(
       { _id: req.params.eventId, society: req.params.societyId },
-      { $set: req.body },
+      { $set: update },
       { new: true, runValidators: true }
     );
 
@@ -259,7 +274,7 @@ const checkInEvent = async (req, res, next) => {
     // Update member stats
     await SocietyMember.findOneAndUpdate(
       { society: req.params.societyId, user: req.user.id },
-      { $inc: { 'gamification.eventsAttended': 1 } }
+      { $inc: { eventsAttended: 1 } }
     );
 
     // Record streak

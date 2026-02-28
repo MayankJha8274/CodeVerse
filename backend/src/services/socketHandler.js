@@ -149,7 +149,7 @@ const setupSocketIO = (io) => {
 
         await SocietyMember.findOneAndUpdate(
           { society: socket.societyId, user: socket.user._id },
-          { $inc: { 'gamification.messagesCount': 1 } }
+          { $inc: { messagesCount: 1 } }
         );
 
         // Record streak
@@ -206,6 +206,7 @@ const setupSocketIO = (io) => {
     socket.on('typing_stop', (channelId) => {
       socket.to(`channel:${channelId}`).emit('user_stopped_typing', {
         userId: socket.user._id,
+        username: socket.user.username,
         channelId
       });
     });

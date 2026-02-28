@@ -120,7 +120,7 @@ const ContestEditPage = () => {
         const problemsData = await api.getContestProblems(slug);
         setProblems(problemsData.data || []);
       } catch (e) {
-        console.log('Problems not available yet');
+        // Problems not available yet
       }
       
     } catch (error) {

@@ -139,7 +139,6 @@ const Dashboard = () => {
   // ── Auto-refresh: silently re-fetch dashboard data every 15 minutes ──
   useEffect(() => {
     const intervalId = setInterval(() => {
-      console.log('🔄 Auto-refreshing dashboard data...');
       fetchDashboardData(true); // silent refresh, no loading spinner
     }, AUTO_REFRESH_MS);
     return () => clearInterval(intervalId);
@@ -186,7 +185,6 @@ const Dashboard = () => {
           setAllRatingHistory({ chartData: [], byPlatform: {}, platforms: [] });
         }
       } catch (e) {
-        console.log('Could not fetch per-platform rating history:', e.message);
         setAllRatingHistory({ chartData: [], byPlatform: {}, platforms: [] });
       }
     } catch (error) {
@@ -680,8 +678,9 @@ const Dashboard = () => {
 
               {/* Chart */}
               <div className="h-52">
+                {(allRatingHistory.chartData?.length || ratingHistory.length) ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={allRatingHistory.chartData?.length ? allRatingHistory.chartData : (ratingHistory.length ? ratingHistory : generateDemoRatingData())}>
+                  <AreaChart data={allRatingHistory.chartData?.length ? allRatingHistory.chartData : ratingHistory}>
                     <defs>
                       {/* Gradient definitions for each platform */}
                       <linearGradient id="gradientLeetcode" x1="0" y1="0" x2="0" y2="1">
@@ -701,7 +700,7 @@ const Dashboard = () => {
                         <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-[#2a2a3e]" vertical={false} />
                     <XAxis 
                       dataKey="date" 
                       stroke="#666" 
@@ -714,12 +713,12 @@ const Dashboard = () => {
                     <YAxis stroke="#666" tick={{ fontSize: 10 }} domain={['dataMin - 100', 'dataMax + 100']} />
                     <Tooltip
                       contentStyle={{ 
-                        backgroundColor: '#1a1a2e', 
-                        border: '1px solid #333', 
+                        backgroundColor: document.documentElement.classList.contains('dark') ? '#1a1a2e' : '#ffffff', 
+                        border: document.documentElement.classList.contains('dark') ? '1px solid #333' : '1px solid #e5e7eb', 
                         borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                        boxShadow: document.documentElement.classList.contains('dark') ? '0 4px 6px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.1)'
                       }}
-                      labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: 4 }}
+                      labelStyle={{ color: document.documentElement.classList.contains('dark') ? '#fff' : '#111827', fontWeight: 'bold', marginBottom: 4 }}
                       formatter={(value, name) => {
                         if (value === null) return ['-', PLATFORM_CONFIG[name]?.name || name];
                         return [value, PLATFORM_CONFIG[name]?.name || name];
@@ -770,10 +769,18 @@ const Dashboard = () => {
                     )}
                   </AreaChart>
                 </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                    <div className="text-center">
+                      <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">No rating data yet. Compete on linked platforms to see your history.</p>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Current Ratings Summary */}
-              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-4 pt-4 border-t border-gray-800">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                 {selectedRatingPlatform === 'all' ? (
                   <>
                     {platformStats.leetcode?.rating > 0 && (
@@ -926,7 +933,7 @@ const Dashboard = () => {
 
               {/* DSA */}
               <div className="mb-6">
-                <p className="text-sm text-gray-400 mb-3">DSA</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">DSA</p>
                 <div className="flex items-center gap-4">
                   <CircularProgress 
                     value={dsaProblems.total} 
@@ -939,17 +946,17 @@ const Dashboard = () => {
                     {/* Easy */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-green-500">Easy</span>
-                      <span className="text-sm font-semibold text-white">{dsaProblems.easy}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.easy}</span>
                     </div>
                     {/* Medium */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-amber-500">Medium</span>
-                      <span className="text-sm font-semibold text-white">{dsaProblems.medium}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.medium}</span>
                     </div>
                     {/* Hard */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-red-500">Hard</span>
-                      <span className="text-sm font-semibold text-white">{dsaProblems.hard}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.hard}</span>
                     </div>
                   </div>
                 </div>
@@ -957,7 +964,7 @@ const Dashboard = () => {
 
               {/* Competitive Programming */}
               <div>
-                <p className="text-sm text-gray-400 mb-3">Competitive Programming</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Competitive Programming</p>
                 <div className="flex items-center gap-4">
                   <CircularProgress 
                     value={cpProblems.total} 
@@ -969,13 +976,13 @@ const Dashboard = () => {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <PlatformIcon platform="codechef" className="w-5 h-5" color={PLATFORM_CONFIG['codechef']?.color} />
-                      <span className="text-sm text-gray-300">Codechef</span>
-                      <span className="text-sm font-semibold text-white">{cpProblems.codechef}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">Codechef</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{cpProblems.codechef}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <PlatformIcon platform="codeforces" className="w-5 h-5" color={PLATFORM_CONFIG['codeforces']?.color} />
-                      <span className="text-sm text-gray-300">Codeforces</span>
-                      <span className="text-sm font-semibold text-white">{cpProblems.codeforces}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">Codeforces</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{cpProblems.codeforces}</span>
                     </div>
                   </div>
                 </div>
@@ -1031,7 +1038,7 @@ const Dashboard = () => {
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button 
-                  onClick={() => navigate('/rooms')}
+                  onClick={() => navigate('/societies')}
                   className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
                 >
                   <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Users className="w-4 h-4" /> Societies</span>

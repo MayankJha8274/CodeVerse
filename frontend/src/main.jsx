@@ -8,16 +8,11 @@ const initTheme = () => {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   const root = document.documentElement;
   
-  console.log('Init theme:', savedTheme);
-  console.log('HTML classes before init:', root.className);
-  
   if (savedTheme === 'dark') {
     root.classList.add('dark');
   } else {
     root.classList.remove('dark');
   }
-  
-  console.log('HTML classes after init:', root.className);
 };
 
 initTheme();

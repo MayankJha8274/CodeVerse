@@ -10,6 +10,8 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
   const [logLoading, setLogLoading] = useState(false);
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
@@ -58,6 +60,8 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
 
   const handleSaveSettings = async () => {
     setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
     try {
       await api.updateSociety(societyId, {
         name: settings.name,
@@ -72,9 +76,11 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
           enableLeaderboard: settings.enableLeaderboard,
         }
       });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
       onUpdate?.();
     } catch (err) {
-      console.error('Failed to save settings:', err);
+      setSaveError(err.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -131,7 +137,7 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
               {/* Overview Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatCard label="Total Members" value={analytics.overview?.totalMembers || 0} icon={Users} />
-                <StatCard label="Active (7d)" value={analytics.overview?.activeMembers || 0} icon={Users} color="text-green-500" />
+                <StatCard label="New (7d)" value={analytics.overview?.newMembers || 0} icon={Users} color="text-green-500" />
                 <StatCard label="Total Messages" value={analytics.overview?.totalMessages || 0} icon={MessageSquare} color="text-blue-500" />
                 <StatCard label="Total Events" value={analytics.overview?.totalEvents || 0} icon={Calendar} color="text-purple-500" />
               </div>
@@ -143,16 +149,16 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                   Role Distribution
                 </h4>
                 <div className="space-y-2">
-                  {analytics.roleDistribution?.map(r => {
+                  {Object.entries(analytics.roleDistribution || {}).map(([role, count]) => {
                     const total = analytics.overview?.totalMembers || 1;
-                    const pct = Math.round((r.count / total) * 100);
+                    const pct = Math.round((count / total) * 100);
                     return (
-                      <div key={r._id} className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500 dark:text-gray-400 w-28 capitalize">{r._id?.replace('_', ' ')}</span>
+                      <div key={role} className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-28 capitalize">{role?.replace('_', ' ')}</span>
                         <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="text-xs text-gray-400 w-16 text-right">{r.count} ({pct}%)</span>
+                        <span className="text-xs text-gray-400 w-16 text-right">{count} ({pct}%)</span>
                       </div>
                     );
                   })}
@@ -186,10 +192,10 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                       <div key={c._id} className="flex items-center gap-3">
                         <span className="w-5 text-xs text-gray-400 text-right">{i + 1}.</span>
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          {c.username?.charAt(0)?.toUpperCase() || '?'}
+                          {c.user?.username?.charAt(0)?.toUpperCase() || '?'}
                         </div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{c.username}</span>
-                        <span className="text-xs font-semibold text-amber-500">{c.score} pts</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{c.user?.username || 'Unknown'}</span>
+                        <span className="text-xs font-semibold text-amber-500">{c.contributionScore || 0} pts</span>
                       </div>
                     ))}
                   </div>
@@ -333,7 +339,15 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <div>
+              {saveError && (
+                <p className="text-sm text-red-400">{saveError}</p>
+              )}
+              {saveSuccess && (
+                <p className="text-sm text-green-400">Settings saved successfully!</p>
+              )}
+            </div>
             <button
               onClick={handleSaveSettings}
               disabled={saving}

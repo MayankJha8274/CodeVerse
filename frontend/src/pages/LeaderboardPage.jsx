@@ -34,6 +34,7 @@ const LeaderboardPage = () => {
   const { user: authUser } = useAuth();
   const [leaderboardData, setLeaderboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rankingType, setRankingType] = useState('codingScore'); // codingScore, problems, leetcode, codeforces, codechef, github
@@ -44,11 +45,13 @@ const LeaderboardPage = () => {
 
   const fetchLeaderboard = async () => {
     setLoading(true);
+    setError('');
     try {
       const data = await api.getGlobalLeaderboard(currentPage, rankingType);
       setLeaderboardData(data);
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);
+      setError('Failed to load leaderboard. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -114,6 +117,23 @@ const LeaderboardPage = () => {
     );
   }
 
+  if (error && !leaderboardData) {
+    return (
+      <div className="min-h-full bg-white dark:bg-[#0d0d14] transition-colors flex items-center justify-center">
+        <div className="text-center p-8">
+          <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={fetchLeaderboard}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const topThree = leaderboardData?.topThree || [];
   const currentUser = leaderboardData?.currentUser;
 
@@ -170,38 +190,6 @@ const LeaderboardPage = () => {
             </div>
           </div>
         )}
-
-        {/* Ranking Type Tabs */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2 bg-gray-50 dark:bg-[#16161f] rounded-xl p-3 transition-colors">
-            {rankingTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => { setRankingType(type.id); setCurrentPage(1); }}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
-                  rankingType === type.id 
-                    ? type.id === 'codingScore' ? 'bg-amber-500 text-black font-semibold' :
-                      type.id === 'problems' ? 'bg-green-500 text-black font-semibold' :
-                      type.id === 'leetcode' ? 'bg-orange-500 text-black font-semibold' :
-                      type.id === 'codeforces' ? 'bg-blue-500 text-black font-semibold' :
-                      type.id === 'codechef' ? 'bg-amber-600 text-black font-semibold' :
-                      'bg-gray-400 text-black font-semibold'
-                    : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536] transition-colors'
-                }`}
-              >
-                {type.icon ? <type.icon className="w-4 h-4" /> : 
-                  ['leetcode', 'codeforces', 'github', 'codechef'].includes(type.id) 
-                    ? <PlatformIcon platform={type.id} className="w-4 h-4" />
-                    : null
-                }
-                {type.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-sm text-gray-500 mt-2 ml-2">
-            {rankingTypes.find(t => t.id === rankingType)?.description}
-          </p>
-        </div>
 
         {/* Top 3 Podium */}
         {topThree.length >= 3 && (
@@ -292,6 +280,38 @@ const LeaderboardPage = () => {
           </div>
         </div>
 
+        {/* Ranking Type Tabs */}
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2 bg-gray-50 dark:bg-[#16161f] rounded-xl p-3 transition-colors">
+            {rankingTypes.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => { setRankingType(type.id); setCurrentPage(1); }}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                  rankingType === type.id 
+                    ? type.id === 'codingScore' ? 'bg-amber-500 text-black font-semibold' :
+                      type.id === 'problems' ? 'bg-green-500 text-black font-semibold' :
+                      type.id === 'leetcode' ? 'bg-orange-500 text-black font-semibold' :
+                      type.id === 'codeforces' ? 'bg-blue-500 text-black font-semibold' :
+                      type.id === 'codechef' ? 'bg-amber-600 text-black font-semibold' :
+                      'bg-gray-400 text-black font-semibold'
+                    : 'bg-gray-100 dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536] transition-colors'
+                }`}
+              >
+                {type.icon ? <type.icon className="w-4 h-4" /> : 
+                  ['leetcode', 'codeforces', 'github', 'codechef'].includes(type.id) 
+                    ? <PlatformIcon platform={type.id} className="w-4 h-4" />
+                    : null
+                }
+                {type.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-gray-500 mt-2 ml-2">
+            {rankingTypes.find(t => t.id === rankingType)?.description}
+          </p>
+        </div>
+
         {/* Leaderboard Table */}
         <div className="bg-white dark:bg-[#16161f] rounded-xl overflow-hidden transition-colors">
           {/* Header */}
@@ -332,10 +352,10 @@ const LeaderboardPage = () => {
                   <UserAvatar user={{ avatar: entry.avatar, name: entry.fullName }} size="md" />
                   <div className="min-w-0">
                     <div className="font-semibold text-gray-900 dark:text-white truncate">{entry.fullName || entry.username}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
                       @{entry.username}
                       {entry.institution && (
-                        <span className="ml-2 text-gray-500">• {entry.institution}</span>
+                        <span className="hidden sm:inline ml-2 text-gray-500">• {entry.institution}</span>
                       )}
                     </div>
                   </div>

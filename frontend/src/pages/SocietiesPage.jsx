@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Building2, Plus, Search, Users, MessageSquare, Calendar,
@@ -25,6 +25,7 @@ const SocietiesPage = () => {
   const [createForm, setCreateForm] = useState({ name: '', description: '', isPrivate: false, tags: '' });
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
+  const searchTimerRef = useRef(null);
 
   const loadMySocieties = useCallback(async () => {
     try {
@@ -54,7 +55,13 @@ const SocietiesPage = () => {
   }, []);
 
   useEffect(() => {
-    if (tab === 'explore') loadExploreSocieties();
+    if (tab === 'explore') {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = setTimeout(() => {
+        loadExploreSocieties();
+      }, 300);
+      return () => clearTimeout(searchTimerRef.current);
+    }
   }, [search, sort, tab]);
 
   const handleCreate = async (e) => {
@@ -241,7 +248,7 @@ const SocietiesPage = () => {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="px-3 py-2.5 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white"
+            className="px-3 py-2.5 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-white"
           >
             <option value="active">Most Active</option>
             <option value="members">Most Members</option>

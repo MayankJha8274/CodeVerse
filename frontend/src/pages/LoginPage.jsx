@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Code2, Mail, Lock, Github, Chrome } from 'lucide-react';
-import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -37,7 +38,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      await api.login({ email: formData.email, password: formData.password });
+      await login({ email: formData.email, password: formData.password });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');

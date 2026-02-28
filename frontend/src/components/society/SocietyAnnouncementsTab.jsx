@@ -17,6 +17,7 @@ const SocietyAnnouncementsTab = ({ societyId, userRole }) => {
   const [creating, setCreating] = useState(false);
   const [commentText, setCommentText] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
+  const [markingRead, setMarkingRead] = useState(new Set());
 
   const canCreate = ['moderator', 'society_admin', 'super_admin'].includes(userRole);
 
@@ -75,6 +76,8 @@ const SocietyAnnouncementsTab = ({ societyId, userRole }) => {
   };
 
   const handleMarkRead = async (announcementId) => {
+    if (markingRead.has(announcementId)) return;
+    setMarkingRead(prev => new Set(prev).add(announcementId));
     try {
       await api.markAnnouncementRead(societyId, announcementId);
       setAnnouncements(prev => prev.map(a =>
@@ -82,6 +85,8 @@ const SocietyAnnouncementsTab = ({ societyId, userRole }) => {
       ));
     } catch (err) {
       console.error('Failed to mark read:', err);
+    } finally {
+      setMarkingRead(prev => { const s = new Set(prev); s.delete(announcementId); return s; });
     }
   };
 
@@ -151,7 +156,7 @@ const SocietyAnnouncementsTab = ({ societyId, userRole }) => {
                     key={i}
                     onClick={() => handleReact(ann._id, r.emoji)}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
-                      r.users?.includes(user?.id)
+                      r.users?.some(u => (u._id || u).toString() === user?.id)
                         ? 'border-amber-500/50 bg-amber-500/10 text-amber-500'
                         : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
                     }`}

@@ -89,9 +89,19 @@ const createAnnouncement = async (req, res, next) => {
 // @access  Private (moderator+)
 const updateAnnouncement = async (req, res, next) => {
   try {
+    const { title, content, isPinned, isScheduled, scheduledAt, taggedMembers, attachments } = req.body;
+    const update = {};
+    if (title !== undefined) update.title = title;
+    if (content !== undefined) update.content = content;
+    if (isPinned !== undefined) update.isPinned = isPinned;
+    if (isScheduled !== undefined) update.isScheduled = isScheduled;
+    if (scheduledAt !== undefined) update.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
+    if (taggedMembers !== undefined) update.taggedMembers = taggedMembers;
+    if (attachments !== undefined) update.attachments = attachments;
+
     const announcement = await Announcement.findOneAndUpdate(
       { _id: req.params.announcementId, society: req.params.societyId },
-      { $set: req.body },
+      { $set: update },
       { new: true, runValidators: true }
     ).populate('author', 'username fullName avatar');
 

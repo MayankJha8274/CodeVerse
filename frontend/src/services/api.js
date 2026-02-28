@@ -14,15 +14,9 @@ const authFetch = async (url, options = {}) => {
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    console.warn('No auth token found in localStorage');
   }
 
   const fullUrl = `${API_BASE_URL}${url}`;
-  console.log(`API Request: ${options.method || 'GET'} ${fullUrl}`);
-  if (options.body) {
-    console.log('Request body:', options.body);
-  }
 
   try {
     const response = await fetch(fullUrl, {
@@ -34,17 +28,12 @@ const authFetch = async (url, options = {}) => {
     try {
       data = await response.json();
     } catch (parseError) {
-      console.error('Failed to parse response:', parseError);
       data = { message: 'Invalid server response' };
     }
-    
-    console.log('API Response status:', response.status);
-    console.log('API Response data:', data);
 
     if (!response.ok) {
       // Handle token expiration - auto redirect to login
       if (response.status === 401 && data.message && data.message.includes('token expired')) {
-        console.warn('🔐 Token expired, clearing auth and redirecting to login...');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setTimeout(() => {
@@ -59,7 +48,6 @@ const authFetch = async (url, options = {}) => {
 
     return data;
   } catch (error) {
-    console.error('API Error:', error);
     // Re-throw with response data if available
     if (!error.response) {
       error.response = { data: { message: error.message }, status: 0 };
@@ -82,11 +70,8 @@ export const api = {
     });
     
     if (data.data?.token) {
-      console.log('✅ New token received from registration, saving to localStorage');
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
-    } else {
-      console.error('❌ No token received from register API');
     }
     return data.data;
   },
@@ -102,11 +87,8 @@ export const api = {
     });
     
     if (data.data?.token) {
-      console.log('✅ New token received, saving to localStorage');
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
-    } else {
-      console.error('❌ No token received from login API');
     }
     return data.data;
   },
@@ -117,7 +99,6 @@ export const api = {
     localStorage.removeItem('user');
     // Also clear any cached data
     localStorage.removeItem('userCache');
-    console.log('🚪 Logged out - all auth data cleared');
   },
 
   // User/Dashboard APIs
@@ -314,7 +295,7 @@ export const api = {
 
   // Room/Society APIs
   async getRooms() {
-    const data = await authFetch('/dashboard/rooms');
+    const data = await authFetch('/rooms');
     return data.data;
   },
 
@@ -371,7 +352,26 @@ export const api = {
     return data.data;
   },
 
+  async removeRoomMember(roomId, userId) {
+    const data = await authFetch(`/rooms/${roomId}/members/${userId}`, {
+      method: 'DELETE'
+    });
+    return data;
+  },
+
+  async promoteRoomMember(roomId, userId) {
+    const data = await authFetch(`/rooms/${roomId}/members/${userId}/promote`, {
+      method: 'PATCH'
+    });
+    return data;
+  },
+
   // Comparison APIs
+  async searchUsers(query) {
+    const data = await authFetch(`/compare/search-users?q=${encodeURIComponent(query)}`);
+    return data.data;
+  },
+
   async compareUsers(u1, u2) {
     const data = await authFetch(`/compare/users?u1=${u1}&u2=${u2}`);
     return data.data;
@@ -404,6 +404,36 @@ export const api = {
   async getInstitutionLeaderboard(institution, page = 1, sortBy = 'codingScore', limit = 50) {
     const data = await authFetch(`/leaderboard/institution/${encodeURIComponent(institution)}?page=${page}&limit=${limit}&sortBy=${sortBy}`);
     return data.data;
+  },
+
+  // Sheet APIs
+  async getSheetProgress() {
+    const data = await authFetch('/sheets/progress');
+    return data;
+  },
+
+  async updateSheetStatus(payload) {
+    const data = await authFetch('/sheets/status', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return data;
+  },
+
+  async toggleSheetRevision(payload) {
+    const data = await authFetch('/sheets/revision', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return data;
+  },
+
+  async updateSheetNotes(payload) {
+    const data = await authFetch('/sheets/notes', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return data;
   },
 
   // Avatar upload
@@ -678,7 +708,7 @@ export const api = {
   // Get public problems
   async getPublicProblems(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    const data = await publicFetch(`/problem-set/public${queryString ? `?${queryString}` : ''}`);
+    const data = await authFetch(`/problem-set/public${queryString ? `?${queryString}` : ''}`);
     return data;
   },
 
