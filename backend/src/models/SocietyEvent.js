@@ -121,7 +121,7 @@ eventSchema.index({ startTime: 1, endTime: 1 });
 eventSchema.index({ eventType: 1 });
 
 // Auto-generate slug
-eventSchema.pre('save', function(next) {
+eventSchema.pre('save', function() {
   if (this.isModified('title') || !this.slug) {
     const crypto = require('crypto');
     this.slug = this.title
@@ -129,7 +129,6 @@ eventSchema.pre('save', function(next) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') + '-' + crypto.randomBytes(2).toString('hex');
   }
-  next();
 });
 
 module.exports = mongoose.model('SocietyEvent', eventSchema);

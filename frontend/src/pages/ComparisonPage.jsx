@@ -1,59 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, X, Search, Trophy, ArrowUp, ArrowDown, Minus, Loader2, Users } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
-import ChartCard from '../components/ChartCard';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import api from '../services/api';
-import { PlatformIcon } from '../utils/platformConfig';
+import { useAuth } from '../context/AuthContext';
 
 const ComparisonPage = () => {
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [comparisonData, setComparisonData] = useState([]);
+  const { user: currentUser } = useAuth();
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [comparisonData, setComparisonData] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [comparing, setComparing] = useState(false);
+  const [error, setError] = useState('');
+  const debounceRef = useRef(null);
 
+  // Debounced user search
+  const handleSearch = useCallback((query) => {
+    setSearchQuery(query);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const results = await api.searchUsers(query.trim());
+        setSearchResults(results || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+  }, []);
+
+  // Fetch comparison when user is selected
   useEffect(() => {
+    if (!selectedUser) {
+      setComparisonData(null);
+      return;
+    }
+
     const fetchComparison = async () => {
-      if (selectedUsers.length > 0) {
-        try {
-          const data = await api.compareUsers(selectedUsers);
-          setComparisonData(data);
-        } catch (error) {
-          console.error('Failed to fetch comparison data:', error);
-        }
+      if (!currentUser) return;
+      setComparing(true);
+      setError('');
+      try {
+        const data = await api.compareUsers(currentUser._id || currentUser.id, selectedUser._id);
+        setComparisonData(data);
+      } catch (err) {
+        setError('Failed to fetch comparison data. Please try again.');
+        setComparisonData(null);
+      } finally {
+        setComparing(false);
       }
     };
 
     fetchComparison();
-  }, [selectedUsers]);
+  }, [selectedUser, currentUser]);
 
-  const addUser = (userId) => {
-    if (selectedUsers.length < 5 && !selectedUsers.includes(userId)) {
-      setSelectedUsers([...selectedUsers, userId]);
-    }
+  const selectUser = (user) => {
+    setSelectedUser(user);
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
-  const removeUser = (userId) => {
-    setSelectedUsers(selectedUsers.filter(id => id !== userId));
+  const clearSelection = () => {
+    setSelectedUser(null);
+    setComparisonData(null);
+    setError('');
   };
 
-  // Mock available users for search
-  const availableUsers = [
-    { id: '1', name: 'Alex Johnson', username: 'alexj', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
-    { id: '2', name: 'Sarah Chen', username: 'sarahc', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-    { id: '3', name: 'Michael Brown', username: 'mikeb', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael' },
-    { id: '4', name: 'Emma Wilson', username: 'emmaw', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma' },
-  ];
+  const getDiffIcon = (diff) => {
+    if (diff > 0) return <ArrowUp className="w-4 h-4 text-green-500" />;
+    if (diff < 0) return <ArrowDown className="w-4 h-4 text-red-500" />;
+    return <Minus className="w-4 h-4 text-gray-400" />;
+  };
 
-  // Prepare radar chart data
-  const radarData = comparisonData.length > 0
-    ? Object.keys(comparisonData[0].stats.skills).map(skill => ({
-        skill: skill.charAt(0).toUpperCase() + skill.slice(1),
-        ...comparisonData.reduce((acc, user) => ({
-          ...acc,
-          [user.name]: user.stats.skills[skill]
-        }), {})
-      }))
-    : [];
+  const getDiffColor = (diff) => {
+    if (diff > 0) return 'text-green-500';
+    if (diff < 0) return 'text-red-500';
+    return 'text-gray-400';
+  };
+
+  const metrics = comparisonData ? [
+    { label: 'Total Problems', key: 'problems', u1: comparisonData.user1.totals.problems, u2: comparisonData.user2.totals.problems, diff: comparisonData.differences.problems },
+    { label: 'Total Commits', key: 'commits', u1: comparisonData.user1.totals.commits, u2: comparisonData.user2.totals.commits, diff: comparisonData.differences.commits },
+    { label: 'Contests Participated', key: 'contests', u1: comparisonData.user1.totals.contests, u2: comparisonData.user2.totals.contests, diff: comparisonData.differences.contests },
+    { label: 'Average Rating', key: 'rating', u1: comparisonData.user1.totals.rating, u2: comparisonData.user2.totals.rating, diff: comparisonData.differences.rating },
+    { label: 'Platforms Active', key: 'platforms', u1: comparisonData.user1.totals.platformsActive, u2: comparisonData.user2.totals.platformsActive, diff: comparisonData.user1.totals.platformsActive - comparisonData.user2.totals.platformsActive },
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -63,75 +104,92 @@ const ComparisonPage = () => {
           Compare Users
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Compare your progress with up to 5 users
+          Compare your stats with another user
         </p>
       </div>
 
       {/* User Selection */}
       <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Selected Users ({selectedUsers.length}/5)
+          Select a User to Compare With
         </h3>
-        
-        {/* Selected Users */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          {comparisonData.map(user => (
-            <div
-              key={user.id}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 rounded-lg"
+
+        {/* Current selection */}
+        {selectedUser && (
+          <div className="flex items-center gap-3 mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <UserAvatar user={selectedUser} size="sm" showName showUsername />
+            <button
+              onClick={clearSelection}
+              className="ml-auto text-gray-500 hover:text-red-500 transition-colors"
             >
-              <UserAvatar user={user} size="sm" showName />
-              <button
-                onClick={() => removeUser(user.id)}
-                className="text-gray-500 hover:text-red-500"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-          {selectedUsers.length === 0 && (
-            <div className="text-gray-600 dark:text-gray-400 text-sm">
-              No users selected. Search and add users to compare.
-            </div>
-          )}
-        </div>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
         {/* Search */}
-        {selectedUsers.length < 5 && (
-          <div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search users by name or username..."
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none mb-4 transition-colors"
-            />
-
-            <div className="space-y-2">
-              {availableUsers
-                .filter(user => 
-                  !selectedUsers.includes(user.id) &&
-                  (user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                   user.username.toLowerCase().includes(searchQuery.toLowerCase()))
-                )
-                .slice(0, 5)
-                .map(user => (
-                  <button
-                    key={user.id}
-                    onClick={() => addUser(user.id)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
-                  >
-                    <UserAvatar user={user} size="md" showName showUsername />
-                    <Plus className="w-5 h-5 text-amber-500" />
-                  </button>
-                ))}
+        {!selectedUser && (
+          <div className="relative">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search users by name or username..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
+              />
+              {searching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500 animate-spin" />
+              )}
             </div>
+
+            {/* Search Results */}
+            {searchQuery.trim().length >= 2 && (
+              <div className="mt-2 max-h-64 overflow-y-auto space-y-1">
+                {searching ? (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 py-3 text-center">
+                    Searching...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map(user => (
+                    <button
+                      key={user._id}
+                      onClick={() => selectUser(user)}
+                      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition-colors"
+                    >
+                      <UserAvatar user={user} size="md" showName showUsername />
+                      <Plus className="w-5 h-5 text-amber-500" />
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 py-3 text-center">
+                    No users found matching "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Loading */}
+      {comparing && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+          <span className="ml-3 text-gray-600 dark:text-gray-400">Comparing stats...</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-600 dark:text-red-400 text-center">
+          {error}
+        </div>
+      )}
+
       {/* Comparison Results */}
-      {comparisonData.length > 0 && (
+      {comparisonData && !comparing && (
         <>
           {/* Stats Table */}
           <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
@@ -145,94 +203,103 @@ const ComparisonPage = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
                       Metric
                     </th>
-                    {comparisonData.map(user => (
-                      <th key={user.id} className="text-center py-3 px-4">
-                        <UserAvatar user={user} size="sm" />
-                      </th>
-                    ))}
+                    <th className="text-center py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                      You ({comparisonData.user1.username})
+                    </th>
+                    <th className="text-center py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {comparisonData.user2.username}
+                    </th>
+                    <th className="text-center py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Difference
+                    </th>
+                    <th className="text-center py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Winner
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-gray-300 dark:border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Total Problems
-                    </td>
-                    {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
-                        {user.stats.totalProblems}
+                  {metrics.map((metric) => (
+                    <tr key={metric.key} className="border-b border-gray-200 dark:border-gray-700/50">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
+                        {metric.label}
                       </td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-gray-300 dark:border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      <span className="flex items-center gap-2"><PlatformIcon platform="leetcode" className="w-4 h-4" color="#FFA116" /> LeetCode</span>
-                    </td>
-                    {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
-                        {user.stats.leetcode}
+                      <td className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
+                        {metric.u1.toLocaleString()}
                       </td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-gray-300 dark:border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      <span className="flex items-center gap-2"><PlatformIcon platform="codeforces" className="w-4 h-4" color="#1F8ACB" /> Codeforces</span>
-                    </td>
-                    {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
-                        {user.stats.codeforces}
+                      <td className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
+                        {metric.u2.toLocaleString()}
                       </td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-gray-300 dark:border-gray-700">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      <span className="flex items-center gap-2"><PlatformIcon platform="codechef" className="w-4 h-4" color="#5B4638" /> CodeChef</span>
-                    </td>
-                    {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-gray-900 dark:text-white">
-                        {user.stats.codechef}
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1 font-semibold ${getDiffColor(metric.diff)}`}>
+                          {getDiffIcon(metric.diff)}
+                          {Math.abs(metric.diff).toLocaleString()}
+                        </span>
                       </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Average Rating
-                    </td>
-                    {comparisonData.map(user => (
-                      <td key={user.id} className="py-3 px-4 text-center font-semibold text-amber-500">
-                        {user.stats.avgRating}
+                      <td className="py-3 px-4 text-center">
+                        {metric.diff !== 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                            <Trophy className="w-3 h-3" />
+                            {comparisonData.winner[metric.key] || (metric.diff > 0 ? comparisonData.user1.username : comparisonData.user2.username)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">Tie</span>
+                        )}
                       </td>
-                    ))}
-                  </tr>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Skills Radar Chart */}
-          <ChartCard
-            title="Skills Comparison"
-            subtitle="Compare proficiency across different topics"
-          >
-            <ResponsiveContainer width="100%" height={400}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="#374151" />
-                <PolarAngleAxis dataKey="skill" stroke="#9CA3AF" />
-                <PolarRadiusAxis stroke="#9CA3AF" />
-                {comparisonData.map((user, index) => (
-                  <Radar
-                    key={user.id}
-                    name={user.name}
-                    dataKey={user.name}
-                    stroke={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index]}
-                    fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index]}
-                    fillOpacity={0.2}
-                  />
-                ))}
-                <Legend />
-              </RadarChart>
-            </ResponsiveContainer>
-          </ChartCard>
+          {/* Visual Bar Comparison */}
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Visual Comparison
+            </h3>
+            <div className="space-y-6">
+              {metrics.slice(0, 4).map((metric) => {
+                const maxVal = Math.max(metric.u1, metric.u2, 1);
+                const u1Pct = (metric.u1 / maxVal) * 100;
+                const u2Pct = (metric.u2 / maxVal) * 100;
+                return (
+                  <div key={metric.key}>
+                    <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{metric.label}</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-24 truncate">{comparisonData.user1.username}</span>
+                        <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                          <div className="bg-amber-500 h-full rounded-full transition-all duration-700" style={{ width: `${u1Pct}%` }} />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white w-16 text-right">{metric.u1.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-24 truncate">{comparisonData.user2.username}</span>
+                        <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                          <div className="bg-blue-500 h-full rounded-full transition-all duration-700" style={{ width: `${u2Pct}%` }} />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white w-16 text-right">{metric.u2.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </>
+      )}
+
+      {/* Empty State */}
+      {!selectedUser && !comparing && (
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-12 border border-gray-200 dark:border-gray-800 text-center">
+          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            No user selected
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Search for a user above to compare your coding stats side by side.
+          </p>
+        </div>
       )}
     </div>
   );

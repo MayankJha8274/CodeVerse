@@ -35,9 +35,12 @@ const createChannel = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Channel name must be at least 2 characters' });
     }
 
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
     const channel = await ChatChannel.create({
       society: req.params.societyId,
       name: name.trim(),
+      slug,
       description: description || '',
       type: type || 'custom',
       isAdminOnly: isAdminOnly || false,
@@ -193,7 +196,7 @@ const sendMessage = async (req, res, next) => {
     // Update member message count
     await SocietyMember.findOneAndUpdate(
       { society: req.params.societyId, user: req.user.id },
-      { $inc: { 'gamification.messagesCount': 1 } }
+      { $inc: { messagesCount: 1 } }
     );
 
     // Record streak activity
@@ -376,7 +379,12 @@ const markSolution = async (req, res, next) => {
     if (message.isSolution) {
       await SocietyMember.findOneAndUpdate(
         { society: req.params.societyId, user: message.sender },
-        { $inc: { 'gamification.helpfulnessScore': 5 } }
+        { $inc: { helpfulnessScore: 5 } }
+      );
+    } else {
+      await SocietyMember.findOneAndUpdate(
+        { society: req.params.societyId, user: message.sender },
+        { $inc: { helpfulnessScore: -5 } }
       );
     }
 

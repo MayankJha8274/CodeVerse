@@ -127,7 +127,7 @@ const SocietyDetailPage = () => {
                 <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {society.stats?.totalMessages || 0}</span>
                 {society.userRole && (
                   <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium capitalize">
-                    {society.userRole.replace('_', ' ')}
+                    {society.userRole.replace(/_/g, ' ')}
                   </span>
                 )}
               </div>
@@ -181,7 +181,7 @@ const SocietyDetailPage = () => {
         {activeTab === 'events' && <SocietyEventsTab societyId={societyId} userRole={society.userRole} />}
         {activeTab === 'announcements' && <SocietyAnnouncementsTab societyId={societyId} userRole={society.userRole} />}
         {activeTab === 'leaderboard' && <SocietyLeaderboardTab societyId={societyId} />}
-        {activeTab === 'members' && <SocietyMembersTab societyId={societyId} userRole={society.userRole} currentUserId={user?.id} />}
+        {activeTab === 'members' && <SocietyMembersTab societyId={societyId} userRole={society.userRole} />}
         {activeTab === 'admin' && isAdmin && <SocietyAdminTab societyId={societyId} society={society} onUpdate={loadSociety} />}
       </div>
     </div>

@@ -1,10 +1,11 @@
 const SheetProgress = require('../models/SheetProgress');
+const mongoose = require('mongoose');
 
 // Get all progress for a sheet
-exports.getSheetProgress = async (req, res) => {
+exports.getSheetProgress = async (req, res, next) => {
   try {
     const { sheetId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const progress = await SheetProgress.find({ user: userId, sheetId });
     
@@ -21,15 +22,14 @@ exports.getSheetProgress = async (req, res) => {
 
     res.json({ success: true, progress: progressMap });
   } catch (error) {
-    console.error('Error fetching sheet progress:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };
 
 // Get all progress for a user (all sheets)
-exports.getAllProgress = async (req, res) => {
+exports.getAllProgress = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const progress = await SheetProgress.find({ user: userId });
     
     // Group by sheetId
@@ -50,16 +50,15 @@ exports.getAllProgress = async (req, res) => {
 
     res.json({ success: true, progress: progressBySheet });
   } catch (error) {
-    console.error('Error fetching all progress:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };
 
 // Update problem status
-exports.updateProblemStatus = async (req, res) => {
+exports.updateProblemStatus = async (req, res, next) => {
   try {
     const { sheetId, problemId, topicIndex, problemIndex, status } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const updateData = {
       status,
@@ -77,16 +76,15 @@ exports.updateProblemStatus = async (req, res) => {
 
     res.json({ success: true, progress });
   } catch (error) {
-    console.error('Error updating problem status:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };
 
 // Update problem notes
-exports.updateProblemNotes = async (req, res) => {
+exports.updateProblemNotes = async (req, res, next) => {
   try {
     const { sheetId, problemId, topicIndex, problemIndex, notes } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const progress = await SheetProgress.findOneAndUpdate(
       { user: userId, sheetId, problemId },
@@ -99,16 +97,15 @@ exports.updateProblemNotes = async (req, res) => {
 
     res.json({ success: true, progress });
   } catch (error) {
-    console.error('Error updating problem notes:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };
 
 // Toggle revision status
-exports.toggleRevision = async (req, res) => {
+exports.toggleRevision = async (req, res, next) => {
   try {
     const { sheetId, problemId, topicIndex, problemIndex } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     // First, check if document exists
     const existing = await SheetProgress.findOne({ user: userId, sheetId, problemId });
@@ -134,15 +131,14 @@ exports.toggleRevision = async (req, res) => {
 
     res.json({ success: true, progress });
   } catch (error) {
-    console.error('Error toggling revision:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };
 
 // Get revision problems (for revision page)
-exports.getRevisionProblems = async (req, res) => {
+exports.getRevisionProblems = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const revisionProblems = await SheetProgress.find({ 
       user: userId, 
       revision: true 
@@ -150,15 +146,14 @@ exports.getRevisionProblems = async (req, res) => {
 
     res.json({ success: true, problems: revisionProblems });
   } catch (error) {
-    console.error('Error fetching revision problems:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };
 
 // Get stats for a user
-exports.getProgressStats = async (req, res) => {
+exports.getProgressStats = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = new mongoose.Types.ObjectId(req.user.id);
     
     const stats = await SheetProgress.aggregate([
       { $match: { user: userId } },
@@ -191,7 +186,6 @@ exports.getProgressStats = async (req, res) => {
 
     res.json({ success: true, stats: statsMap });
   } catch (error) {
-    console.error('Error fetching progress stats:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    next(error);
   }
 };

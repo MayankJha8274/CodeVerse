@@ -16,7 +16,6 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const messagesEndRef = useRef(null);
@@ -63,9 +62,9 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
       }
     };
 
-    const handleStoppedTyping = ({ userId, channelId }) => {
+    const handleStoppedTyping = ({ username, channelId }) => {
       if (channelId === activeChannel?._id) {
-        setTypingUsers(prev => prev.filter(u => u !== userId));
+        setTypingUsers(prev => prev.filter(u => u !== username));
       }
     };
 
@@ -245,12 +244,12 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
                   <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
                 </div>
                 {msgs.map((msg, i) => {
-                  const isMine = msg.sender?._id === user?.id;
+                  const isMine = (msg.sender?._id || msg.sender)?.toString() === (user?.id || user?._id);
                   const showAvatar = i === 0 || msgs[i - 1]?.sender?._id !== msg.sender?._id;
                   return (
                     <div
                       key={msg._id}
-                      className={`group flex items-start gap-3 py-1 hover:bg-gray-50 dark:hover:bg-[#111118] px-2 -mx-2 rounded ${!showAvatar ? 'mt-0' : 'mt-2'}`}
+                      className={`group relative flex items-start gap-3 py-1 hover:bg-gray-50 dark:hover:bg-[#111118] px-2 -mx-2 rounded ${!showAvatar ? 'mt-0' : 'mt-2'}`}
                     >
                       {showAvatar ? (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
@@ -286,7 +285,7 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
                                 key={ri}
                                 onClick={() => handleReact(msg._id, r.emoji)}
                                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
-                                  r.users?.includes(user?.id)
+                                  r.users?.some(u => (u._id || u).toString() === user?.id)
                                     ? 'border-amber-500/50 bg-amber-500/10 text-amber-500'
                                     : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
@@ -350,7 +349,7 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
         )}
 
         {/* Input */}
-        {society?.isMember && (
+        {society?.isMember ? (
           <form onSubmit={handleSend} className="px-4 py-3 border-t border-gray-200 dark:border-gray-800/50">
             <div className="flex items-center gap-2">
               <input
@@ -371,6 +370,10 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
               </button>
             </div>
           </form>
+        ) : (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800/50 text-center">
+            <p className="text-sm text-gray-400">Join this society to participate in chat</p>
+          </div>
         )}
       </div>
     </div>

@@ -210,7 +210,7 @@ const contestProblemSchema = new mongoose.Schema({
 });
 
 // Auto-generate slug
-contestProblemSchema.pre('save', async function(next) {
+contestProblemSchema.pre('save', async function() {
   if (this.isModified('title') && !this.slug) {
     this.slug = this.title
       .toLowerCase()
@@ -218,7 +218,6 @@ contestProblemSchema.pre('save', async function(next) {
       .replace(/\s+/g, '-')
       .substring(0, 50);
   }
-  next();
 });
 
 // Virtual for sample test cases

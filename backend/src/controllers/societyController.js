@@ -140,7 +140,8 @@ const getMySocieties = async (req, res, next) => {
   try {
     const memberships = await SocietyMember.find({
       user: req.user.id,
-      isBanned: false
+      isBanned: false,
+      isActive: true
     }).lean();
 
     const societyIds = memberships.map(m => m.society);
@@ -255,7 +256,18 @@ const updateSociety = async (req, res, next) => {
 // @access  Private (owner only)
 const deleteSociety = async (req, res, next) => {
   try {
-    await Society.findByIdAndUpdate(req.params.societyId, { isActive: false });
+    const societyId = req.params.societyId;
+    await Society.findByIdAndUpdate(societyId, { isActive: false });
+    await SocietyMember.updateMany({ society: societyId }, { isActive: false });
+
+    await ActivityLog.create({
+      society: societyId,
+      user: req.user.id,
+      action: 'society_deleted',
+      targetType: 'society',
+      targetId: societyId
+    });
+
     res.status(200).json({ success: true, message: 'Society deleted' });
   } catch (error) {
     next(error);
@@ -357,7 +369,7 @@ const getMembers = async (req, res, next) => {
     const { societyId } = req.params;
     const { role, search, page = 1, limit = 50 } = req.query;
 
-    const query = { society: societyId, isBanned: false };
+    const query = { society: societyId, isBanned: false, isActive: true };
     if (role) query.role = role;
 
     let members = await SocietyMember.find(query)
@@ -557,7 +569,7 @@ const toggleMuteMember = async (req, res, next) => {
 // @access  Private (admin+)
 const regenerateInviteCode = async (req, res, next) => {
   try {
-    const newCode = crypto.randomBytes(4).toString('hex');
+    const newCode = crypto.randomBytes(4).toString('hex').toUpperCase();
     await Society.findByIdAndUpdate(req.params.societyId, { inviteCode: newCode });
 
     await ActivityLog.create({

@@ -153,14 +153,7 @@ const DailyChallengePage = () => {
 
       } catch (error) {
         console.error('Error fetching daily challenge:', error);
-        // Set demo data for non-logged in users
-        setChallenge({
-          problemName: 'Two Sum',
-          problemLink: 'https://leetcode.com/problems/two-sum/',
-          difficulty: 'Easy',
-          topic: 'Arrays',
-          isCompleted: false
-        });
+        setChallenge(null);
         setStreak({ current: 0, longest: 0, total: 0, history: [] });
       } finally {
         setLoading(false);
@@ -183,8 +176,6 @@ const DailyChallengePage = () => {
       if (response.success) {
         setChallenge(prev => ({ ...prev, isCompleted: true, completedAt: new Date() }));
         setStreak(response.streak);
-        // Refresh the page to get fresh data
-        window.location.reload();
       }
     } catch (error) {
       console.error('Error completing challenge:', error);

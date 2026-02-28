@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Code2, Mail, Lock, User, Github, Chrome } from 'lucide-react';
-import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
     username: '',
     password: '',
@@ -42,7 +43,7 @@ const RegisterPage = () => {
     }
 
     try {
-      await api.register(formData);
+      await register(formData);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -54,7 +55,6 @@ const RegisterPage = () => {
   const handleOAuthRegister = (provider) => {
     // Redirect to backend OAuth route (same as login - OAuth doesn't distinguish register/login)
     const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-    console.log(`\ud83d\udd10 Redirecting to ${provider} OAuth...`);
     window.location.href = `${API_URL}/api/auth/${provider}`;
   };
 
@@ -126,8 +126,8 @@ const RegisterPage = () => {
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1a1a2e] text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"

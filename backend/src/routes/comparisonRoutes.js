@@ -8,6 +8,9 @@ const comparisonController = require('../controllers/comparisonController');
  * All routes require authentication
  */
 
+// Search users for comparison
+router.get('/search-users', protect, comparisonController.searchUsers);
+
 // Compare two users
 router.get('/users', protect, comparisonController.compareUsers);
 

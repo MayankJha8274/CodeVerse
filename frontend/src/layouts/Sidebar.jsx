@@ -138,11 +138,11 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full z-50 bg-white dark:bg-[#111118] border-r border-gray-200 dark:border-gray-800/50
+          fixed top-0 left-0 h-full z-50 bg-white dark:bg-[#111118]
           transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden
-          ${isOpen ? 'w-60 translate-x-0' : 'w-60 -translate-x-full'}
+          ${isOpen ? 'w-60 translate-x-0 border-r border-gray-200 dark:border-gray-800/50' : 'w-60 -translate-x-full border-r-0'}
           xl:relative xl:translate-x-0
-          ${isOpen ? 'xl:w-60' : 'xl:w-0'}
+          ${isOpen ? 'xl:w-60 xl:border-r xl:border-gray-200 xl:dark:border-gray-800/50' : 'xl:w-0 xl:border-r-0'}
         `}
       >
         <div className="flex flex-col h-full w-60">
@@ -166,7 +166,7 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
           </div>
 
           {/* Navigation Sections */}
-          <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto custom-scrollbar">
+          <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto scrollbar-hide">
             {sections.map((section) => (
               <div key={section.id} className="mb-1">
                 <SectionHeader section={section} />

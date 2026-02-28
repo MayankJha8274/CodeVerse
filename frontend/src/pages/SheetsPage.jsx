@@ -389,13 +389,13 @@ const SheetsPage = () => {
     const fetchProgress = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/sheets/progress');
-        if (response.data.success) {
-          setProgress(response.data.progress);
+        const response = await api.getSheetProgress();
+        if (response.success) {
+          setProgress(response.progress || {});
           
           let solved = 0;
           let revision = 0;
-          Object.values(response.data.progress).forEach(sheet => {
+          Object.values(response.progress || {}).forEach(sheet => {
             Object.values(sheet).forEach(problem => {
               if (problem.status === 'solved') solved++;
               if (problem.revision) revision++;
@@ -457,7 +457,7 @@ const SheetsPage = () => {
 
     if (user) {
       try {
-        await api.post('/sheets/status', { sheetId, problemId, topicIndex, problemIndex, status });
+        await api.updateSheetStatus({ sheetId, problemId, topicIndex, problemIndex, status });
       } catch (error) {
         console.error('Error saving status:', error);
       }
@@ -483,7 +483,7 @@ const SheetsPage = () => {
 
     if (user) {
       try {
-        await api.post('/sheets/revision', { sheetId, problemId, topicIndex, problemIndex });
+        await api.toggleSheetRevision({ sheetId, problemId, topicIndex, problemIndex });
       } catch (error) {
         console.error('Error toggling revision:', error);
       }
@@ -504,7 +504,7 @@ const SheetsPage = () => {
 
     if (user) {
       try {
-        await api.post('/sheets/notes', { sheetId, problemId, topicIndex, problemIndex, notes });
+        await api.updateSheetNotes({ sheetId, problemId, topicIndex, problemIndex, notes });
       } catch (error) {
         console.error('Error saving notes:', error);
       }
@@ -730,13 +730,13 @@ const SheetsPage = () => {
                 <ArrowLeft className="w-4 h-4" /> Back to all sheets
               </button>
 
-              <div className="flex items-start gap-6">
-                <div className="text-6xl">{selectedSheet.icon}</div>
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                <div className="text-5xl sm:text-6xl">{selectedSheet.icon}</div>
+                <div className="flex-1 min-w-0">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{selectedSheet.name}</h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">by {selectedSheet.author}</p>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{selectedSheet.description}</p>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <span className="px-3 py-1 bg-amber-500/20 text-amber-500 text-sm rounded-lg">
                       {selectedSheet.difficulty}
                     </span>
@@ -834,9 +834,9 @@ const SheetsPage = () => {
 
                     {/* Problems Table */}
                     {isExpanded && topicProblems.length > 0 && (
-                      <div className="bg-gray-50 dark:bg-[#0d0d14] border-t border-gray-200 dark:border-gray-800">
+                      <div className="bg-gray-50 dark:bg-[#0d0d14] border-t border-gray-200 dark:border-gray-800 overflow-x-auto">
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
+                        <div className="min-w-[700px] grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800">
                           <div className="col-span-1 text-center">Status</div>
                           <div className="col-span-4">Problem</div>
                           <div className="col-span-1 text-center">Solve</div>
@@ -847,7 +847,7 @@ const SheetsPage = () => {
                         </div>
 
                         {/* Table Body */}
-                        <div className="divide-y divide-gray-200/50 dark:divide-gray-800/50">
+                        <div className="min-w-[700px] divide-y divide-gray-200/50 dark:divide-gray-800/50">
                           {topicProblems.map((problem, problemIndex) => {
                             const problemId = getProblemId(selectedSheet.id, topicIndex, problemIndex);
                             const prob = getProblemProgress(selectedSheet.id, problemId);

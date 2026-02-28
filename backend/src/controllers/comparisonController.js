@@ -8,6 +8,39 @@ const Room = require('../models/Room');
  */
 
 /**
+ * Search users by username or full name
+ * GET /api/compare/search-users?q=searchTerm
+ */
+exports.searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const sanitized = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const users = await User.find({
+      $or: [
+        { username: { $regex: sanitized, $options: 'i' } },
+        { fullName: { $regex: sanitized, $options: 'i' } }
+      ],
+      _id: { $ne: req.user.id }
+    })
+    .select('username fullName avatar')
+    .limit(10);
+
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error searching users',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Calculate totals from platform stats
  */
 const calculateTotals = (platformStats) => {

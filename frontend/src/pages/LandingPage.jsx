@@ -87,7 +87,7 @@ const LandingPage = () => {
             </a>
           </nav>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link to="/login" className="hidden sm:block text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium">
+            <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium text-sm sm:text-base">
               Sign In
             </Link>
             <Link to="/register" className="px-3 sm:px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors text-sm sm:text-base">

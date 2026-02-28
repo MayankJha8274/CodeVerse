@@ -43,7 +43,7 @@ const PlatformDetailPage = () => {
             localStorage.setItem('user', JSON.stringify(user));
           }
         } catch (apiError) {
-          console.log('Using cached user data:', apiError.message);
+        // Using cached user data
         }
 
         const user = JSON.parse(localStorage.getItem('user'));
@@ -104,17 +104,14 @@ const PlatformDetailPage = () => {
   };
 
   const handleLinkPlatform = (platform) => {
-    console.log('Opening modal for platform:', platform);
     setSelectedPlatform(platform);
     setModalOpen(true);
   };
 
   const handleLinkSubmit = async (platformId, username) => {
-    console.log('Linking platform:', platformId, 'with username:', username);
     try {
       // First, link the platform
       const response = await api.linkPlatform(platformId, username);
-      console.log('Link response:', response);
       
       // Update linked platforms state immediately
       setLinkedPlatforms(prev => ({ ...prev, [platformId]: username }));
@@ -140,9 +137,7 @@ const PlatformDetailPage = () => {
       // Sync platform data in background
       setTimeout(async () => {
         try {
-          console.log('Starting sync for', platformId);
           await api.syncPlatform(platformId);
-          console.log('Platform synced successfully');
           
           // Wait a bit for DB to update
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -179,9 +174,7 @@ const PlatformDetailPage = () => {
     }
 
     try {
-      console.log('Unlinking platform:', platformId);
       const response = await api.unlinkPlatform(platformId);
-      console.log('Unlink response:', response);
       
       // Update state - remove the platform
       setLinkedPlatforms(prev => {
@@ -464,7 +457,6 @@ const PlatformDetailPage = () => {
           platform={selectedPlatform}
           isOpen={modalOpen}
           onClose={() => {
-            console.log('Closing modal');
             setModalOpen(false);
             setSelectedPlatform(null);
           }}

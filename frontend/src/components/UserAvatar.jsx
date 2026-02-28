@@ -32,7 +32,7 @@ const UserAvatar = ({ user, size = 'md', showName = false, showUsername = false,
       {(showName || showUsername) && (
         <div className={`flex-col ${responsiveName ? 'hidden sm:flex' : 'flex'}`}>
           {showName && (
-            <span className="text-sm font-semibold text-white">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">
               {displayName}
             </span>
           )}

@@ -120,8 +120,8 @@ const ProblemSetSchema = new mongoose.Schema({
 });
 
 // Generate slug before saving
-ProblemSetSchema.pre('save', async function(next) {
-  if (!this.isModified('title')) return next();
+ProblemSetSchema.pre('save', async function() {
+  if (!this.isModified('title')) return;
   
   const baseSlug = slugify(this.title, { lower: true, strict: true });
   let slug = baseSlug;
@@ -133,13 +133,11 @@ ProblemSetSchema.pre('save', async function(next) {
   }
   
   this.slug = slug;
-  next();
 });
 
 // Update timestamp
-ProblemSetSchema.pre('save', function(next) {
+ProblemSetSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Virtual for acceptance rate

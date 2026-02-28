@@ -76,7 +76,7 @@ const getSocietyAnalytics = async (req, res, next) => {
     // Top contributors
     const topContributors = await SocietyMember.find({ society: societyId, isBanned: false })
       .populate('user', 'username fullName avatar')
-      .sort({ 'gamification.contributionScore': -1 })
+      .sort({ contributionScore: -1 })
       .limit(10)
       .lean();
 
@@ -111,7 +111,7 @@ const getSocietyAnalytics = async (req, res, next) => {
         topContributors: topContributors.map(tc => ({
           user: tc.user,
           role: tc.role,
-          gamification: tc.gamification
+          contributionScore: tc.contributionScore || 0
         })),
         reportedMessages,
         recentActivity

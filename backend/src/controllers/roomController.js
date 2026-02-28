@@ -139,7 +139,10 @@ const updateRoom = async (req, res, next) => {
     // Update fields
     if (name) room.name = name;
     if (description !== undefined) room.description = description;
-    if (settings) room.settings = { ...room.settings, ...settings };
+    if (settings) {
+      Object.assign(room.settings, settings);
+      room.markModified('settings');
+    }
 
     await room.save();
     await room.populate('members.user', 'username fullName avatar');
@@ -408,18 +411,18 @@ const getRoomLeaderboard = async (req, res, next) => {
       memberIds.map(async (memberId) => {
         // Get platform stats
         const platformStats = await PlatformStats.find({
-          user: memberId
+          userId: memberId
         });
 
         // Get daily progress in date range
         const dailyProgress = await DailyProgress.find({
-          user: memberId,
+          userId: memberId,
           date: { $gte: startDate }
         });
 
         // Calculate total problems solved
         const totalProblems = platformStats.reduce((sum, stat) => {
-          return sum + (stat.problemsSolved || 0);
+          return sum + (stat.stats?.totalSolved || stat.stats?.problemsSolved || 0);
         }, 0);
 
         // Calculate commits (GitHub)
@@ -436,7 +439,7 @@ const getRoomLeaderboard = async (req, res, next) => {
 
         // Problems solved in period
         const problemsInPeriod = dailyProgress.reduce((sum, day) => {
-          return sum + (day.problemsSolved || 0);
+          return sum + (day.aggregatedStats?.totalProblemsSolved || 0);
         }, 0);
 
         const member = room.members.find(m => m.user._id.toString() === memberId.toString());
@@ -503,7 +506,7 @@ const getRoomAnalytics = async (req, res, next) => {
 
     // Get all platform stats
     const allPlatformStats = await PlatformStats.find({
-      user: { $in: memberIds }
+      userId: { $in: memberIds }
     });
 
     // Get last 30 days of progress
@@ -511,7 +514,7 @@ const getRoomAnalytics = async (req, res, next) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const recentProgress = await DailyProgress.find({
-      user: { $in: memberIds },
+      userId: { $in: memberIds },
       date: { $gte: thirtyDaysAgo }
     }).sort({ date: 1 });
 
@@ -519,7 +522,7 @@ const getRoomAnalytics = async (req, res, next) => {
     const analytics = {
       totalMembers: room.members.length,
       activeMembers: room.stats.activeMembers,
-      totalProblems: allPlatformStats.reduce((sum, stat) => sum + (stat.problemsSolved || 0), 0),
+      totalProblems: allPlatformStats.reduce((sum, stat) => sum + (stat.stats?.totalSolved || stat.stats?.problemsSolved || 0), 0),
       avgProblemsPerMember: 0,
       totalCommits: 0,
       platformDistribution: {},
@@ -532,7 +535,7 @@ const getRoomAnalytics = async (req, res, next) => {
       if (!analytics.platformDistribution[stat.platform]) {
         analytics.platformDistribution[stat.platform] = 0;
       }
-      analytics.platformDistribution[stat.platform] += stat.problemsSolved || 0;
+      analytics.platformDistribution[stat.platform] += stat.stats?.totalSolved || stat.stats?.problemsSolved || 0;
     });
 
     // Calculate commits
@@ -549,7 +552,7 @@ const getRoomAnalytics = async (req, res, next) => {
       if (!timelineMap[dateStr]) {
         timelineMap[dateStr] = 0;
       }
-      timelineMap[dateStr] += progress.problemsSolved || 0;
+      timelineMap[dateStr] += progress.aggregatedStats?.totalProblemsSolved || 0;
     });
 
     analytics.activityTimeline = Object.entries(timelineMap).map(([date, problems]) => ({

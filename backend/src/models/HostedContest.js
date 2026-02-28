@@ -224,7 +224,7 @@ const hostedContestSchema = new mongoose.Schema({
 });
 
 // Generate unique slug before saving
-hostedContestSchema.pre('save', async function(next) {
+hostedContestSchema.pre('save', async function() {
   if (this.isModified('name') && !this.slug) {
     let baseSlug = this.name
       .toLowerCase()
@@ -242,7 +242,6 @@ hostedContestSchema.pre('save', async function(next) {
     
     this.slug = slug;
   }
-  next();
 });
 
 // Update status based on time

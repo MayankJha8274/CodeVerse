@@ -13,7 +13,7 @@ const ROLE_CONFIG = {
 
 const ROLE_HIERARCHY = ['visitor', 'member', 'moderator', 'society_admin', 'super_admin'];
 
-const SocietyMembersTab = ({ societyId, society, membership }) => {
+const SocietyMembersTab = ({ societyId, userRole }) => {
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ const SocietyMembersTab = ({ societyId, society, membership }) => {
   const [actionMenu, setActionMenu] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
 
-  const myRole = membership?.role || 'visitor';
+  const myRole = userRole || 'visitor';
   const myRoleIndex = ROLE_HIERARCHY.indexOf(myRole);
   const canManage = myRoleIndex >= ROLE_HIERARCHY.indexOf('moderator');
 
@@ -55,7 +55,7 @@ const SocietyMembersTab = ({ societyId, society, membership }) => {
       } else if (action === 'ban') {
         await api.banMember(societyId, member.user._id);
       } else if (action === 'mute') {
-        await api.toggleMuteMember(societyId, member.user._id);
+        await api.toggleMuteMember(societyId, member.user._id, member.isMuted ? 0 : 60);
       } else if (action.startsWith('role:')) {
         const newRole = action.split(':')[1];
         await api.changeMemberRole(societyId, member.user._id, newRole);
@@ -95,7 +95,7 @@ const SocietyMembersTab = ({ societyId, society, membership }) => {
           <select
             value={roleFilter}
             onChange={e => setRoleFilter(e.target.value)}
-            className="appearance-none pl-3 pr-8 py-2 text-sm bg-white dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50 cursor-pointer"
+            className="appearance-none pl-3 pr-8 py-2 text-sm bg-white dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50 cursor-pointer [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-white"
           >
             <option value="all">All Roles</option>
             {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
@@ -138,15 +138,15 @@ const SocietyMembersTab = ({ societyId, society, membership }) => {
                       {member.user?.username || 'Unknown'}
                     </span>
                     {isMe && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium">you</span>}
-                    {member.moderation?.isMuted && (
+                    {member.isMuted && (
                       <VolumeX className="w-3 h-3 text-red-400" title="Muted" />
                     )}
-                    {member.moderation?.isBanned && (
+                    {member.isBanned && (
                       <Ban className="w-3 h-3 text-red-400" title="Banned" />
                     )}
                   </div>
                   <div className="text-[11px] text-gray-400">
-                    Joined {new Date(member.joinedAt).toLocaleDateString()} · {member.gamification?.messagesCount || 0} msgs · {member.gamification?.eventsAttended || 0} events
+                    Joined {new Date(member.joinedAt).toLocaleDateString()} · {member.messagesCount || 0} msgs · {member.eventsAttended || 0} events
                   </div>
                 </div>
 
@@ -158,7 +158,7 @@ const SocietyMembersTab = ({ societyId, society, membership }) => {
 
                 {/* Score */}
                 <div className="text-right flex-shrink-0 hidden md:block">
-                  <div className="text-xs font-semibold text-amber-500">{member.gamification?.contributionScore || 0}</div>
+                  <div className="text-xs font-semibold text-amber-500">{member.contributionScore || 0}</div>
                   <div className="text-[10px] text-gray-400">score</div>
                 </div>
 
@@ -197,8 +197,8 @@ const SocietyMembersTab = ({ societyId, society, membership }) => {
                             onClick={() => handleAction('mute', member)}
                             className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 flex items-center gap-2"
                           >
-                            {member.moderation?.isMuted ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                            {member.moderation?.isMuted ? 'Unmute' : 'Mute'}
+                            {member.isMuted ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                            {member.isMuted ? 'Unmute' : 'Mute'}
                           </button>
 
                           <button

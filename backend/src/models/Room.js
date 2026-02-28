@@ -21,7 +21,7 @@ const roomSchema = new mongoose.Schema({
   inviteCode: {
     type: String,
     unique: true,
-    required: true
+    default: generateInviteCode
   },
   members: [{
     user: {
@@ -72,14 +72,13 @@ const roomSchema = new mongoose.Schema({
 });
 
 // Generate unique invite code before saving
-roomSchema.pre('save', function(next) {
+roomSchema.pre('save', function() {
   if (!this.inviteCode) {
     this.inviteCode = generateInviteCode();
   }
-  next();
 });
 
-// Helper function to generate invite code
+// Helper function to generate invite code (declared before schema for default usage)
 function generateInviteCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
