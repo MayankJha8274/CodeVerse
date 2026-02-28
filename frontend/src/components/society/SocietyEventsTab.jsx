@@ -59,9 +59,13 @@ const SocietyEventsTab = ({ societyId, userRole }) => {
   const handleRsvp = async (eventId, status) => {
     try {
       await api.rsvpEvent(societyId, eventId, status);
-      setEvents(prev => prev.map(evt =>
-        evt._id === eventId ? { ...evt, userRsvpStatus: status } : evt
-      ));
+      setEvents(prev => prev.map(evt => {
+        if (evt._id !== eventId) return evt;
+        // Update rsvps array optimistically
+        const filtered = (evt.rsvps || []).filter(r => r.user !== evt.userRsvpStatus?._id && r.status !== evt.userRsvpStatus);
+        const updatedRsvps = [...filtered, { status }];
+        return { ...evt, userRsvpStatus: status, rsvps: updatedRsvps };
+      }));
     } catch (err) {
       console.error('Failed to RSVP:', err);
     }

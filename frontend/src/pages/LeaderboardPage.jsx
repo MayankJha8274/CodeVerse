@@ -22,8 +22,8 @@ import { PlatformIcon } from '../utils/platformConfig';
 
 // Ranking type configurations
 const rankingTypes = [
-  { id: 'codingScore', label: 'Coding-Score', icon: Zap, color: 'amber', description: 'Comprehensive Score' },
-  { id: 'problems', label: 'Problems', icon: Target, color: 'green', description: 'Total Questions Solved' },
+  { id: 'codingScore', label: 'Coding Score', icon: Zap, color: 'amber', description: 'Comprehensive Coding Score' },
+  { id: 'problems', label: 'Total Questions', icon: Target, color: 'green', description: 'Total Questions Solved' },
   { id: 'leetcode', label: 'LeetCode', icon: null, color: 'orange', description: 'LeetCode Rating' },
   { id: 'codeforces', label: 'Codeforces', icon: null, color: 'blue', description: 'Codeforces Rating' },
   { id: 'codechef', label: 'CodeChef', icon: null, color: 'amber', description: 'CodeChef Rating' },
@@ -176,7 +176,7 @@ const LeaderboardPage = () => {
               <div className="flex flex-wrap items-center gap-4 sm:gap-8">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-amber-500">{currentUser.codingScore}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Coding-Score</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Coding Score</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">{currentUser.totalProblems}</div>
@@ -319,7 +319,7 @@ const LeaderboardPage = () => {
             <div className="col-span-1">Rank</div>
             <div className="col-span-4">User</div>
             <div className="col-span-2 text-center">{getRankingLabel()}</div>
-            <div className="col-span-2 text-center">{rankingType === 'problems' ? 'Coding-Score' : 'Problems'}</div>
+            <div className="col-span-2 text-center">{rankingType === 'problems' ? 'Coding Score' : 'Questions'}</div>
             <div className="col-span-3 text-center">Platform Stats</div>
           </div>
 
@@ -475,7 +475,7 @@ const LeaderboardPage = () => {
         <div className="mt-8 bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-amber-500" />
-            How Coding-Score is Calculated
+            How Coding Score is Calculated
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-4 transition-colors">

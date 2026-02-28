@@ -90,13 +90,13 @@ function generateInviteCode() {
 
 // Method to check if user is owner or admin
 roomSchema.methods.isUserAdmin = function(userId) {
-  const member = this.members.find(m => m.user.toString() === userId.toString());
+  const member = this.members.find(m => m.user && m.user.toString() === userId.toString());
   return member && (member.role === 'owner' || member.role === 'admin');
 };
 
 // Method to check if user is member
 roomSchema.methods.isUserMember = function(userId) {
-  return this.members.some(m => m.user.toString() === userId.toString());
+  return this.members.some(m => m.user && m.user.toString() === userId.toString());
 };
 
 module.exports = mongoose.model('Room', roomSchema);
