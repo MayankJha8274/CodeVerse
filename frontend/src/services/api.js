@@ -759,6 +759,145 @@ export const api = {
     const queryString = new URLSearchParams(params).toString();
     const data = await authFetch(`/problem-set/search${queryString ? `?${queryString}` : ''}`);
     return data;
+  },
+
+  // ============ SOCIETY ============
+  async exploreSocieties(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies${q ? `?${q}` : ''}`);
+  },
+  async getMySocieties() { return authFetch('/societies/my'); },
+  async getSociety(id) { return authFetch(`/societies/${id}`); },
+  async createSociety(data) {
+    return authFetch('/societies', { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateSociety(id, data) {
+    return authFetch(`/societies/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  },
+  async deleteSociety(id) {
+    return authFetch(`/societies/${id}`, { method: 'DELETE' });
+  },
+  async joinSociety(inviteCode) {
+    return authFetch('/societies/join', { method: 'POST', body: JSON.stringify({ inviteCode }) });
+  },
+  async leaveSociety(id) {
+    return authFetch(`/societies/${id}/leave`, { method: 'POST' });
+  },
+  async regenerateInviteCode(id) {
+    return authFetch(`/societies/${id}/regenerate-invite`, { method: 'POST' });
+  },
+
+  // Society Members
+  async getSocietyMembers(id, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/${id}/members${q ? `?${q}` : ''}`);
+  },
+  async kickMember(societyId, userId) {
+    return authFetch(`/societies/${societyId}/members/${userId}`, { method: 'DELETE' });
+  },
+  async banMember(societyId, userId, reason) {
+    return authFetch(`/societies/${societyId}/members/${userId}/ban`, { method: 'POST', body: JSON.stringify({ reason }) });
+  },
+  async changeMemberRole(societyId, userId, role) {
+    return authFetch(`/societies/${societyId}/members/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
+  },
+  async toggleMuteMember(societyId, userId, duration) {
+    return authFetch(`/societies/${societyId}/members/${userId}/mute`, { method: 'POST', body: JSON.stringify({ duration }) });
+  },
+
+  // Society Channels & Chat
+  async getChannels(societyId) { return authFetch(`/societies/${societyId}/channels`); },
+  async createChannel(societyId, data) {
+    return authFetch(`/societies/${societyId}/channels`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async getMessages(societyId, channelId, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages${q ? `?${q}` : ''}`);
+  },
+  async sendMessage(societyId, channelId, data) {
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async getThread(societyId, channelId, messageId) {
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages/${messageId}/thread`);
+  },
+  async deleteMessage(societyId, channelId, messageId) {
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages/${messageId}`, { method: 'DELETE' });
+  },
+  async togglePinMessage(societyId, channelId, messageId) {
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages/${messageId}/pin`, { method: 'POST' });
+  },
+  async reactToMessage(societyId, channelId, messageId, emoji) {
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages/${messageId}/react`, { method: 'POST', body: JSON.stringify({ emoji }) });
+  },
+  async reportMessage(societyId, channelId, messageId, reason) {
+    return authFetch(`/societies/${societyId}/channels/${channelId}/messages/${messageId}/report`, { method: 'POST', body: JSON.stringify({ reason }) });
+  },
+
+  // Society Events
+  async getSocietyEvents(societyId, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/${societyId}/events${q ? `?${q}` : ''}`);
+  },
+  async getSocietyEvent(societyId, eventId) {
+    return authFetch(`/societies/${societyId}/events/${eventId}`);
+  },
+  async createSocietyEvent(societyId, data) {
+    return authFetch(`/societies/${societyId}/events`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async updateSocietyEvent(societyId, eventId, data) {
+    return authFetch(`/societies/${societyId}/events/${eventId}`, { method: 'PUT', body: JSON.stringify(data) });
+  },
+  async cancelSocietyEvent(societyId, eventId) {
+    return authFetch(`/societies/${societyId}/events/${eventId}/cancel`, { method: 'POST' });
+  },
+  async rsvpEvent(societyId, eventId, status) {
+    return authFetch(`/societies/${societyId}/events/${eventId}/rsvp`, { method: 'POST', body: JSON.stringify({ status }) });
+  },
+  async checkInEvent(societyId, eventId) {
+    return authFetch(`/societies/${societyId}/events/${eventId}/checkin`, { method: 'POST' });
+  },
+  async submitEventFeedback(societyId, eventId, data) {
+    return authFetch(`/societies/${societyId}/events/${eventId}/feedback`, { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  // Society Announcements
+  async getAnnouncements(societyId, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/${societyId}/announcements${q ? `?${q}` : ''}`);
+  },
+  async createAnnouncement(societyId, data) {
+    return authFetch(`/societies/${societyId}/announcements`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async markAnnouncementRead(societyId, announcementId) {
+    return authFetch(`/societies/${societyId}/announcements/${announcementId}/read`, { method: 'POST' });
+  },
+  async commentOnAnnouncement(societyId, announcementId, content) {
+    return authFetch(`/societies/${societyId}/announcements/${announcementId}/comment`, { method: 'POST', body: JSON.stringify({ content }) });
+  },
+  async reactToAnnouncement(societyId, announcementId, emoji) {
+    return authFetch(`/societies/${societyId}/announcements/${announcementId}/react`, { method: 'POST', body: JSON.stringify({ emoji }) });
+  },
+
+  // Society Leaderboard & Gamification
+  async getSocietyLeaderboard(societyId, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/${societyId}/leaderboard${q ? `?${q}` : ''}`);
+  },
+  async getSocietyBadges(societyId, userId) {
+    const q = userId ? `?userId=${userId}` : '';
+    return authFetch(`/societies/${societyId}/badges${q}`);
+  },
+  async getSocietyStreak(societyId) {
+    return authFetch(`/societies/${societyId}/streak`);
+  },
+
+  // Society Analytics (admin)
+  async getSocietyAnalytics(societyId, days = 30) {
+    return authFetch(`/societies/${societyId}/analytics?days=${days}`);
+  },
+  async getSocietyActivityLog(societyId, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/${societyId}/activity-log${q ? `?${q}` : ''}`);
   }
 };
 

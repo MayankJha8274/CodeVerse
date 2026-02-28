@@ -274,8 +274,7 @@ hostedContestSchema.methods.canEdit = function(userId) {
   return mod && ['admin'].includes(mod.role);
 };
 
-// Indexes
-hostedContestSchema.index({ slug: 1 });
+// Indexes (slug already indexed via unique:true)
 hostedContestSchema.index({ owner: 1 });
 hostedContestSchema.index({ status: 1, startTime: 1 });
 hostedContestSchema.index({ 'signups.user': 1 });

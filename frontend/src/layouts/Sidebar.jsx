@@ -18,7 +18,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Swords,
-  Menu
+  Menu,
+  Building2
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -69,7 +70,8 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
       label: 'COMMUNITY',
       items: [
         { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-        { to: '/rooms', icon: Users, label: 'Societies' },
+        { to: '/societies', icon: Building2, label: 'Societies' },
+        { to: '/rooms', icon: Users, label: 'Rooms' },
       ]
     },
     {

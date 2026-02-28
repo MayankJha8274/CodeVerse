@@ -21,8 +21,7 @@ const roomSchema = new mongoose.Schema({
   inviteCode: {
     type: String,
     unique: true,
-    required: true,
-    index: true
+    required: true
   },
   members: [{
     user: {
