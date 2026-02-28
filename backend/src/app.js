@@ -57,6 +57,7 @@ try {
   app.use('/api/contests', require('./routes/contestRoutes'));
   app.use('/api/hosted-contests', require('./routes/hostedContestRoutes'));
   app.use('/api/problem-set', require('./routes/problemSetRoutes'));
+  app.use('/api/societies', require('./routes/societyRoutes'));
   
   // Run code endpoint (live compiler)
   const { protect } = require('./middleware/auth');

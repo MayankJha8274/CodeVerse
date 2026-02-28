@@ -1,7 +1,10 @@
 require('dotenv').config();
+const http = require('http');
+const { Server: SocketIOServer } = require('socket.io');
 const app = require('./app');
 const connectDB = require('./config/database');
 const { startAllCronJobs } = require('./services/cronService');
+const { setupSocketIO } = require('./services/socketHandler');
 const { exec } = require('child_process');
 const net = require('net');
 
@@ -59,8 +62,27 @@ const startServer = async () => {
     console.log('⏰ Platform data will sync automatically every 15 minutes');
     console.log('   You can also manually sync using "Sync All Platforms" button');
 
+    // Create HTTP server and attach Socket.io
+    const httpServer = http.createServer(app);
+    const io = new SocketIOServer(httpServer, {
+      cors: {
+        origin: [
+          process.env.FRONTEND_URL,
+          'http://localhost:5173',
+          'http://localhost:5174',
+          'http://localhost:3000'
+        ].filter(Boolean),
+        credentials: true
+      },
+      transports: ['websocket', 'polling']
+    });
+
+    // Setup Socket.io handlers
+    setupSocketIO(io);
+    console.log('✅ Socket.io initialized for real-time chat');
+
     // Start server
-    server = app.listen(PORT, '0.0.0.0', () => {
+    server = httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       console.log(`📍 Health check: http://localhost:${PORT}/health`);
       console.log(`📍 Also try: http://127.0.0.1:${PORT}/health`);

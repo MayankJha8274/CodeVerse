@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import PrivateRoute from './components/PrivateRoute';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -17,6 +18,10 @@ import DailyChallengePage from './pages/DailyChallengePage';
 import ContestsPage from './pages/ContestsPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
+// Society Pages
+import SocietiesPage from './pages/SocietiesPage';
+import SocietyDetailPage from './pages/SocietyDetailPage';
+
 // Contest Hosting Pages (admin routes show Coming Soon)
 import ContestLandingPage from './pages/ContestLandingPage';
 import ContestParticipationPage from './pages/ContestParticipationPage';
@@ -28,6 +33,7 @@ import { ProblemSetComingSoon, HostContestComingSoon } from './pages/ComingSoonP
 function App() {
   return (
     <AuthProvider>
+      <SocketProvider>
       <Router>
         <Routes>
           {/* Public Routes */}
@@ -53,6 +59,9 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="platforms" element={<PlatformDetailPage />} />
             <Route path="rooms" element={<RoomsPage />} />
+            <Route path="societies" element={<SocietiesPage />} />
+            <Route path="societies/:societyId" element={<SocietyDetailPage />} />
+            <Route path="societies/:societyId/:tab" element={<SocietyDetailPage />} />
             <Route path="compare" element={<ComparisonPage />} />
             <Route path="sheets" element={<SheetsPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
@@ -78,6 +87,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }
