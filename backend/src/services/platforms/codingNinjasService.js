@@ -64,9 +64,37 @@ const fetchCodingNinjasStats = async (username) => {
       const getText = () => document.body.innerText || '';
       const text = getText();
       
-      // Try to find the problems solved data
+      // Try to find the problems solved data with multiple regex patterns
+      // Pattern 1: Standard format
       const dsaMatch = text.match(/Data\s+Structures\s+&\s+Algorithms\s+(\d+)\s+Problems\s+solved\s+(\d+)\s+Easy\s+(\d+)\s+Moderate\s+(\d+)\s+Hard/i);
+      // Pattern 2: Alternate layout (numbers on separate lines)
+      const altMatch = !dsaMatch ? text.match(/(\d+)\s+Problems?\s+solved[\s\S]*?(\d+)\s+Easy\s+(\d+)\s+Moderate\s+(\d+)\s+Hard/i) : null;
+      // Pattern 3: Try individual extraction
+      const totalMatch = !dsaMatch && !altMatch ? text.match(/(\d+)\s+Problems?\s+solved/i) : null;
+      const easyMatch = !dsaMatch && !altMatch ? text.match(/(\d+)\s+Easy/i) : null;
+      const modMatch = !dsaMatch && !altMatch ? text.match(/(\d+)\s+Moderate/i) : null;
+      const hardMatch = !dsaMatch && !altMatch ? text.match(/(\d+)\s+Hard/i) : null;
+      
       const submissionsMatch = text.match(/(\d+)\s+Problem\s+submissions/i);
+      
+      // Extract DSA topic badges from the profile
+      // CN shows "X in DSA topics\nTopic1\nTopic2..."
+      const topicBadges = [];
+      const topicBadgeMatches = text.matchAll(/(\d+)\s+in\s+DSA\s+topics?\s*\n([\s\S]*?)(?=\d+\s+(?:in\s+DSA|Specialist|Achiever|Expert|Ninja)|$)/gi);
+      for (const match of topicBadgeMatches) {
+        const topicSection = match[2];
+        const topics = topicSection.split('\n').map(t => t.trim()).filter(t => t && t.length > 1 && t.length < 40 && !/^\d+$/.test(t));
+        topicBadges.push(...topics);
+      }
+      // Fallback: look for known DSA topic names after "DSA badges" or "DSA topics"
+      if (topicBadges.length === 0) {
+        const knownTopics = ['Arrays', 'Array', 'Linked List', 'Stacks & Queues', 'Stacks', 'Queues', 'Trees', 'Graphs', 'Graph', 'Dynamic Programming', 'Greedy', 'Backtracking', 'Recursion', 'Sorting', 'Searching', 'Hashing', 'Strings', 'String', 'Bit Manipulation', 'Math', 'Matrix', 'Heap', 'Trie', 'Two Pointer', 'Sliding Window'];
+        for (const topic of knownTopics) {
+          if (text.includes(topic)) {
+            topicBadges.push(topic);
+          }
+        }
+      }
       
       return {
         text: text.substring(0, 5000), // First 5000 chars for debugging
@@ -76,8 +104,19 @@ const fetchCodingNinjasStats = async (username) => {
           easy: dsaMatch[2],
           moderate: dsaMatch[3],
           hard: dsaMatch[4]
+        } : altMatch ? {
+          total: altMatch[1],
+          easy: altMatch[2],
+          moderate: altMatch[3],
+          hard: altMatch[4]
+        } : (totalMatch || easyMatch) ? {
+          total: totalMatch ? totalMatch[1] : '0',
+          easy: easyMatch ? easyMatch[1] : '0',
+          moderate: modMatch ? modMatch[1] : '0',
+          hard: hardMatch ? hardMatch[1] : '0'
         } : null,
-        submissions: submissionsMatch ? submissionsMatch[1] : null
+        submissions: submissionsMatch ? submissionsMatch[1] : null,
+        topicBadges: topicBadges
       };
     });
     
@@ -99,6 +138,41 @@ const fetchCodingNinjasStats = async (username) => {
       console.log(`✅ Found: ${submissions} submissions`);
     }
     
+    // Build topics from DSA badge topics
+    // CN doesn't provide per-topic problem counts, so we estimate based on 
+    // total problems and the number of topics the user has badges in
+    const cnTopics = [];
+    if (extractedData.topicBadges && extractedData.topicBadges.length > 0) {
+      const uniqueTopics = [...new Set(extractedData.topicBadges)];
+      // Normalize topic names to match standard naming
+      const topicNameMap = {
+        'Arrays': 'Array',
+        'Stacks & Queues': 'Stack',
+        'Stacks': 'Stack',
+        'Queues': 'Queue',
+        'Trees': 'Tree',
+        'Graphs': 'Graph',
+        'Strings': 'String',
+        'Hashing': 'Hash',
+      };
+      
+      // Distribute problems proportionally across topics
+      const totalForTopics = problemsSolved;
+      const perTopic = Math.max(1, Math.floor(totalForTopics / uniqueTopics.length));
+      let remaining = totalForTopics;
+      
+      for (let i = 0; i < uniqueTopics.length; i++) {
+        const rawName = uniqueTopics[i];
+        const name = topicNameMap[rawName] || rawName;
+        const count = i === uniqueTopics.length - 1 ? remaining : Math.min(perTopic, remaining);
+        remaining -= count;
+        if (count > 0) {
+          cnTopics.push({ name, count });
+        }
+      }
+      console.log(`✅ CN Topics from badges: ${cnTopics.map(t => t.name + '(' + t.count + ')').join(', ')}`);
+    }
+    
     const stats = {
       problemsSolved,
       totalSolved: problemsSolved,
@@ -108,7 +182,8 @@ const fetchCodingNinjasStats = async (username) => {
       easy,
       moderate,
       hard,
-      submissions
+      submissions,
+      topics: cnTopics
     };
 
     console.log(`✅ CodingNinjas: ${username} - ${problemsSolved} problems (E:${easy}, M:${moderate}, H:${hard}), ${submissions} submissions`);

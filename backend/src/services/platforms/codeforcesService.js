@@ -35,13 +35,13 @@ const fetchCodeforcesStats = async (handle) => {
     let acceptedProblems = new Set();
     let totalSubmissions = 0;
     let submissionCalendar = [];
+    const topicMap = {};
 
     if (submissionsResponse.data.status === 'OK') {
       const submissions = submissionsResponse.data.result;
       totalSubmissions = submissions.length;
 
       // Count unique accepted problems + extract topics
-      const topicMap = {};
       const solvedSet = new Set();
       submissions.forEach(submission => {
         if (submission.verdict === 'OK' && submission.problem) {
