@@ -1,6 +1,85 @@
 const puppeteer = require('puppeteer');
 
 /**
+ * Classify a problem into DSA topics based on its name/slug
+ * Returns an array of topic names the problem belongs to
+ */
+const classifyProblemTopics = (problemName, problemSlug) => {
+  const text = `${problemName} ${problemSlug}`.toLowerCase();
+  const matched = [];
+  
+  // Topic rules: [topicName, [keywords], [negative keywords to avoid false matches]]
+  const topicRules = [
+    ['Linked List', ['linked list', 'linked-list', 'doubly linked', 'singly linked', 'circular linked', 'merge list', 'node insertion', 'node deletion'], []],
+    ['Tree', ['tree', 'bst', 'binary search tree', 'binary-tree', 'inorder', 'preorder', 'postorder', 'leaf', 'subtree', 'root to', 'left view', 'right view', 'top view', 'bottom view', 'boundary traversal', 'level order', 'height of', 'diameter of', 'balanced tree', 'mirror tree', 'symmetric tree'], ['spanning tree']],
+    ['Graph', ['graph', 'dijkstra', 'bfs of', 'dfs of', 'cycle in', 'spanning tree', 'floyd', 'bellman', 'shortest path', 'island', 'province', 'topological', 'bipartite', 'word ladder', 'alien dict', 'safe state', 'connected component'], []],
+    ['Dynamic Programming', ['knapsack', 'longest increasing sub', 'longest common sub', 'longest bitonic', 'rod cutting', 'coin change', 'perfect sum', 'subset sum', 'partition', 'frog jump', 'geek.s training', 'climbing', 'edit distance', 'egg drop', 'matrix chain', 'fibonacci'], ['binary search', 'linked list']],
+    ['Sorting', ['sort', 'bubble sort', 'merge sort', 'quick sort', 'insertion sort', 'selection sort', 'heap sort', 'count inversion'], ['binary search', 'topological sort']],
+    ['Searching', ['binary search', 'search', 'lower bound', 'upper bound', 'floor in', 'ceil in', 'kth smallest', 'kth largest', 'kth element', 'nth root', 'square root', 'find peak', 'search pattern'], ['binary search tree', 'search in linked']],
+    ['Array', ['array', 'subarray', 'sub-array', 'rotate array', 'reverse array', 'leaders', 'kadane', 'maximum sub array', 'duplicate', 'missing', 'pair', 'triplet', 'stock', 'trapping rain', 'max sum', 'move all', 'rearrange'], []],
+    ['Stack', ['stack', 'parenthes', 'bracket', 'next greater', 'stock span', 'celebrity', 'expression', 'postfix', 'infix', 'prefix'], []],
+    ['Queue', ['queue', 'circular queue', 'deque', 'first non-repeating', 'stream', 'sliding window'], []],
+    ['Hash', ['hash', 'union of', 'frequency', 'count subarray', 'xor', 'largest subarray with 0', 'longest sub-array with sum', 'distinct'], ['binary search']],
+    ['String', ['string', 'pattern', 'anagram', 'palindrome', 'rabin-karp', 'kmp', 'reverse string', 'word'], ['subsequence', 'longest common sub']],
+    ['Math', ['gcd', 'lcm', 'prime', 'factorial', 'armstrong', 'divisor', 'digit', 'power of', 'sieve', 'modular', 'count digit', 'sum of divisors', 'odd or even'], []],
+    ['Bit Manipulation', ['bit', 'xor', 'set bit', 'toggle', 'rightmost', 'kth bit', 'power of 2', 'number of 1 bit'], ['longest bitonic']],
+    ['Greedy', ['greedy', 'fractional knapsack', 'gas station', 'minimum cost of ropes', 'job sequencing', 'huffman', 'activity selection', 'minimum platform'], []],
+    ['Backtracking', ['backtrack', 'rat in a maze', 'n queen', 'sudoku', 'permutation', 'combination'], []],
+    ['Heap', ['heap', 'priority queue', 'median of stream', 'merge k sorted', 'k largest', 'k closest'], []],
+    ['Recursion', ['recursion', 'recursive', 'tower of hanoi', 'print 1 to n', 'print n to 1', 'print gfg'], []],
+    ['Matrix', ['matrix', 'spiral', 'row-wise', 'row wise', 'rotate matrix', 'median in a row'], ['adjacency']],  
+    ['Sliding Window', ['window', 'sliding', 'longest subarray with atmost', 'first negative in every', 'fruit into basket'], []],
+    ['Two Pointer', ['two pointer', 'container with most', 'pair sum', '3sum', 'triplet'], []],
+    ['Divide and Conquer', ['divide and conquer', 'merge sort', 'count inversion', 'closest pair'], []],
+    ['Trie', ['trie', 'prefix tree', 'auto complete'], []],
+    ['Segment Tree', ['segment tree', 'range query', 'range update'], []],
+    ['Disjoint Set', ['disjoint set', 'union find', 'union-find', 'kruskal'], []],
+  ];
+  
+  for (const [topic, keywords, negKeywords] of topicRules) {
+    const hasNeg = negKeywords.length > 0 && negKeywords.some(nk => text.includes(nk));
+    if (!hasNeg && keywords.some(kw => text.includes(kw))) {
+      matched.push(topic);
+    }
+  }
+  
+  return matched;
+};
+
+/**
+ * Extract topics from GFG submissions data
+ * Uses problem names/slugs to classify into DSA topics
+ */
+const extractTopicsFromSubmissions = (submissionsObj) => {
+  const topicMap = {};
+  const difficulties = ['School', 'Basic', 'Easy', 'Medium', 'Hard'];
+  
+  difficulties.forEach(difficulty => {
+    if (submissionsObj[difficulty] && typeof submissionsObj[difficulty] === 'object') {
+      const problems = submissionsObj[difficulty];
+      for (const [id, detail] of Object.entries(problems)) {
+        const pname = detail.pname || '';
+        const slug = detail.slug || '';
+        const topics = classifyProblemTopics(pname, slug);
+        for (const topic of topics) {
+          topicMap[topic] = (topicMap[topic] || 0) + 1;
+        }
+      }
+    }
+  });
+  
+  // Convert to array format [{name, count}] sorted by count desc
+  const topics = Object.entries(topicMap)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+  
+  console.log(`   📊 GFG Topics extracted: ${topics.length} topics from problem names`);
+  topics.slice(0, 10).forEach(t => console.log(`      ${t.name}: ${t.count}`));
+  
+  return topics;
+};
+
+/**
  * Generate estimated calendar from total problems solved
  * Since GFG doesn't provide submission calendar API, we create an estimated distribution
  * This spreads problems over the last 180 days for visualization purposes
@@ -67,15 +146,20 @@ const fetchGeeksforGeeksStats = async (username) => {
     
     // Intercept API responses to capture user data
     const apiData = {};
-    await page.on('response', async (response) => {
+    page.on('response', async (response) => {
       try {
         const url = response.url();
         // GFG loads user data from API endpoints
         if (url.includes('/api/') && 
             (url.includes('user') || url.includes('profile') || url.includes('submissions'))) {
           const text = await response.text();
+          // For submissions endpoint, keep the LARGEST response (the difficulty-based one, not the date-count one)
+          if (url.includes('submissions') && apiData[url] && apiData[url].length > text.length) {
+            console.log(`📡 Skipping smaller submissions response (${text.length} vs ${apiData[url].length} bytes)`);
+            return;
+          }
           apiData[url] = text;
-          console.log(`📡 Captured API response from: ${url.substring(0, 80)}...`);
+          console.log(`📡 Captured API response from: ${url.substring(0, 80)}... (${text.length} bytes)`);
         }
       } catch (e) {
         // Ignore errors from reading response bodies
@@ -248,38 +332,48 @@ const fetchGeeksforGeeksStats = async (username) => {
         if (apiUrl.includes('submissions')) {
           console.log(`   📝 Submissions API found, keys:`, Object.keys(json).join(', '));
           
-          if (json.results) {
-            // Count unique problems from submissions (all difficulty levels)
+          // Helper to count per-difficulty from a results/result object
+          const countFromObj = (obj) => {
             const uniqueProblems = new Set();
+            const counts = { school: 0, basic: 0, easy: 0, medium: 0, hard: 0 };
             const difficulties = ['School', 'Basic', 'Easy', 'Medium', 'Hard'];
-            
             difficulties.forEach(difficulty => {
-              if (json.results[difficulty]) {
-                const problems = Object.keys(json.results[difficulty]);
+              if (obj[difficulty]) {
+                const problems = Object.keys(obj[difficulty]);
                 problems.forEach(id => uniqueProblems.add(id));
+                counts[difficulty.toLowerCase()] = problems.length;
                 console.log(`   📊 ${difficulty}: ${problems.length} problems`);
               }
             });
-            
-            if (uniqueProblems.size > 0) {
-              data.jsonData.totalProblemsSolved = uniqueProblems.size;
-              console.log(`   ✅ Found ${uniqueProblems.size} total unique problems from submissions API`);
+            return { unique: uniqueProblems.size, counts };
+          };
+
+          if (json.results) {
+            const { unique, counts } = countFromObj(json.results);
+            if (unique > 0) {
+              data.jsonData.totalProblemsSolved = unique;
+              // Map: School+Basic+Easy → easySolved, Medium → mediumSolved, Hard → hardSolved
+              data.jsonData.easySolved = (counts.school || 0) + (counts.basic || 0) + (counts.easy || 0);
+              data.jsonData.mediumSolved = counts.medium || 0;
+              data.jsonData.hardSolved = counts.hard || 0;
+              console.log(`   ✅ Found ${unique} total unique problems from submissions API (E:${data.jsonData.easySolved} M:${data.jsonData.mediumSolved} H:${data.jsonData.hardSolved})`);
+              // Extract topics from problem names
+              data.jsonData.topics = extractTopicsFromSubmissions(json.results);
             }
-          } else if (json.result) {
-            // Try alternate structure
-            const uniqueProblems = new Set();
-            const difficulties = ['School', 'Basic', 'Easy', 'Medium', 'Hard'];
-            
-            difficulties.forEach(difficulty => {
-              if (json.result[difficulty]) {
-                const problems = Object.keys(json.result[difficulty]);
-                problems.forEach(id => uniqueProblems.add(id));
+          } else if (json.result && typeof json.result === 'object' && !Array.isArray(json.result)) {
+            // Check if result has difficulty keys (not just date:count mapping)
+            const hasDifficultyKeys = ['School', 'Basic', 'Easy', 'Medium', 'Hard'].some(d => json.result[d]);
+            if (hasDifficultyKeys) {
+              const { unique, counts } = countFromObj(json.result);
+              if (unique > 0) {
+                data.jsonData.totalProblemsSolved = unique;
+                data.jsonData.easySolved = (counts.school || 0) + (counts.basic || 0) + (counts.easy || 0);
+                data.jsonData.mediumSolved = counts.medium || 0;
+                data.jsonData.hardSolved = counts.hard || 0;
+                console.log(`   ✅ Found ${unique} total unique problems (alternate structure) (E:${data.jsonData.easySolved} M:${data.jsonData.mediumSolved} H:${data.jsonData.hardSolved})`);
+                // Extract topics from problem names
+                data.jsonData.topics = extractTopicsFromSubmissions(json.result);
               }
-            });
-            
-            if (uniqueProblems.size > 0) {
-              data.jsonData.totalProblemsSolved = uniqueProblems.size;
-              console.log(`   ✅ Found ${uniqueProblems.size} total unique problems (alternate structure)`);
             }
           }
         }
@@ -343,12 +437,21 @@ const fetchGeeksforGeeksStats = async (username) => {
     let instituteRank = data.jsonData.instituteRank || data.profileStats.instituteRank || data.textStats.instituteRank || 0;
     let monthlyScore = data.jsonData.monthlyScore || 0;
     
+    const easySolved = data.jsonData.easySolved || 0;
+    const mediumSolved = data.jsonData.mediumSolved || 0;
+    const hardSolved = data.jsonData.hardSolved || 0;
+
     const stats = {
       problemsSolved,
       totalSolved: problemsSolved,
+      easySolved,
+      mediumSolved,
+      hardSolved,
       codingScore,
       instituteRank,
       monthlyScore: monthlyScore || codingScore,
+      // Topics extracted from problem names via keyword classification
+      topics: data.jsonData.topics || [],
       // DO NOT create estimated calendar - it adds fake activity on zero days
       // This breaks streak calculations with incorrect data
       submissionCalendar: []

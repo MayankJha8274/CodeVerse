@@ -171,14 +171,24 @@ const Dashboard = () => {
       setUserData(dashboardData);
       setPlatformStats(dashboardData.platforms || {});
       setRatingHistory(dashboardData.ratingHistory || []);
-      setAllRatingHistory({ 
-        chartData: dashboardData.ratingHistory || [], 
-        platforms: Object.keys(dashboardData.platforms || {}) 
-      });
       setTopicAnalysis(dashboardData.topics || []);
       setBadges(dashboardData.badges || []);
       setAchievements(dashboardData.achievements || []);
       setContributionCalendar(dashboardData.contributionCalendar || null);
+
+      // Fetch proper per-platform rating history from dedicated endpoint
+      // (combined endpoint only has averaged rating, not per-platform data)
+      try {
+        const allRatingsData = await api.getAllRatingHistory();
+        if (allRatingsData?.chartData?.length > 0) {
+          setAllRatingHistory(allRatingsData);
+        } else {
+          setAllRatingHistory({ chartData: [], byPlatform: {}, platforms: [] });
+        }
+      } catch (e) {
+        console.log('Could not fetch per-platform rating history:', e.message);
+        setAllRatingHistory({ chartData: [], byPlatform: {}, platforms: [] });
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       // Fallback to individual API calls if combined endpoint fails
@@ -284,15 +294,62 @@ const Dashboard = () => {
     return connected;
   };
 
-  // Problems breakdown
+  // Problems breakdown — combine ALL DSA platforms into Easy/Medium/Hard
   const getDSAProblems = () => {
     const lc = platformStats.leetcode || {};
-    return {
-      easy: lc.easySolved || lc.easy || 0,
-      medium: lc.mediumSolved || lc.medium || 0,
-      hard: lc.hardSolved || lc.hard || 0,
-      total: (lc.easySolved || lc.easy || 0) + (lc.mediumSolved || lc.medium || 0) + (lc.hardSolved || lc.hard || 0)
-    };
+    const gfg = platformStats.geeksforgeeks || {};
+    const hr = platformStats.hackerrank || {};
+    const cn = platformStats.codingninjas || {};
+
+    // Per-platform difficulty data
+    const lcEasy = lc.easySolved || lc.easy || 0;
+    const lcMed = lc.mediumSolved || lc.medium || 0;
+    const lcHard = lc.hardSolved || lc.hard || 0;
+
+    const gfgEasy = gfg.easySolved || 0;
+    const gfgMed = gfg.mediumSolved || 0;
+    const gfgHard = gfg.hardSolved || 0;
+    const gfgFromDifficulty = gfgEasy + gfgMed + gfgHard;
+    const gfgTotal = gfg.problemsSolved || gfg.totalSolved || 0;
+
+    const cnEasy = cn.easy || 0;
+    const cnMod = cn.moderate || 0;
+    const cnHard = cn.hard || 0;
+    const cnFromDifficulty = cnEasy + cnMod + cnHard;
+    const cnTotal = cn.problemsSolved || cn.totalSolved || 0;
+
+    const hrTotal = hr.problemsSolved || hr.totalSolved || 0;
+
+    // Sum known difficulty counts
+    let easy = lcEasy + gfgEasy + cnEasy;
+    let medium = lcMed + gfgMed + cnMod;
+    let hard = lcHard + gfgHard + cnHard;
+    const knownTotal = easy + medium + hard;
+
+    // Unclassified = platforms without per-difficulty data
+    const gfgUnclassified = gfgFromDifficulty > 0 ? 0 : gfgTotal;
+    const cnUnclassified = cnFromDifficulty > 0 ? 0 : cnTotal;
+    const unclassified = gfgUnclassified + cnUnclassified + hrTotal;
+
+    // Distribute unclassified proportionally into Easy/Medium/Hard
+    if (unclassified > 0 && knownTotal > 0) {
+      const easyRatio = easy / knownTotal;
+      const medRatio = medium / knownTotal;
+      // hard gets the remainder to avoid rounding errors
+      const extraEasy = Math.round(unclassified * easyRatio);
+      const extraMed = Math.round(unclassified * medRatio);
+      const extraHard = unclassified - extraEasy - extraMed;
+      easy += extraEasy;
+      medium += extraMed;
+      hard += extraHard;
+    } else if (unclassified > 0) {
+      // No known distribution — put all in easy as fallback
+      easy += unclassified;
+    }
+
+    const total = easy + medium + hard;
+
+    return { easy, medium, hard, total };
   };
 
   const getCPProblems = () => {
@@ -774,78 +831,15 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Contest Achievements/Titles */}
-            {achievements.length > 0 ? (
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="text-xl">🏆</span> Contest Rankings
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  {achievements.map((achievement, idx) => {
-                    return (
-                      <div 
-                        key={idx}
-                        className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#1a1a2e] dark:to-[#12121a] rounded-xl p-4 border border-gray-200 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all group overflow-hidden"
-                      >
-                        {/* Glow effect */}
-                        <div 
-                          className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
-                          style={{ 
-                            background: `radial-gradient(circle at 50% 0%, ${achievement.color}40, transparent 70%)` 
-                          }}
-                        />
-                        
-                        <div className="relative z-10 flex items-center justify-between">
-                          {/* Left: Icon + Platform Name */}
-                          <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0">
-                              <PlatformIcon platform={achievement.platform} className="w-10 h-10" color={achievement.color} />
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-400 uppercase tracking-wide font-semibold">
-                                {getPlatformName(achievement.platform)}
-                              </div>
-                              {/* Hide contest titles for now to avoid showing incorrect labels (e.g., 'Knight'). */}
-                            </div>
-                          </div>
-                          
-                          {/* Right: Rating + Max */}
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{achievement.rating}</div>
-                            {achievement.maxRating && (
-                              <div className="text-xs text-gray-500 mt-1">max: {achievement.maxRating}</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                  <span className="text-xl">🏆</span> Contest Rankings
-                </h3>
-                <div className="text-center py-6">
-                  <div className="text-4xl mb-3">🎯</div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">No contest ratings yet</p>
-                  <p className="text-gray-500 text-xs">Participate in LeetCode, Codeforces, or CodeChef contests to see your rankings</p>
-                </div>
-              </div>
-            )}
-
             {/* DSA Topic Analysis */}
             {topicAnalysis.length > 0 ? (
               <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <PlatformIcon platform="leetcode" className="w-5 h-5" color="#FFA116" /> DSA Topic Analysis
+                    <Code className="w-5 h-5 text-amber-500" /> DSA Topic Analysis
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{ topicAnalysis.length} topics</span>
+                    <span className="text-xs text-gray-500">{topicAnalysis.length} topics</span>
                   </div>
                 </div>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar-thin">
@@ -891,7 +885,7 @@ const Dashboard = () => {
             ) : (
               <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                  <PlatformIcon platform="leetcode" className="w-5 h-5" color="#FFA116" /> DSA Topic Analysis
+                  <Code className="w-5 h-5 text-amber-500" /> DSA Topic Analysis
                 </h3>
                 <div className="text-center py-6">
                   <div className="flex justify-center mb-3"><BookOpen className="w-10 h-10 text-gray-400 dark:text-gray-600" /></div>
@@ -936,25 +930,25 @@ const Dashboard = () => {
                 <div className="flex items-center gap-4">
                   <CircularProgress 
                     value={dsaProblems.total} 
-                    max={500} 
+                    max={Math.max(dsaProblems.total + 50, 500)} 
                     size={80} 
                     strokeWidth={8}
                     color="#f59e0b"
                   />
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                      <span className="text-sm text-gray-300">Easy</span>
+                  <div className="flex-1 space-y-2">
+                    {/* Easy */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-green-500">Easy</span>
                       <span className="text-sm font-semibold text-white">{dsaProblems.easy}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                      <span className="text-sm text-gray-300">Medium</span>
+                    {/* Medium */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-amber-500">Medium</span>
                       <span className="text-sm font-semibold text-white">{dsaProblems.medium}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                      <span className="text-sm text-gray-300">Hard</span>
+                    {/* Hard */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-red-500">Hard</span>
                       <span className="text-sm font-semibold text-white">{dsaProblems.hard}</span>
                     </div>
                   </div>
