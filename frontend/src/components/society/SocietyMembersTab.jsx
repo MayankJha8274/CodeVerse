@@ -4,9 +4,9 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const ROLE_CONFIG = {
-  super_admin: { label: 'Super Admin', color: 'text-red-400 bg-red-500/10', icon: Crown },
-  society_admin: { label: 'Admin', color: 'text-amber-400 bg-amber-500/10', icon: ShieldAlert },
-  moderator: { label: 'Moderator', color: 'text-blue-400 bg-blue-500/10', icon: Shield },
+  super_admin: { label: 'Super Admin', color: 'text-white bg-gradient-to-r from-amber-500 to-orange-500 ring-2 ring-amber-500/30', icon: Crown },
+  society_admin: { label: 'Admin', color: 'text-blue-400 bg-blue-500/10', icon: ShieldAlert },
+  moderator: { label: 'Moderator', color: 'text-purple-400 bg-purple-500/10', icon: Shield },
   member: { label: 'Member', color: 'text-green-400 bg-green-500/10', icon: User },
   visitor: { label: 'Visitor', color: 'text-gray-400 bg-gray-500/10', icon: User },
 };
@@ -79,6 +79,33 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
 
   return (
     <div>
+      {/* Role Information Banner */}
+      <div className="mb-5 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+            <Shield className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Role Hierarchy</h3>
+            <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <p>
+                <span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                  <Crown className="w-3 h-3" />
+                  Super Admin:
+                </span>{' '}
+                Society creator with full control (only 1 per society)
+              </p>
+              <p>
+                <span className="font-medium text-blue-600 dark:text-blue-400">Admin:</span> Can manage members, events, and announcements
+              </p>
+              <p>
+                <span className="font-medium text-green-600 dark:text-green-400">Member:</span> Can participate in all activities
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">

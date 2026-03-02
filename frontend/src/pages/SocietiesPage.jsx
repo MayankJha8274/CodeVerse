@@ -359,32 +359,88 @@ const SocietiesPage = () => {
       {/* Join Modal */}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowJoinModal(false)}>
-          <div className="bg-white dark:bg-[#1a1a2e] rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-[#1a1a2e] rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Join Society</h2>
               <button onClick={() => setShowJoinModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
+            
+            {/* Instructions */}
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Hash className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-600 dark:text-blue-400">
+                  <p className="font-medium mb-1">How to join:</p>
+                  <ol className="list-decimal list-inside space-y-0.5 text-blue-600/80 dark:text-blue-400/80">
+                    <li>Get an invite code from a society admin</li>
+                    <li>Paste it in the field below</li>
+                    <li>Click Join to become a member</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Invite Code</label>
-                <input
-                  type="text" required
-                  value={inviteCode}
-                  onChange={e => setInviteCode(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-[#111118] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white text-center tracking-widest font-mono text-lg"
-                  placeholder="abcd1234"
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Paste Invite Code Here
+                </label>
+                <div className="relative">
+                  <input
+                    type="text" 
+                    required
+                    value={inviteCode}
+                    onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                    className="w-full px-4 py-3.5 bg-gray-50 dark:bg-[#111118] border-2 border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white text-center tracking-[0.3em] font-mono text-lg font-bold uppercase focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    placeholder="EE3C6A7D"
+                    maxLength={12}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Hash className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                  Example: EE3C6A7D, ABC123XY, or similar format
+                </p>
               </div>
-              {joinError && <p className="text-sm text-red-500">{joinError}</p>}
+              
+              {/* Role Info */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Users className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-600 dark:text-amber-400">
+                    <p className="font-medium">You'll join as a <span className="font-bold">Member</span></p>
+                    <p className="text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                      Only the society creator has Super Admin privileges
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {joinError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{joinError}</p>
+                </div>
+              )}
+              
               <button
                 type="submit"
-                disabled={joinLoading}
-                className="w-full py-2.5 bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={joinLoading || !inviteCode.trim()}
+                className="w-full py-3 bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {joinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                Join
+                {joinLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Joining...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-4 h-4" />
+                    Join Society
+                  </>
+                )}
               </button>
             </form>
           </div>

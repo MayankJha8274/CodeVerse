@@ -822,6 +822,13 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return authFetch(`/societies/${id}/members${q ? `?${q}` : ''}`);
   },
+  async addMemberManually(societyId, data) {
+    return authFetch(`/societies/${societyId}/members/add`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async searchUsers(societyId, query, limit = 20) {
+    console.log('API call: searchUsers', { societyId, query, limit });
+    return authFetch(`/societies/${societyId}/search-users?query=${encodeURIComponent(query)}&limit=${limit}`);
+  },
   async kickMember(societyId, userId) {
     return authFetch(`/societies/${societyId}/members/${userId}`, { method: 'DELETE' });
   },

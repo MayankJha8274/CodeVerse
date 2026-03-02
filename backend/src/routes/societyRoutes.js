@@ -29,6 +29,8 @@ router.post('/:societyId/regenerate-invite', requireSocietyMember, requirePermis
 
 // ============ MEMBERS ============
 router.get('/:societyId/members', requireSocietyMember, requirePermission('view_members'), society.getMembers);
+router.post('/:societyId/members/add', requireSocietyMember, requireMinRole('super_admin'), society.addMemberManually);
+router.get('/:societyId/search-users', requireSocietyMember, requireMinRole('super_admin'), society.searchUsers);
 router.delete('/:societyId/members/:userId', requireSocietyMember, requirePermission('kick_member'), society.kickMember);
 router.post('/:societyId/members/:userId/ban', requireSocietyMember, requirePermission('ban_member'), society.banMember);
 router.put('/:societyId/members/:userId/role', requireSocietyMember, requirePermission('change_role'), society.changeMemberRole);
