@@ -38,6 +38,9 @@ const SocietyDetailPage = () => {
     try {
       setLoading(true);
       const res = await api.getSociety(societyId);
+      console.log('Society data received:', res.data);
+      console.log('User role:', res.data?.userRole);
+      console.log('Is member:', res.data?.isMember);
       setSociety(res.data);
     } catch (err) {
       console.error('Failed to load society:', err);
@@ -78,6 +81,10 @@ const SocietyDetailPage = () => {
 
   const isAdmin = ADMIN_TABS.includes(society?.userRole);
   const allTabs = isAdmin ? [...TABS, { id: 'admin', label: 'Admin', icon: BarChart3 }] : TABS;
+  
+  console.log('Society userRole:', society?.userRole);
+  console.log('isAdmin:', isAdmin);
+  console.log('All tabs:', allTabs.map(t => t.label));
 
   if (loading) {
     return (
@@ -126,7 +133,14 @@ const SocietyDetailPage = () => {
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {society.memberCount || 0} members</span>
                 <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {society.stats?.totalMessages || 0}</span>
                 {society.userRole && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium capitalize">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize flex items-center gap-1 ${
+                    society.userRole === 'super_admin' 
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black'
+                      : society.userRole === 'society_admin'
+                      ? 'bg-blue-500/10 text-blue-500'
+                      : 'bg-gray-500/10 text-gray-500'
+                  }`}>
+                    {society.userRole === 'super_admin' && <Shield className="w-3 h-3" />}
                     {society.userRole.replace(/_/g, ' ')}
                   </span>
                 )}

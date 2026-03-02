@@ -16,7 +16,7 @@ const activityLogSchema = new mongoose.Schema({
     enum: [
       'society_created', 'society_updated', 'society_deleted',
       'member_joined', 'member_left', 'member_kicked', 'member_banned',
-      'member_role_changed', 'member_muted', 'member_unmuted',
+      'member_added_manually', 'member_role_changed', 'member_muted', 'member_unmuted',
       'message_sent', 'message_deleted', 'message_reported', 'message_pinned',
       'channel_created', 'channel_updated', 'channel_deleted',
       'event_created', 'event_updated', 'event_cancelled', 'event_rsvp',

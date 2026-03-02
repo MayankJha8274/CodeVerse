@@ -585,6 +585,126 @@ const regenerateInviteCode = async (req, res, next) => {
   }
 };
 
+// @desc    Add member manually (by super admin)
+// @route   POST /api/societies/:societyId/members/add
+// @access  Private (super_admin only)
+const addMemberManually = async (req, res, next) => {
+  try {
+    const { societyId } = req.params;
+    const { userId, username, email } = req.body;
+
+    // Find user by ID, username or email
+    let targetUser;
+    if (userId) {
+      targetUser = await User.findById(userId);
+    } else if (username) {
+      targetUser = await User.findOne({ username: username.toLowerCase() });
+    } else if (email) {
+      targetUser = await User.findOne({ email: email.toLowerCase() });
+    } else {
+      return res.status(400).json({ success: false, message: 'User ID, username, or email is required' });
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Check if already a member
+    const existing = await SocietyMember.findOne({ society: societyId, user: targetUser._id });
+    if (existing) {
+      if (existing.isBanned) {
+        return res.status(403).json({ success: false, message: 'User is banned from this society' });
+      }
+      return res.status(400).json({ success: false, message: 'User is already a member' });
+    }
+
+    // Check member limit
+    const society = await Society.findById(societyId);
+    const memberCount = await SocietyMember.countDocuments({ society: societyId, isBanned: false });
+    if (memberCount >= society.settings.maxMembers) {
+      return res.status(400).json({ success: false, message: 'Society is full' });
+    }
+
+    // Add member
+    await SocietyMember.create({
+      society: societyId,
+      user: targetUser._id,
+      role: 'member'
+    });
+
+    await SocietyStreak.create({ user: targetUser._id, society: societyId });
+
+    society.stats.totalMembers = memberCount + 1;
+    await society.save();
+
+    await ActivityLog.create({
+      society: societyId,
+      user: req.user.id,
+      action: 'member_added_manually',
+      targetType: 'member',
+      targetUser: targetUser._id,
+      details: { addedBy: req.user.id }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${targetUser.username} added successfully`,
+      data: { userId: targetUser._id, username: targetUser.username }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Search users (for manual addition)
+// @route   GET /api/societies/:societyId/search-users
+// @access  Private (super_admin only)
+const searchUsers = async (req, res, next) => {
+  try {
+    const { query, limit = 20 } = req.query;
+    const { societyId } = req.params;
+
+    console.log('Search request:', { societyId, query, limit });
+
+    if (!query || query.trim().length < 2) {
+      return res.status(200).json({ success: true, count: 0, data: [] });
+    }
+
+    // Find existing member IDs to exclude them
+    const existingMembers = await SocietyMember.find({
+      society: societyId
+    }).select('user').lean();
+    const memberIds = existingMembers.map(m => m.user.toString());
+
+    console.log('Existing member IDs:', memberIds);
+
+    // Search for users (case-insensitive)
+    const searchRegex = new RegExp(query.trim(), 'i');
+    const users = await User.find({
+      _id: { $nin: memberIds },
+      $or: [
+        { username: searchRegex },
+        { email: searchRegex },
+        { fullName: searchRegex }
+      ]
+    })
+      .select('username email fullName avatar')
+      .limit(parseInt(limit))
+      .lean();
+
+    console.log('Found users:', users.length);
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    console.error('Search users error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   createSociety,
   exploreSocieties,
@@ -599,5 +719,7 @@ module.exports = {
   banMember,
   changeMemberRole,
   toggleMuteMember,
-  regenerateInviteCode
+  regenerateInviteCode,
+  addMemberManually,
+  searchUsers
 };
