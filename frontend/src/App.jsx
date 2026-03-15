@@ -30,12 +30,14 @@ import ContestLeaderboardPage from './pages/ContestLeaderboardPage';
 
 // Problem Set Pages (Coming Soon)
 import { ProblemSetComingSoon, HostContestComingSoon } from './pages/ComingSoonPage';
+import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   return (
     <AuthProvider>
       <SocketProvider>
       <Router>
+        <Analytics />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
