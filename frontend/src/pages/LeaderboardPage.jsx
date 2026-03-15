@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
 import UserAvatar from '../components/UserAvatar';
+import ProfileLink from '../components/ProfileLink';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { PlatformIcon } from '../utils/platformConfig';
@@ -157,7 +158,9 @@ const LeaderboardPage = () => {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <UserAvatar user={{ avatar: currentUser.avatar, name: currentUser.fullName }} size="lg" />
+                  <ProfileLink userId={currentUser.id || currentUser._id}>
+                    <UserAvatar user={{ avatar: currentUser.avatar, name: currentUser.fullName, username: currentUser.username }} size="lg" />
+                  </ProfileLink>
                   <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1">
                     <Star className="w-4 h-4 text-black" />
                   </div>
@@ -203,14 +206,20 @@ const LeaderboardPage = () => {
               <div className={`bg-gradient-to-br ${getRankColor(2)} border rounded-xl p-6 order-1 md:order-1`}>
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-4">
-                    <UserAvatar user={{ avatar: topThree[1]?.avatar, name: topThree[1]?.fullName }} size="xl" />
+                    <ProfileLink userId={topThree[1]?.id || topThree[1]?._id}>
+                      <UserAvatar user={{ avatar: topThree[1]?.avatar, name: topThree[1]?.fullName, username: topThree[1]?.username }} size="xl" />
+                    </ProfileLink>
                     <div className="absolute -top-2 -right-2">
                       <Medal className="w-8 h-8 text-gray-300" />
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-gray-300 mb-1">#2</div>
-                  <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{topThree[1]?.fullName || topThree[1]?.username}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">@{topThree[1]?.username}</div>
+                  <ProfileLink userId={topThree[1]?.id || topThree[1]?._id} className="text-lg font-semibold text-gray-900 dark:text-white hover:text-amber-500 mb-1 transition-colors">
+                    {topThree[1]?.fullName || topThree[1]?.username}
+                  </ProfileLink>
+                  <ProfileLink userId={topThree[1]?.id || topThree[1]?._id} className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-500 mb-3 transition-colors">
+                    @{topThree[1]?.username}
+                  </ProfileLink>
                   <div className={`text-2xl font-bold ${getRankingColor().split(' ')[0]}`}>{getRankingValue(topThree[1])}</div>
                   <div className="text-xs text-gray-500">{getRankingLabel()}</div>
                 </div>
@@ -223,11 +232,17 @@ const LeaderboardPage = () => {
                     <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
                       <Crown className="w-10 h-10 text-yellow-400" />
                     </div>
-                    <UserAvatar user={{ avatar: topThree[0]?.avatar, name: topThree[0]?.fullName }} size="xl" />
+                    <ProfileLink userId={topThree[0]?.id || topThree[0]?._id}>
+                      <UserAvatar user={{ avatar: topThree[0]?.avatar, name: topThree[0]?.fullName, username: topThree[0]?.username }} size="xl" />
+                    </ProfileLink>
                   </div>
                   <div className="text-3xl font-bold text-yellow-400 mb-1">#1</div>
-                  <div className="text-xl font-semibold text-gray-900 dark:text-white mb-1">{topThree[0]?.fullName || topThree[0]?.username}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">@{topThree[0]?.username}</div>
+                  <ProfileLink userId={topThree[0]?.id || topThree[0]?._id} className="text-xl font-semibold text-gray-900 dark:text-white hover:text-amber-500 mb-1 transition-colors">
+                    {topThree[0]?.fullName || topThree[0]?.username}
+                  </ProfileLink>
+                  <ProfileLink userId={topThree[0]?.id || topThree[0]?._id} className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-500 mb-3 transition-colors">
+                    @{topThree[0]?.username}
+                  </ProfileLink>
                   <div className={`text-3xl font-bold ${getRankingColor().split(' ')[0]}`}>{getRankingValue(topThree[0])}</div>
                   <div className="text-xs text-gray-500">{getRankingLabel()}</div>
                 </div>
@@ -237,14 +252,20 @@ const LeaderboardPage = () => {
               <div className={`bg-gradient-to-br ${getRankColor(3)} border rounded-xl p-6 order-2 md:order-3`}>
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-4">
-                    <UserAvatar user={{ avatar: topThree[2]?.avatar, name: topThree[2]?.fullName }} size="xl" />
+                    <ProfileLink userId={topThree[2]?.id || topThree[2]?._id}>
+                      <UserAvatar user={{ avatar: topThree[2]?.avatar, name: topThree[2]?.fullName, username: topThree[2]?.username }} size="xl" />
+                    </ProfileLink>
                     <div className="absolute -top-2 -right-2">
                       <Medal className="w-8 h-8 text-amber-600" />
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-amber-600 mb-1">#3</div>
-                  <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{topThree[2]?.fullName || topThree[2]?.username}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">@{topThree[2]?.username}</div>
+                  <ProfileLink userId={topThree[2]?.id || topThree[2]?._id} className="text-lg font-semibold text-gray-900 dark:text-white hover:text-amber-500 mb-1 transition-colors">
+                    {topThree[2]?.fullName || topThree[2]?.username}
+                  </ProfileLink>
+                  <ProfileLink userId={topThree[2]?.id || topThree[2]?._id} className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-500 mb-3 transition-colors">
+                    @{topThree[2]?.username}
+                  </ProfileLink>
                   <div className={`text-2xl font-bold ${getRankingColor().split(' ')[0]}`}>{getRankingValue(topThree[2])}</div>
                   <div className="text-xs text-gray-500">{getRankingLabel()}</div>
                 </div>
@@ -349,11 +370,15 @@ const LeaderboardPage = () => {
 
                 {/* User Info */}
                 <div className="col-span-2 sm:col-span-4 flex items-center gap-2 sm:gap-3 min-w-0">
-                  <UserAvatar user={{ avatar: entry.avatar, name: entry.fullName }} size="md" />
+                  <ProfileLink userId={entry.id || entry._id}>
+                    <UserAvatar user={{ avatar: entry.avatar, name: entry.fullName, username: entry.username }} size="md" />
+                  </ProfileLink>
                   <div className="min-w-0">
-                    <div className="font-semibold text-gray-900 dark:text-white truncate">{entry.fullName || entry.username}</div>
+                    <ProfileLink userId={entry.id || entry._id} className="block font-semibold text-gray-900 dark:text-white hover:text-amber-500 truncate transition-colors">
+                      {entry.fullName || entry.username}
+                    </ProfileLink>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                      @{entry.username}
+                      <ProfileLink userId={entry.id || entry._id} className="hover:text-amber-500 transition-colors">@{entry.username}</ProfileLink>
                       {entry.institution && (
                         <span className="hidden sm:inline ml-2 text-gray-500">• {entry.institution}</span>
                       )}

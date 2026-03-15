@@ -4,6 +4,7 @@ import {
   X, Loader2, Send, Smile
 } from 'lucide-react';
 import api from '../../services/api';
+import ProfileLink from '../ProfileLink';
 import { useAuth } from '../../context/AuthContext';
 
 const REACTION_EMOJIS = ['👍', '❤️', '🎉', '😂', '🤔', '👏'];
@@ -143,10 +144,10 @@ const SocietyAnnouncementsTab = ({ societyId, userRole }) => {
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 whitespace-pre-wrap">{ann.content}</p>
 
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">
+                <ProfileLink user={ann.author} className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">
                   {ann.author?.username?.charAt(0)?.toUpperCase() || '?'}
-                </div>
-                <span>{ann.author?.username || 'Unknown'}</span>
+                </ProfileLink>
+                <ProfileLink user={ann.author} className="hover:text-amber-500 transition-colors">{ann.author?.username || 'Unknown'}</ProfileLink>
               </div>
 
               {/* Reactions */}
@@ -188,11 +189,11 @@ const SocietyAnnouncementsTab = ({ societyId, userRole }) => {
                   <div className="space-y-2 mb-2">
                     {ann.comments?.map((c, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
-                        <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 flex-shrink-0 mt-0.5">
+                        <ProfileLink user={c.user} className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 flex-shrink-0 mt-0.5">
                           {c.user?.username?.charAt(0)?.toUpperCase() || '?'}
-                        </div>
+                        </ProfileLink>
                         <div className="flex-1 min-w-0">
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{c.user?.username}</span>
+                          <ProfileLink user={c.user} className="font-medium text-gray-700 dark:text-gray-300 hover:text-amber-500 transition-colors">{c.user?.username}</ProfileLink>
                           <span className="text-gray-500 dark:text-gray-400 ml-1">{c.content}</span>
                         </div>
                       </div>

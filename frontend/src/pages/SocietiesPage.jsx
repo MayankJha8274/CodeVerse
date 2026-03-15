@@ -6,6 +6,7 @@ import {
   TrendingUp, Sparkles
 } from 'lucide-react';
 import api from '../services/api';
+import ProfileLink from '../components/ProfileLink';
 import { useAuth } from '../context/AuthContext';
 
 const SocietiesPage = () => {
@@ -116,7 +117,7 @@ const SocietiesPage = () => {
               {society.name}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              by {society.owner?.username || 'Unknown'}
+              by <ProfileLink user={society.owner} className="hover:text-amber-500 transition-colors">{society.owner?.username || 'Unknown'}</ProfileLink>
             </p>
           </div>
         </div>

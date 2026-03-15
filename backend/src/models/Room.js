@@ -88,15 +88,25 @@ function generateInviteCode() {
   return code;
 }
 
+function getMemberUserId(member) {
+  if (!member || !member.user) {
+    return null;
+  }
+
+  return (member.user._id || member.user).toString();
+}
+
 // Method to check if user is owner or admin
 roomSchema.methods.isUserAdmin = function(userId) {
-  const member = this.members.find(m => m.user && m.user.toString() === userId.toString());
+  const targetUserId = userId.toString();
+  const member = this.members.find(m => getMemberUserId(m) === targetUserId);
   return member && (member.role === 'owner' || member.role === 'admin');
 };
 
 // Method to check if user is member
 roomSchema.methods.isUserMember = function(userId) {
-  return this.members.some(m => m.user && m.user.toString() === userId.toString());
+  const targetUserId = userId.toString();
+  return this.members.some(m => getMemberUserId(m) === targetUserId);
 };
 
 module.exports = mongoose.model('Room', roomSchema);
