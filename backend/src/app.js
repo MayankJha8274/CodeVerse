@@ -4,6 +4,7 @@ const passport = require('./config/passport');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(express.json());

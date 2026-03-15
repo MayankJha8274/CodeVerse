@@ -83,7 +83,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       {
         clientID: process.env.GITHUB_CLIENT_ID,
         clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL: '/api/auth/github/callback',
+        callbackURL: `${process.env.BASE_URL}/api/auth/github/callback`,
         scope: ['user:email']
       },
       async (accessToken, refreshToken, profile, done) => {
