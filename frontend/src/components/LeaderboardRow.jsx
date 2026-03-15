@@ -1,8 +1,9 @@
 import React from 'react';
 import UserAvatar from './UserAvatar';
+import ProfileLink from './ProfileLink';
 import { Trophy, TrendingUp } from 'lucide-react';
 
-const LeaderboardRow = ({ rank, user, totalProblems, weeklyProblems, avgRating, score }) => {
+const LeaderboardRow = ({ rank, user, totalProblems, weeklyProblems, avgRating, score, profileUserId }) => {
   const getRankColor = (rank) => {
     if (rank === 1) return 'text-yellow-500';
     if (rank === 2) return 'text-gray-400';
@@ -30,7 +31,9 @@ const LeaderboardRow = ({ rank, user, totalProblems, weeklyProblems, avgRating, 
       </div>
 
       <div className="flex-1 min-w-0">
-        <UserAvatar user={user} size="md" showName showUsername />
+        <ProfileLink user={user} userId={profileUserId} className="inline-flex min-w-0">
+          <UserAvatar user={user} size="md" showName showUsername />
+        </ProfileLink>
       </div>
 
       <div className="hidden md:flex items-center gap-8">

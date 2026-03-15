@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area
 } from 'recharts';
 import api from '../../services/api';
+import ProfileLink from '../ProfileLink';
 import { useAuth } from '../../context/AuthContext';
 import { PlatformIcon } from '../../utils/platformConfig';
 
@@ -454,10 +455,12 @@ const SocietyLeaderboardTab = ({ societyId }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1">
-                        {entry.user?.fullName || entry.user?.username || 'Unknown'}
+                        <ProfileLink user={entry.user} className="truncate hover:text-amber-500 transition-colors">
+                          {entry.user?.fullName || entry.user?.username || 'Unknown'}
+                        </ProfileLink>
                         {isMe && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500 text-black font-medium">YOU</span>}
                       </div>
-                      <div className="text-[10px] text-gray-400">@{entry.user?.username}</div>
+                      <ProfileLink user={entry.user} className="text-[10px] text-gray-400 hover:text-amber-500 transition-colors">@{entry.user?.username}</ProfileLink>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-amber-500">{(entry.codingScore || entry.score || 0).toLocaleString()}</div>
@@ -560,15 +563,17 @@ const SocietyLeaderboardTab = ({ societyId }) => {
 
                   {/* User */}
                   <div className="md:col-span-3 flex items-center gap-2 min-w-0 flex-1">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    <ProfileLink user={entry.user} className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                       {entry.user?.username?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
+                    </ProfileLink>
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1">
-                        {entry.user?.fullName || entry.user?.username || 'Unknown'}
+                        <ProfileLink user={entry.user} className="truncate hover:text-amber-500 transition-colors">
+                          {entry.user?.fullName || entry.user?.username || 'Unknown'}
+                        </ProfileLink>
                         {isMe && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-500 font-medium">you</span>}
                       </div>
-                      <div className="text-[10px] text-gray-400">@{entry.user?.username}</div>
+                      <ProfileLink user={entry.user} className="text-[10px] text-gray-400 hover:text-amber-500 transition-colors">@{entry.user?.username}</ProfileLink>
                     </div>
                   </div>
 

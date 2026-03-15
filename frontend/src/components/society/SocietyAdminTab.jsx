@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart3, Users, MessageSquare, Calendar, AlertTriangle, Activity, Settings, Loader2, RefreshCw, ChevronDown, Save, Shield, UserPlus, Search, X, Check } from 'lucide-react';
 import api from '../../services/api';
+import ProfileLink from '../ProfileLink';
 
 const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
   const [activeSection, setActiveSection] = useState('analytics');
@@ -261,10 +262,10 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                     {analytics.topContributors.slice(0, 10).map((c, i) => (
                       <div key={c._id} className="flex items-center gap-3">
                         <span className="w-5 text-xs text-gray-400 text-right">{i + 1}.</span>
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        <ProfileLink user={c.user} className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {c.user?.username?.charAt(0)?.toUpperCase() || '?'}
-                        </div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{c.user?.username || 'Unknown'}</span>
+                        </ProfileLink>
+                        <ProfileLink user={c.user} className="text-sm text-gray-700 dark:text-gray-300 hover:text-amber-500 transition-colors flex-1">{c.user?.username || 'Unknown'}</ProfileLink>
                         <span className="text-xs font-semibold text-amber-500">{c.contributionScore || 0} pts</span>
                       </div>
                     ))}
@@ -283,7 +284,7 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                     {analytics.reportedMessages.slice(0, 10).map(msg => (
                       <div key={msg._id} className="bg-red-50 dark:bg-red-900/10 rounded-lg p-3">
                         <div className="flex justify-between items-start mb-1">
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{msg.sender?.username}</span>
+                          <ProfileLink user={msg.sender} className="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-amber-500 transition-colors">{msg.sender?.username}</ProfileLink>
                           <span className="text-[10px] text-red-400">{msg.reports?.length} report(s)</span>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{msg.content}</p>
@@ -320,10 +321,10 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-medium text-gray-900 dark:text-white">{log.user?.username || 'System'}</span>
+                      <ProfileLink user={log.user} className="font-medium text-gray-900 dark:text-white hover:text-amber-500 transition-colors">{log.user?.username || 'System'}</ProfileLink>
                       {' '}{formatAction(log.action)}
                       {log.targetUser && (
-                        <> → <span className="font-medium">{log.targetUser?.username}</span></>
+                        <> → <ProfileLink user={log.targetUser} className="font-medium hover:text-amber-500 transition-colors">{log.targetUser?.username}</ProfileLink></>
                       )}
                     </p>
                     <span className="text-[10px] text-gray-400">
@@ -403,9 +404,9 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                     
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <ProfileLink user={user} className="block text-sm font-medium text-gray-900 dark:text-white hover:text-amber-500 truncate transition-colors">
                         {user.username}
-                      </p>
+                      </ProfileLink>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {user.email}
                       </p>

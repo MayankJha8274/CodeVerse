@@ -67,8 +67,14 @@ exports.getUserProfile = async (req, res) => {
       data: {
         user: {
           id: user._id,
+          _id: user._id,
           username: user.username,
+          fullName: user.fullName,
+          avatar: user.avatar,
           email: user.email,
+          bio: user.bio,
+          institution: user.institution,
+          country: user.country,
           platforms: user.platforms,
           createdAt: user.createdAt,
           lastSynced: user.lastSynced

@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import OAuthSuccess from './pages/OAuthSuccess';
 import Dashboard from './pages/Dashboard';
+import UserProfilePage from './pages/UserProfilePage';
 import PlatformDetailPage from './pages/PlatformDetailPage';
 import RoomsPage from './pages/RoomsPage';
 import ComparisonPage from './pages/ComparisonPage';
@@ -57,6 +58,7 @@ function App() {
           {/* Protected Routes with Dashboard Layout */}
           <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="dashboard/profile/:userId" element={<UserProfilePage />} />
             <Route path="platforms" element={<PlatformDetailPage />} />
             <Route path="rooms" element={<RoomsPage />} />
             <Route path="societies" element={<SocietiesPage />} />

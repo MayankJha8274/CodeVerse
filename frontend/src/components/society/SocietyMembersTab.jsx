@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Shield, ShieldAlert, Crown, User, MoreVertical, X, Loader2, UserMinus, Ban, Volume2, VolumeX, ChevronDown } from 'lucide-react';
 import api from '../../services/api';
+import ProfileLink from '../ProfileLink';
 import { useAuth } from '../../context/AuthContext';
 
 const ROLE_CONFIG = {
@@ -154,16 +155,16 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
                 }`}
               >
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                <ProfileLink user={member.user} className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                   {member.user?.username?.charAt(0)?.toUpperCase() || '?'}
-                </div>
+                </ProfileLink>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <ProfileLink user={member.user} className="text-sm font-medium text-gray-900 dark:text-white hover:text-amber-500 truncate transition-colors">
                       {member.user?.username || 'Unknown'}
-                    </span>
+                    </ProfileLink>
                     {isMe && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-medium">you</span>}
                     {member.isMuted && (
                       <VolumeX className="w-3 h-3 text-red-400" title="Muted" />
@@ -269,7 +270,7 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
               {confirmAction.type === 'kick' ? 'Kick Member' : 'Ban Member'}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-              Are you sure you want to {confirmAction.type} <strong>{confirmAction.member.user?.username}</strong>?
+              Are you sure you want to {confirmAction.type} <strong><ProfileLink user={confirmAction.member.user} className="hover:text-amber-500 transition-colors">{confirmAction.member.user?.username}</ProfileLink></strong>?
               {confirmAction.type === 'ban' && ' They will not be able to rejoin.'}
             </p>
             <div className="flex justify-end gap-3">

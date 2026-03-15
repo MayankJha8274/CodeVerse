@@ -21,6 +21,7 @@ import LeaderboardRow from '../components/LeaderboardRow';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import UserAvatar from '../components/UserAvatar';
+import ProfileLink from '../components/ProfileLink';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -375,6 +376,7 @@ const RoomsPage = () => {
                           key={entry.rank || entry.username}
                           rank={entry.rank}
                           user={{ username: entry.username, fullName: entry.fullName, avatar: entry.avatar }}
+                          profileUserId={entry.userId}
                           totalProblems={entry.totalProblems}
                           weeklyProblems={entry.problemsInPeriod}
                           avgRating={entry.avgRating}
@@ -404,20 +406,23 @@ const RoomsPage = () => {
                         key={member.user?._id || member.user}
                         className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-[#1a1a2e] transition-colors rounded-lg"
                       >
-                        <UserAvatar 
-                          user={{ 
-                            avatar: member.user?.avatar, 
-                            name: member.user?.fullName || member.user?.username 
-                          }} 
-                          size="md" 
-                        />
+                        <ProfileLink user={member.user} className="flex-shrink-0">
+                          <UserAvatar 
+                            user={{ 
+                              avatar: member.user?.avatar,
+                              name: member.user?.fullName || member.user?.username,
+                              username: member.user?.username
+                            }} 
+                            size="md" 
+                          />
+                        </ProfileLink>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 dark:text-white truncate">
+                          <ProfileLink user={member.user} className="block font-medium text-gray-900 dark:text-white hover:text-amber-500 truncate transition-colors">
                             {member.user?.fullName || member.user?.username || 'Unknown'}
-                          </div>
-                          <div className="text-sm text-gray-400">
+                          </ProfileLink>
+                          <ProfileLink user={member.user} className="block text-sm text-gray-400 hover:text-amber-500 transition-colors">
                             @{member.user?.username || 'user'}
-                          </div>
+                          </ProfileLink>
                         </div>
                         {member.role === 'owner' && (
                           <Crown className="w-4 h-4 text-amber-500" />

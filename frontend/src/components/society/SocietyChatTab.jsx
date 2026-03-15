@@ -4,6 +4,7 @@ import {
   Code, AlertTriangle, CheckCircle, Loader2, Users, ChevronDown
 } from 'lucide-react';
 import api from '../../services/api';
+import ProfileLink from '../ProfileLink';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
@@ -53,18 +54,24 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
       }
     };
 
-    const handleTyping = ({ username, channelId }) => {
+    const handleTyping = ({ userId, username, channelId }) => {
       if (channelId === activeChannel?._id && username !== user?.username) {
-        setTypingUsers(prev => [...new Set([...prev, username])]);
+        setTypingUsers(prev => {
+          if (prev.some(entry => entry.userId === userId)) {
+            return prev;
+          }
+
+          return [...prev, { userId, username }];
+        });
         setTimeout(() => {
-          setTypingUsers(prev => prev.filter(u => u !== username));
+          setTypingUsers(prev => prev.filter(entry => entry.userId !== userId));
         }, 3000);
       }
     };
 
-    const handleStoppedTyping = ({ username, channelId }) => {
+    const handleStoppedTyping = ({ userId, channelId }) => {
       if (channelId === activeChannel?._id) {
-        setTypingUsers(prev => prev.filter(u => u !== username));
+        setTypingUsers(prev => prev.filter(entry => entry.userId !== userId));
       }
     };
 
@@ -204,7 +211,7 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
             {socket.onlineUsers?.slice(0, 10).map(u => (
               <div key={u.userId} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                <span className="truncate">{u.username}</span>
+                <ProfileLink userId={u.userId} className="truncate hover:text-amber-500 transition-colors">{u.username}</ProfileLink>
               </div>
             ))}
           </div>
@@ -252,16 +259,16 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
                       className={`group relative flex items-start gap-3 py-1 hover:bg-gray-50 dark:hover:bg-[#111118] px-2 -mx-2 rounded ${!showAvatar ? 'mt-0' : 'mt-2'}`}
                     >
                       {showAvatar ? (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
+                        <ProfileLink user={msg.sender} className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
                           {msg.sender?.username?.charAt(0)?.toUpperCase() || '?'}
-                        </div>
+                        </ProfileLink>
                       ) : (
                         <div className="w-8 flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         {showAvatar && (
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{msg.sender?.username || 'Unknown'}</span>
+                            <ProfileLink user={msg.sender} className="text-sm font-semibold text-gray-900 dark:text-white hover:text-amber-500 transition-colors">{msg.sender?.username || 'Unknown'}</ProfileLink>
                             <span className="text-[10px] text-gray-400">{formatTime(msg.createdAt)}</span>
                             {msg.isPinned && <Pin className="w-3 h-3 text-amber-500" />}
                             {msg.isSolution && <CheckCircle className="w-3 h-3 text-green-500" />}
@@ -344,7 +351,14 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
         {/* Typing Indicator */}
         {typingUsers.length > 0 && (
           <div className="px-4 py-1 text-xs text-gray-400 dark:text-gray-500">
-            {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            {typingUsers.map((entry, index) => (
+              <React.Fragment key={entry.userId || entry.username}>
+                {index > 0 && ', '}
+                <ProfileLink userId={entry.userId} className="hover:text-amber-500 transition-colors">
+                  {entry.username}
+                </ProfileLink>
+              </React.Fragment>
+            ))} {typingUsers.length === 1 ? 'is' : 'are'} typing...
           </div>
         )}
 
