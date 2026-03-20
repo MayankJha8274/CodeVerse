@@ -825,8 +825,7 @@ export const api = {
   async addMemberManually(societyId, data) {
     return authFetch(`/societies/${societyId}/members/add`, { method: 'POST', body: JSON.stringify(data) });
   },
-  async searchUsers(societyId, query, limit = 20) {
-    console.log('API call: searchUsers', { societyId, query, limit });
+  async searchSocietyUsers(societyId, query, limit = 20) {
     return authFetch(`/societies/${societyId}/search-users?query=${encodeURIComponent(query)}&limit=${limit}`);
   },
   async kickMember(societyId, userId) {

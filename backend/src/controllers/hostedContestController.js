@@ -125,7 +125,8 @@ exports.getContest = async (req, res) => {
     const isOwnerOrMod = req.user && contest.isModerator(req.user._id);
     
     if (!contest.isPublic && !isOwnerOrMod) {
-      if (!req.body.accessCode || req.body.accessCode !== contest.accessCode) {
+      const accessCode = req.query.accessCode || req.body?.accessCode;
+      if (!accessCode || accessCode !== contest.accessCode) {
         return res.status(403).json({
           success: false,
           error: 'Access code required for this contest'

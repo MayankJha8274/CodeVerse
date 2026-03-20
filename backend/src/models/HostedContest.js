@@ -153,11 +153,13 @@ const hostedContestSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  allowedLanguages: [{
-    type: String,
-    enum: ['cpp20', 'java', 'python3', 'pypy3', 'c'],
+  allowedLanguages: {
+    type: [{
+      type: String,
+      enum: ['cpp20', 'java', 'python3', 'pypy3', 'c']
+    }],
     default: ['cpp20', 'java', 'python3', 'pypy3', 'c']
-  }],
+  },
   
   // Security Features
   screenLockEnabled: {

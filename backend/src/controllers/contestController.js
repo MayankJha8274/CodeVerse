@@ -215,7 +215,7 @@ const getUserReminders = async (req, res, next) => {
 const getContestsCalendar = async (req, res, next) => {
   try {
     const { month, year } = req.query;
-    const targetMonth = parseInt(month) || new Date().getMonth();
+    const targetMonth = month !== undefined ? parseInt(month) : new Date().getMonth();
     const targetYear = parseInt(year) || new Date().getFullYear();
 
     // Get first and last day of month

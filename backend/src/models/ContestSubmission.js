@@ -127,33 +127,43 @@ const contestSubmissionSchema = new mongoose.Schema({
   tabSwitchCount: {
     type: Number,
     default: 0
+  },
+  // Flag to prevent double-counting in statistics
+  _statisticsCounted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
 });
 
-// Update problem statistics on save
+// Update problem statistics on save (only once per submission)
 contestSubmissionSchema.post('save', async function() {
-  if (this.status === 'accepted' || this.status === 'partial' || this.status === 'wrong_answer') {
-    const ContestProblem = mongoose.model('ContestProblem');
-    await ContestProblem.findByIdAndUpdate(this.problem, {
-      $inc: { 
-        'statistics.totalSubmissions': 1,
-        ...(this.status === 'accepted' && { 'statistics.acceptedSubmissions': 1 })
-      }
-    });
-    
-    // Check if this is first solve
-    if (this.status === 'accepted') {
-      const problem = await ContestProblem.findById(this.problem);
-      if (problem && !problem.statistics.firstSolve?.user) {
-        problem.statistics.firstSolve = {
-          user: this.user,
-          time: this.submittedAt
-        };
-        await problem.save();
-      }
+  const terminalStatuses = ['accepted', 'partial', 'wrong_answer', 'time_limit', 'memory_limit', 'runtime_error', 'compilation_error'];
+  if (!terminalStatuses.includes(this.status)) return;
+  if (this._statisticsCounted) return;
+
+  // Mark as counted atomically to prevent race conditions
+  const updated = await mongoose.model('ContestSubmission').findOneAndUpdate(
+    { _id: this._id, _statisticsCounted: false },
+    { _statisticsCounted: true }
+  );
+  if (!updated) return; // Another save already counted this
+
+  const ContestProblem = mongoose.model('ContestProblem');
+  await ContestProblem.findByIdAndUpdate(this.problem, {
+    $inc: {
+      'statistics.totalSubmissions': 1,
+      ...(this.status === 'accepted' && { 'statistics.acceptedSubmissions': 1 })
     }
+  });
+
+  // Check if this is first solve (atomic: only sets if not already set)
+  if (this.status === 'accepted') {
+    await ContestProblem.findOneAndUpdate(
+      { _id: this.problem, 'statistics.firstSolve.user': { $exists: false } },
+      { 'statistics.firstSolve': { user: this.user, time: this.submittedAt } }
+    );
   }
 });
 

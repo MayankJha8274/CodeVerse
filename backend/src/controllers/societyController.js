@@ -78,10 +78,11 @@ const exploreSocieties = async (req, res, next) => {
     const query = { isActive: true };
 
     if (search) {
+      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $regex: search, $options: 'i' } }
+        { name: { $regex: sanitized, $options: 'i' } },
+        { description: { $regex: sanitized, $options: 'i' } },
+        { tags: { $regex: sanitized, $options: 'i' } }
       ];
     }
 

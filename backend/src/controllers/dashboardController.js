@@ -286,7 +286,10 @@ exports.getUserRooms = async (req, res) => {
     }).populate('members.user', 'username email fullName avatar');
 
     const formattedRooms = rooms.map(room => {
-      const member = room.members.find(m => (m.user?._id || m.user).toString() === userId);
+      const member = room.members.find(m => {
+        const memberId = m.user?._id || m.user;
+        return memberId && memberId.toString() === userId;
+      });
       const isAdmin = member?.role === 'admin' || member?.role === 'owner';
       const isOwner = room.owner.toString() === userId;
 

@@ -489,7 +489,7 @@ exports.getLeaderboard = async (req, res) => {
         for (const prob of entry.problems) {
           if (prob.solved) {
             const solveTime = Math.floor((new Date(prob.firstAcceptedTime) - contest.startTime) / 60000); // minutes
-            const wrongAttemptPenalty = (prob.attempts - 1) * (contest.icpcSettings?.penalty / 60 || 20); // penalty in minutes
+            const wrongAttemptPenalty = (prob.attempts - 1) * ((contest.icpcSettings?.penalty ?? 1200) / 60); // penalty in minutes
             totalPenalty += solveTime + wrongAttemptPenalty;
           }
         }
