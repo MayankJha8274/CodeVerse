@@ -307,7 +307,7 @@ const reactToMessage = async (req, res, next) => {
 
     const existingReaction = message.reactions.find(r => r.emoji === emoji);
     if (existingReaction) {
-      const userIndex = existingReaction.users.indexOf(req.user.id);
+      const userIndex = existingReaction.users.findIndex(u => u.toString() === req.user.id);
       if (userIndex > -1) {
         existingReaction.users.splice(userIndex, 1);
         if (existingReaction.users.length === 0) {

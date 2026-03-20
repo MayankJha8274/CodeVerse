@@ -337,17 +337,17 @@ exports.verifyAndComplete = async (req, res) => {
     
     const user = await User.findById(userId);
     const challenge = await DailyChallenge.findOne({ user: userId, date: today });
-    
+
     if (!challenge) {
       return res.status(404).json({ success: false, message: 'No challenge found for today' });
     }
-    
+
     if (challenge.isCompleted) {
       return res.status(400).json({ success: false, message: 'Challenge already completed' });
     }
-    
+
     // Check user's platforms
-    if (!user.platforms?.leetcode && !user.platforms?.codeforces) {
+    if (!user || (!user.platforms?.leetcode && !user.platforms?.codeforces)) {
       return res.status(400).json({ 
         success: false, 
         message: 'Please link your LeetCode or Codeforces account to verify submissions' 

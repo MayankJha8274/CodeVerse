@@ -107,12 +107,9 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
     setSearching(true);
     setAddError(null);
     try {
-      console.log('Searching for:', query);
-      const res = await api.searchUsers(societyId, query);
-      console.log('Search response:', res);
+      const res = await api.searchSocietyUsers(societyId, query);
       const users = res.data || res || [];
       setSearchResults(users);
-      console.log('Search results:', users.length, 'users');
     } catch (err) {
       console.error('Failed to search users:', err);
       setAddError('Failed to search users. Please try again.');

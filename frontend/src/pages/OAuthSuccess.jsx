@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -10,18 +10,19 @@ const OAuthSuccess = () => {
   const [status, setStatus] = useState('processing'); // processing | success | error
   const [errorMsg, setErrorMsg] = useState(null);
   const [decoded, setDecoded] = useState(null);
+  const statusRef = useRef('processing');
 
   useEffect(() => {
     const token = searchParams.get('token');
 
     if (!token) {
       setStatus('error');
+      statusRef.current = 'error';
       setErrorMsg('No token found in URL.');
-      // Redirect back to login after short delay
       setTimeout(() => navigate('/login?error=oauth_failed'), 2500);
       return;
     }
- 
+
     // Save token immediately so api calls use it
     localStorage.setItem('token', token);
 
@@ -39,11 +40,10 @@ const OAuthSuccess = () => {
         localStorage.setItem('user', JSON.stringify(user));
         updateUserData(user);
         setStatus('success');
-        // Ensure user sees the success state briefly
+        statusRef.current = 'success';
         setTimeout(() => navigate('/dashboard'), 600);
       } catch (error) {
         console.error('Error fetching user data after OAuth:', error);
-        // Attempt to decode token payload as a fallback
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const user = {
@@ -56,22 +56,23 @@ const OAuthSuccess = () => {
           updateUserData(user);
           setDecoded(payload);
           setStatus('success');
+          statusRef.current = 'success';
           setTimeout(() => navigate('/dashboard'), 800);
         } catch (decodeError) {
           console.error('Token decode failed:', decodeError);
           setStatus('error');
+          statusRef.current = 'error';
           setErrorMsg('Failed to fetch account after authentication. Please try logging in.');
         }
       }
     };
 
-    // Start fetch but also guard in case it stalls
     fetchUserData();
     const guard = setTimeout(() => {
-      if (status === 'processing') {
-        // show a helpful message and allow manual continue
+      if (statusRef.current === 'processing') {
         setErrorMsg('Taking longer than expected. If the page stays here, click Continue.');
         setStatus('error');
+        statusRef.current = 'error';
       }
     }, 8000);
 
@@ -80,11 +81,15 @@ const OAuthSuccess = () => {
   }, [searchParams]);
 
   const handleContinue = () => {
-    const savedUser = JSON.parse(localStorage.getItem('user'));
-    if (savedUser) {
-      updateUserData(savedUser);
-      navigate('/dashboard');
-    } else {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('user'));
+      if (savedUser) {
+        updateUserData(savedUser);
+        navigate('/dashboard');
+      } else {
+        navigate('/login');
+      }
+    } catch {
       navigate('/login');
     }
   };

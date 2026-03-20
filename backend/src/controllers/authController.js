@@ -144,7 +144,10 @@ const updateProfile = async (req, res, next) => {
     if (fullName) updateData.fullName = fullName;
     if (bio !== undefined) updateData.bio = bio;
     if (avatar !== undefined) updateData.avatar = avatar;
-    if (platforms) updateData.platforms = { ...req.user.platforms, ...platforms };
+    if (platforms) {
+      const currentUser = await User.findById(req.user.id);
+      updateData.platforms = { ...(currentUser.platforms?.toObject ? currentUser.platforms.toObject() : currentUser.platforms), ...platforms };
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,

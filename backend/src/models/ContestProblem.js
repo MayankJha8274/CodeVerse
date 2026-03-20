@@ -57,7 +57,6 @@ const contestProblemSchema = new mongoose.Schema({
   // Problem Statement (Markdown)
   description: {
     type: String,
-    required: true,
     default: ''
   },
   

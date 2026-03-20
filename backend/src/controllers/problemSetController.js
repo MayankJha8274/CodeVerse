@@ -80,18 +80,19 @@ exports.getPublicProblems = async (req, res) => {
     if (difficulty) query.difficulty = difficulty;
     if (tags) query.tags = { $in: tags.split(',') };
     if (search) {
+      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { problemCode: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { title: { $regex: sanitized, $options: 'i' } },
+        { problemCode: { $regex: sanitized, $options: 'i' } },
+        { tags: { $in: [new RegExp(sanitized, 'i')] } }
       ];
     }
-    
+
     const problems = await ProblemSet.find(query)
       .select('title slug problemCode difficulty tags stats maxScore owner createdAt')
       .populate('owner', 'username name avatar')
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .limit(parseInt(limit));
     
     const total = await ProblemSet.countDocuments(query);
@@ -510,10 +511,11 @@ exports.searchProblems = async (req, res) => {
     };
     
     if (search) {
+      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$and = [{
         $or: [
-          { title: { $regex: search, $options: 'i' } },
-          { problemCode: { $regex: search, $options: 'i' } }
+          { title: { $regex: sanitized, $options: 'i' } },
+          { problemCode: { $regex: sanitized, $options: 'i' } }
         ]
       }];
     }

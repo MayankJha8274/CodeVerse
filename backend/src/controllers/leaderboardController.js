@@ -209,9 +209,10 @@ const getInstitutionLeaderboard = async (req, res, next) => {
     const { institution } = req.params;
     const { limit = 50, page = 1 } = req.query;
     
-    const users = await User.find({ 
+    const sanitizedInstitution = institution.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const users = await User.find({
       isActive: true,
-      institution: { $regex: institution, $options: 'i' }
+      institution: { $regex: sanitizedInstitution, $options: 'i' }
     }).lean();
     
     const userIds = users.map(u => u._id);

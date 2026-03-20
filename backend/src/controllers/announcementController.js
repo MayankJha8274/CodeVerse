@@ -210,7 +210,7 @@ const reactToAnnouncement = async (req, res, next) => {
 
     const existingReaction = announcement.reactions.find(r => r.emoji === emoji);
     if (existingReaction) {
-      const userIdx = existingReaction.users.indexOf(req.user.id);
+      const userIdx = existingReaction.users.findIndex(u => u.toString() === req.user.id);
       if (userIdx > -1) {
         existingReaction.users.splice(userIdx, 1);
         if (existingReaction.users.length === 0) {

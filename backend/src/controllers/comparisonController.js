@@ -182,7 +182,7 @@ exports.compareWithRoom = async (req, res) => {
       });
     }
 
-    const isMember = room.members.some(m => m.userId.toString() === userId);
+    const isMember = room.members.some(m => m.user.toString() === userId);
     if (!isMember) {
       return res.status(403).json({
         success: false,
@@ -198,7 +198,7 @@ exports.compareWithRoom = async (req, res) => {
     const userTotals = calculateTotals(userStats);
 
     // Get all members' stats
-    const memberIds = room.members.map(m => m.userId);
+    const memberIds = room.members.map(m => m.user);
     const allMembersData = [];
 
     for (const memberId of memberIds) {
@@ -281,7 +281,7 @@ exports.getTopPerformers = async (req, res) => {
           message: 'Room not found'
         });
       }
-      userIds = room.members.map(m => m.userId);
+      userIds = room.members.map(m => m.user);
     } else {
       // Global leaderboard
       const allUsers = await User.find({ isActive: true }).limit(100);
@@ -293,13 +293,14 @@ exports.getTopPerformers = async (req, res) => {
 
     for (const userId of userIds) {
       const user = await User.findById(userId).select('-password');
+      if (!user) continue;
       const stats = await PlatformStats.find({
         userId,
         fetchStatus: 'success'
       });
 
       const totals = calculateTotals(stats);
-      
+
       // Calculate score (problems + commits + rating/10)
       const score = totals.problems + totals.commits + Math.round(totals.rating / 10);
 
