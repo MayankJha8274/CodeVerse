@@ -5,6 +5,7 @@ const { fetchAllPlatformStats, calculateAggregatedStats } = require('./aggregati
 const { generateInsightsSummary } = require('./insightsService');
 const { fetchAllContests } = require('./contestService');
 const { sendContestReminder } = require('./emailService');
+const { addSyncJob } = require('../queues/syncQueue'); // Added queue import
 
 /**
  * Cron Job Service
@@ -14,7 +15,7 @@ const { sendContestReminder } = require('./emailService');
 let syncJob = null;
 
 /**
- * Sync stats for a single user
+ * Sync stats for a single user via Background Queue
  */
 const syncUserStats = async (userId) => {
   try {
@@ -29,45 +30,47 @@ const syncUserStats = async (userId) => {
       return;
     }
 
-    console.log(`🔄 Auto-syncing stats for user: ${user.username}`);
+    console.log(`🔄 Queuing auto-sync job for user: ${user.username}`);
     
-    await fetchAllPlatformStats(user);
-    await calculateAggregatedStats(user._id);
+    // Instead of old blocking call, add to BullMQ queue:
+    await addSyncJob(user._id, {
+      priority: 5, 
+      triggeredBy: 'cron'
+    });
     
-    user.lastSynced = new Date();
-    await user.save();
-    
-    console.log(`✅ Completed sync for user: ${user.username}`);
+    console.log(`✅ Queued sync for user: ${user.username}`);
   } catch (error) {
-    console.error(`❌ Error syncing user ${userId}:`, error.message);
+    console.error(`❌ Error queuing sync user ${userId}:`, error.message);
   }
 };
 
 /**
- * Sync all active users
+ * Sync ONLY outdated users via Batch Jobs (Feature #5) 
  */
 const syncAllUsers = async () => {
   try {
-    console.log('🚀 Starting scheduled sync for all users...');
+    console.log('🚀 Starting scheduled sync lookup for outdated users...');
     
-    const users = await User.find({ isActive: true });
-    console.log(`Found ${users.length} active users`);
+    // Feature 5: Sync ONLY outdated users. (E.g. Not synced in last 30 minutes)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
+    const users = await User.find({ 
+      isActive: true,
+      $or: [
+        { lastSyncedAt: { $lt: thirtyMinutesAgo } },
+        { lastSyncedAt: null },
+        { syncStatus: 'failed' } // Retry failed users
+      ]
+    });
+    console.log(`Found ${users.length} active users needing a sync`);
 
-    // Sync users in batches to avoid rate limits
-    const batchSize = 5;
-    for (let i = 0; i < users.length; i += batchSize) {
-      const batch = users.slice(i, i + batchSize);
-      await Promise.all(batch.map(user => syncUserStats(user._id)));
-      
-      // Wait between batches to respect rate limits
-      if (i + batchSize < users.length) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
+    for (let i = 0; i < users.length; i++) {
+        await syncUserStats(users[i]._id);
     }
 
-    console.log('✅ Completed scheduled sync for all users');
+    console.log('✅ Completed queue dispatch for outdated users');
   } catch (error) {
-    console.error('❌ Error in scheduled sync:', error.message);
+    console.error('❌ Error in scheduling syncs:', error.message);
   }
 };
 

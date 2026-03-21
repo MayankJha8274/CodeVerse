@@ -255,11 +255,22 @@ export const api = {
   },
 
   // Platform sync APIs
-  async syncPlatforms() {
+  async syncPlatforms(options = {}) {
     const data = await authFetch('/platforms/sync', {
-      method: 'POST'
+      method: 'POST',
+      body: JSON.stringify(options)
     });
     return data;
+  },
+
+  async getSyncStatus() {
+    const data = await authFetch('/platforms/sync/status');
+    return data.data;
+  },
+
+  async getQueueStats() {
+    const data = await authFetch('/platforms/queue/stats');
+    return data.data;
   },
 
   async linkPlatform(platform, username) {

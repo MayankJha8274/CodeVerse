@@ -104,17 +104,25 @@ const fetchHackerRankStats = async (username) => {
     const totalSubmissions = submissions.length;
     const uniqueProblems = new Set(submissions.map(s => s.challenge_id || s)).size;
     
+    // Convert badges to proper format (array of objects)
+    const formattedBadges = Array.isArray(badges) ? badges.map(b => ({
+      name: b.badge_name || b.name || 'Badge',
+      icon: b.badge_image || b.image || null,
+      earnedDate: b.created_at || new Date()
+    })) : [];
+
     const stats = {
       totalScore: profileData?.score || 0,
       problemsSolved: profileData?.problemsSolved || uniqueProblems || 0,
       totalSolved: profileData?.problemsSolved || uniqueProblems || 0,
-      badges: badges.length,
+      badges: formattedBadges,
+      badgeCount: formattedBadges.length,
       totalSubmissions,
       rank: 0,
       submissionCalendar: submissionCalendar.length > 0 ? submissionCalendar : null
     };
 
-    console.log(`✅ HackerRank: ${username} - ${stats.problemsSolved} problems, ${stats.badges} badges`);
+    console.log(`✅ HackerRank: ${username} - ${stats.problemsSolved} problems, ${stats.badgeCount} badges`);
 
     return {
       success: true,

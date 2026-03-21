@@ -222,11 +222,28 @@ const Dashboard = () => {
     if (cooldownRemaining > 0) return; // block if cooldown active
     try {
       setSyncing(true);
-      // 1. Tell the backend to re-fetch fresh data from all platforms
-      await api.syncPlatforms();
-      // 2. Re-fetch all dashboard data (now reflects the fresh sync, no full-page spinner)
+      
+      // 1. Put the sync job in the queue
+      const response = await api.syncPlatforms();
+      
+      // 2. Poll backend until sync is complete or cached
+      if (response && response.status !== 200 && !response.cached) {
+        let isSyncingBackend = true;
+        let attempts = 0;
+        while (isSyncingBackend && attempts < 60) {
+           await new Promise(r => setTimeout(r, 3000));
+           const status = await api.getSyncStatus();
+           if (status && (status.syncStatus === 'completed' || status.syncStatus === 'failed')) {
+              isSyncingBackend = false;
+           }
+           attempts++;
+        }
+      }
+
+      // 3. Re-fetch all dashboard data (now reflects the fresh sync, no full-page spinner)
       await fetchDashboardData(true);
-      // 3. Start cooldown timer (1 hour)
+      
+      // 4. Start cooldown timer
       const now = Date.now();
       localStorage.setItem(getSyncKey(), String(now));
       setCooldownRemaining(Math.ceil(SYNC_COOLDOWN_MS / 1000));

@@ -106,9 +106,42 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Sync tracking fields
   lastSynced: {
     type: Date,
     default: null
+  },
+  lastSyncedAt: {
+    type: Date,
+    default: null
+  },
+  syncStatus: {
+    type: String,
+    enum: ['idle', 'syncing', 'failed', 'completed'],
+    default: 'idle'
+  },
+  lastSyncError: {
+    type: String,
+    default: null
+  },
+  syncPriority: {
+    type: String,
+    enum: ['high', 'normal', 'low'],
+    default: 'normal'
+  },
+  lastActivityAt: {
+    type: Date,
+    default: null
+  },
+  // Per-platform last sync timestamps for cooldown
+  platformSyncTimes: {
+    leetcode: { type: Date, default: null },
+    github: { type: Date, default: null },
+    codeforces: { type: Date, default: null },
+    codechef: { type: Date, default: null },
+    geeksforgeeks: { type: Date, default: null },
+    hackerrank: { type: Date, default: null },
+    codingninjas: { type: Date, default: null }
   }
 }, {
   timestamps: true
