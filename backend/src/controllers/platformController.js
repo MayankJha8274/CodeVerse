@@ -3,10 +3,61 @@ const PlatformStats = require('../models/PlatformStats');
 const {
   fetchAllPlatformStats,
   calculateAggregatedStats,
-  getProgressHistory
+  getProgressHistory,
+  fetchPlatformData
 } = require('../services/aggregationService');
 const { fetchLeetCodeSkillStats, fetchLeetCodeBadges, getLeetCodeRankTitle } = require('../services/platforms/leetcodeService');
 const { fetchCodeforcesTopicStats, getCodeforcesRankInfo } = require('../services/platforms/codeforcesService');
+
+// Try to load queue (optional - requires Redis)
+let addSyncJob, getQueueStats, PRIORITY, PLATFORM_COOLDOWNS;
+let queueAvailable = false;
+try {
+  const syncQueue = require('../queues/syncQueue');
+  addSyncJob = syncQueue.addSyncJob;
+  getQueueStats = syncQueue.getQueueStats;
+  PRIORITY = syncQueue.PRIORITY;
+  PLATFORM_COOLDOWNS = syncQueue.PLATFORM_COOLDOWNS;
+  queueAvailable = true;
+} catch (err) {
+  console.warn('⚠️ Queue not available, using direct sync');
+  PRIORITY = { HIGH: 1, NORMAL: 5, LOW: 10 };
+  PLATFORM_COOLDOWNS = {
+    github: 5 * 60 * 1000,
+    codeforces: 10 * 60 * 1000,
+    leetcode: 15 * 60 * 1000,
+    codechef: 15 * 60 * 1000,
+    geeksforgeeks: 20 * 60 * 1000,
+    hackerrank: 10 * 60 * 1000,
+    codingninjas: 20 * 60 * 1000
+  };
+}
+
+// Try to load logger (optional)
+let syncLogger;
+try {
+  syncLogger = require('../services/loggerService').syncLogger;
+} catch (err) {
+  // Fallback logger
+  syncLogger = {
+    info: console.log,
+    error: console.error,
+    warn: console.warn,
+    debug: console.log
+  };
+}
+
+// Cache threshold (30 minutes)
+const CACHE_THRESHOLD = 30 * 60 * 1000;
+
+/**
+ * Check if data is fresh enough (cached)
+ */
+const isDataFresh = (lastSyncedAt) => {
+  if (!lastSyncedAt) return false;
+  const elapsed = Date.now() - new Date(lastSyncedAt).getTime();
+  return elapsed < CACHE_THRESHOLD;
+};
 
 /**
  * @desc    Connect/Update platform username
@@ -25,7 +76,7 @@ const connectPlatform = async (req, res, next) => {
     }
 
     const validPlatforms = ['leetcode', 'github', 'codeforces', 'codechef', 'geeksforgeeks', 'hackerrank', 'codingninjas'];
-    
+
     if (!validPlatforms.includes(platform)) {
       return res.status(400).json({
         success: false,
@@ -36,13 +87,29 @@ const connectPlatform = async (req, res, next) => {
     // Update user's platforms
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { [`platforms.${platform}`]: username },
+      {
+        [`platforms.${platform}`]: username,
+        lastActivityAt: new Date()
+      },
       { new: true }
     );
 
+    // Queue a sync job if queue is available
+    if (queueAvailable && addSyncJob) {
+      try {
+        await addSyncJob(req.user.id, {
+          platform,
+          priority: PRIORITY.HIGH,
+          triggeredBy: 'platform_connect'
+        });
+      } catch (err) {
+        console.warn('Queue not available, sync manually');
+      }
+    }
+
     res.status(200).json({
       success: true,
-      message: `${platform} connected successfully`,
+      message: `${platform} connected successfully.`,
       data: {
         platforms: user.platforms
       }
@@ -64,7 +131,10 @@ const disconnectPlatform = async (req, res, next) => {
     // Remove platform username
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { [`platforms.${platform}`]: null },
+      {
+        [`platforms.${platform}`]: null,
+        [`platformSyncTimes.${platform}`]: null
+      },
       { new: true }
     );
 
@@ -87,33 +157,115 @@ const disconnectPlatform = async (req, res, next) => {
 };
 
 /**
- * @desc    Sync all platforms (fetch latest stats)
+ * @desc    Sync all platforms (queue-based or direct)
  * @route   POST /api/platforms/sync
  * @access  Private
  */
 const syncAllPlatforms = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    const { platform, hardReset } = req.body;
+    const { platform, hardReset, forceSync } = req.body;
 
-    // Hard reset: Clear all stored data and rebuild from scratch
-    if (hardReset === true || req.query.hardReset === 'true') {
-      console.log(`🔥 Hard reset requested for user ${user.username} - clearing all cached data`);
-      
-      // Delete all platform stats
+    // Check if already syncing
+    if (user.syncStatus === 'syncing' && !forceSync) {
+      return res.status(429).json({
+        success: false,
+        message: 'Sync already in progress. Please wait.',
+        data: {
+          syncStatus: user.syncStatus,
+          lastSyncedAt: user.lastSyncedAt
+        }
+      });
+    }
+
+    // Check cache (if not force sync and not hard reset)
+    if (!forceSync && !hardReset && isDataFresh(user.lastSyncedAt)) {
+      const aggregated = await calculateAggregatedStats(user._id);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Data is fresh (cached). No sync needed.',
+        cached: true,
+        data: {
+          aggregated,
+          lastSynced: user.lastSyncedAt,
+          nextSyncIn: Math.ceil((CACHE_THRESHOLD - (Date.now() - new Date(user.lastSyncedAt).getTime())) / 1000)
+        }
+      });
+    }
+
+    // Check platform-specific cooldown
+    if (platform && !hardReset) {
+      const lastPlatformSync = user.platformSyncTimes?.[platform];
+      if (lastPlatformSync) {
+        const cooldown = PLATFORM_COOLDOWNS[platform] || 10 * 60 * 1000;
+        const elapsed = Date.now() - new Date(lastPlatformSync).getTime();
+
+        if (elapsed < cooldown) {
+          const remaining = Math.ceil((cooldown - elapsed) / 1000);
+          return res.status(429).json({
+            success: false,
+            message: `${platform} is on cooldown. Try again in ${remaining} seconds.`,
+            data: {
+              platform,
+              cooldownRemaining: remaining
+            }
+          });
+        }
+      }
+    }
+
+    // If queue is available, use it
+    if (queueAvailable && addSyncJob) {
+      try {
+        // Update user status
+        await User.findByIdAndUpdate(req.user.id, {
+          syncStatus: 'syncing',
+          lastActivityAt: new Date()
+        });
+
+        // Queue the sync job with high priority (manual trigger)
+        const job = await addSyncJob(req.user.id, {
+          platform,
+          hardReset: hardReset === true,
+          priority: PRIORITY.HIGH,
+          triggeredBy: 'manual'
+        });
+
+        syncLogger.info('Manual sync requested', {
+          userId: req.user.id,
+          platform: platform || 'all',
+          jobId: job.id
+        });
+
+        return res.status(202).json({
+          success: true,
+          message: platform
+            ? `Sync queued for ${platform}`
+            : 'Sync queued for all platforms',
+          data: {
+            jobId: job.id,
+            status: 'queued'
+          }
+        });
+      } catch (err) {
+        console.warn('Queue failed, falling back to direct sync:', err.message);
+      }
+    }
+
+    // Direct sync (fallback when queue is not available)
+    await User.findByIdAndUpdate(req.user.id, {
+      syncStatus: 'syncing'
+    });
+
+    // Hard reset if requested
+    if (hardReset) {
       await PlatformStats.deleteMany({ userId: user._id });
-      
-      // Delete all daily progress records (this clears corrupt streak data)
       const DailyProgress = require('../models/DailyProgress');
       await DailyProgress.deleteMany({ userId: user._id });
-      
-      console.log('✅ All cached data cleared - will rebuild from scratch');
     }
-    // Normal sync: just fetch fresh data without wiping anything
 
     let results;
-    
-    // If specific platform requested, sync only that one
     if (platform) {
       const username = user.platforms?.[platform];
       if (!username) {
@@ -122,71 +274,32 @@ const syncAllPlatforms = async (req, res, next) => {
           message: `Platform ${platform} is not linked`
         });
       }
-      
-      // Fetch stats for single platform
-      const { fetchPlatformData } = require('../services/aggregationService');
       const result = await fetchPlatformData(platform, username);
-      
-      // Save to database
-      const PlatformStats = require('../models/PlatformStats');
       if (result.success) {
-        // Guard: don't overwrite valid stored data with a zero/empty API response
-        const existingRecord = await PlatformStats.findOne({ userId: user._id, platform });
-        const newProblems = result.stats?.totalSolved || result.stats?.problemsSolved || 0;
-        const oldProblems = existingRecord?.stats?.totalSolved || existingRecord?.stats?.problemsSolved || 0;
-        const isSuspiciousZero = newProblems === 0 && oldProblems > 0;
-
-        if (isSuspiciousZero) {
-          console.warn(`⚠️  ${platform}: API returned 0 problems but stored data has ${oldProblems} — keeping old data`);
-          await PlatformStats.findOneAndUpdate(
-            { userId: user._id, platform },
-            { lastFetched: new Date(), fetchStatus: 'success', errorMessage: null },
-            { upsert: true, new: true }
-          );
-        } else {
-          await PlatformStats.findOneAndUpdate(
-            { userId: user._id, platform },
-            {
-              userId: user._id,
-              platform,
-              stats: result.stats,
-              lastFetched: new Date(),
-              fetchStatus: 'success',
-              errorMessage: null
-            },
-            { upsert: true, new: true }
-          );
-        }
-      } else {
-        // Preserve existing stats on failure
-        const existingStats = await PlatformStats.findOne({ userId: user._id, platform });
         await PlatformStats.findOneAndUpdate(
           { userId: user._id, platform },
           {
             userId: user._id,
             platform,
+            stats: result.stats,
             lastFetched: new Date(),
-            fetchStatus: 'failed',
-            errorMessage: result.error,
-            // Keep old stats if they exist
-            ...(existingStats?.stats && { stats: existingStats.stats })
+            fetchStatus: 'success'
           },
-          { upsert: true, new: true }
+          { upsert: true }
         );
       }
-      
       results = [result];
     } else {
-      // Fetch stats from all connected platforms
       results = await fetchAllPlatformStats(user);
     }
 
-    // Calculate aggregated stats
     const aggregated = await calculateAggregatedStats(user._id);
 
-    // Update user's last synced time
-    user.lastSynced = new Date();
-    await user.save();
+    await User.findByIdAndUpdate(req.user.id, {
+      lastSynced: new Date(),
+      lastSyncedAt: new Date(),
+      syncStatus: 'completed'
+    });
 
     res.status(200).json({
       success: true,
@@ -194,7 +307,63 @@ const syncAllPlatforms = async (req, res, next) => {
       data: {
         results,
         aggregated,
-        lastSynced: user.lastSynced
+        lastSynced: new Date()
+      }
+    });
+  } catch (error) {
+    await User.findByIdAndUpdate(req.user.id, {
+      syncStatus: 'failed',
+      lastSyncError: error.message
+    });
+    syncLogger.error('Sync request failed', { error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get sync status
+ * @route   GET /api/platforms/sync/status
+ * @access  Private
+ */
+const getSyncStatus = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select('syncStatus lastSyncedAt lastSyncError platformSyncTimes');
+
+    let queueStats = { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 };
+
+    if (queueAvailable && getQueueStats) {
+      try {
+        queueStats = await getQueueStats();
+      } catch (err) {
+        // Queue stats not available
+      }
+    }
+
+    // Calculate time since last sync
+    let timeSinceSync = null;
+    if (user.lastSyncedAt) {
+      const elapsed = Date.now() - new Date(user.lastSyncedAt).getTime();
+      timeSinceSync = {
+        seconds: Math.floor(elapsed / 1000),
+        minutes: Math.floor(elapsed / 60000),
+        hours: Math.floor(elapsed / 3600000)
+      };
+    }
+
+    // Check if data is cached
+    const isCached = isDataFresh(user.lastSyncedAt);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        syncStatus: user.syncStatus || 'idle',
+        lastSyncedAt: user.lastSyncedAt,
+        lastSyncError: user.lastSyncError,
+        timeSinceSync,
+        isCached,
+        platformSyncTimes: user.platformSyncTimes,
+        queue: queueStats
       }
     });
   } catch (error) {
@@ -203,17 +372,18 @@ const syncAllPlatforms = async (req, res, next) => {
 };
 
 /**
- * @desc    Get user's aggregated stats
+ * @desc    Get user's aggregated stats (with caching)
  * @route   GET /api/platforms/stats
  * @access  Private
  */
 const getAggregatedStats = async (req, res, next) => {
   try {
+    const user = await User.findById(req.user.id);
+
+    // Return cached data if fresh, otherwise calculate
     const aggregated = await calculateAggregatedStats(req.user.id);
 
     // Also fetch individual platform stats for the dashboard.
-    // Include ALL platforms that have stats data (even if the last fetch failed),
-    // so a transient sync failure never drops counts on the dashboard.
     const platformStatsData = await PlatformStats.find({
       userId: req.user.id,
       stats: { $exists: true, $ne: null }
@@ -229,7 +399,10 @@ const getAggregatedStats = async (req, res, next) => {
       success: true,
       data: {
         stats: aggregated,
-        ...platformsObject // Spread individual platform stats at root level
+        lastSyncedAt: user.lastSyncedAt,
+        syncStatus: user.syncStatus,
+        isCached: isDataFresh(user.lastSyncedAt),
+        ...platformsObject
       }
     });
   } catch (error) {
@@ -245,6 +418,7 @@ const getAggregatedStats = async (req, res, next) => {
 const getPlatformStats = async (req, res, next) => {
   try {
     const { platform } = req.params;
+    const user = await User.findById(req.user.id);
 
     const stats = await PlatformStats.findOne({
       userId: req.user.id,
@@ -258,13 +432,19 @@ const getPlatformStats = async (req, res, next) => {
       });
     }
 
+    // Check if platform data is fresh
+    const lastPlatformSync = user.platformSyncTimes?.[platform];
+    const isFresh = lastPlatformSync &&
+      (Date.now() - new Date(lastPlatformSync).getTime()) < (PLATFORM_COOLDOWNS[platform] || 600000);
+
     res.status(200).json({
       success: true,
       data: {
         platform: stats.platform,
         stats: stats.stats,
         lastFetched: stats.lastFetched,
-        fetchStatus: stats.fetchStatus
+        fetchStatus: stats.fetchStatus,
+        isCached: isFresh
       }
     });
   } catch (error) {
@@ -378,11 +558,11 @@ const getBadges = async (req, res, next) => {
 
     // Generate Codeforces badges based on rating
     const cfStats = platformStats.find(ps => ps.platform === 'codeforces');
-    
+
     if (cfStats?.stats?.rating && cfStats.stats.rating > 0) {
       const rating = cfStats.stats.rating;
       const cfBadges = [];
-      
+
       if (rating >= 1200) {
         cfBadges.push({
           platform: 'codeforces',
@@ -423,17 +603,17 @@ const getBadges = async (req, res, next) => {
           earnedDate: new Date()
         });
       }
-      
+
       allBadges.push(...cfBadges);
     }
 
     // Generate CodeChef badges based on rating
     const ccStats = platformStats.find(ps => ps.platform === 'codechef');
-    
+
     if (ccStats?.stats?.rating && ccStats.stats.rating > 0) {
       const rating = ccStats.stats.rating;
       const ccBadges = [];
-      
+
       if (rating >= 1000) {
         ccBadges.push({
           platform: 'codechef',
@@ -466,7 +646,7 @@ const getBadges = async (req, res, next) => {
           earnedDate: new Date()
         });
       }
-      
+
       allBadges.push(...ccBadges);
     }
 
@@ -475,11 +655,11 @@ const getBadges = async (req, res, next) => {
       userId: req.user.id,
       platform: 'codingninjas'
     });
-    
+
     if (cnStats?.stats?.rating && cnStats.stats.rating > 0) {
       const rating = cnStats.stats.rating;
       const cnBadges = [];
-      
+
       if (rating >= 800) {
         cnBadges.push({
           platform: 'codingninjas',
@@ -504,8 +684,8 @@ const getBadges = async (req, res, next) => {
           earnedDate: new Date()
         });
       }
-      
-      allBadges.push(...cnBadges);
+
+      cnBadges.push(...cnBadges);
     }
 
     // Generate GeeksforGeeks badges based on rating
@@ -513,11 +693,11 @@ const getBadges = async (req, res, next) => {
       userId: req.user.id,
       platform: 'geeksforgeeks'
     });
-    
+
     if (gfgStats?.stats?.rating && gfgStats.stats.rating > 0) {
       const rating = gfgStats.stats.rating;
       const gfgBadges = [];
-      
+
       if (rating >= 100) {
         gfgBadges.push({
           platform: 'geeksforgeeks',
@@ -542,7 +722,7 @@ const getBadges = async (req, res, next) => {
           earnedDate: new Date()
         });
       }
-      
+
       allBadges.push(...gfgBadges);
     }
 
@@ -551,11 +731,11 @@ const getBadges = async (req, res, next) => {
       userId: req.user.id,
       platform: 'hackerrank'
     });
-    
+
     if (hrStats?.stats?.rating && hrStats.stats.rating > 0) {
       const rating = hrStats.stats.rating;
       const hrBadges = [];
-      
+
       if (rating >= 50) {
         hrBadges.push({
           platform: 'hackerrank',
@@ -580,7 +760,7 @@ const getBadges = async (req, res, next) => {
           earnedDate: new Date()
         });
       }
-      
+
       allBadges.push(...hrBadges);
     }
 
@@ -679,14 +859,42 @@ const getAchievements = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get queue statistics (admin)
+ * @route   GET /api/platforms/queue/stats
+ * @access  Private
+ */
+const getQueueStatistics = async (req, res, next) => {
+  try {
+    let stats = { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0, total: 0 };
+
+    if (queueAvailable && getQueueStats) {
+      try {
+        stats = await getQueueStats();
+      } catch (err) {
+        // Queue not available
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   connectPlatform,
   disconnectPlatform,
   syncAllPlatforms,
+  getSyncStatus,
   getAggregatedStats,
   getPlatformStats,
   getProgress,
   getTopicAnalysis,
   getBadges,
-  getAchievements
+  getAchievements,
+  getQueueStatistics
 };

@@ -5,6 +5,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "worker": "node src/workers/syncWorker.js",
+    "worker:dev": "nodemon src/workers/syncWorker.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:room:e2e": "node scripts/room-e2e.js"
   },
@@ -19,12 +21,17 @@
   "license": "ISC",
   "description": "Backend for CodeVerse - A comprehensive coding platform analytics tool",
   "dependencies": {
+    "@bull-board/api": "^6.20.6",
+    "@bull-board/express": "^6.20.6",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.71.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
+    "express-rate-limit": "^7.5.1",
+    "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
@@ -35,7 +42,8 @@
     "passport-google-oauth20": "^2.0.0",
     "puppeteer": "^24.36.1",
     "slugify": "^1.6.6",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.13"

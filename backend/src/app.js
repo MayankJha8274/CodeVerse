@@ -28,19 +28,71 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
       callback(null, true); // Allow all in development
     }
   },
   credentials: true
 }));
 
+// Track feature availability
+let bullBoardInitialized = false;
+let redisEnabled = process.env.REDIS_ENABLED === 'true';
+
+// Initialize BullMQ queue and Bull Board (lazy loading, only if Redis is enabled)
+const initializeBullBoard = () => {
+  if (bullBoardInitialized) return;
+  if (!redisEnabled) {
+    console.log('ℹ️ Bull Board disabled (set REDIS_ENABLED=true to enable)');
+    return;
+  }
+
+  try {
+    const { isQueueAvailable, getSyncQueue } = require('./queues/syncQueue');
+
+    if (!isQueueAvailable()) {
+      console.log('ℹ️ Bull Board disabled (queue not available)');
+      return;
+    }
+
+    const { createBullBoard } = require('@bull-board/api');
+    const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+    const { ExpressAdapter } = require('@bull-board/express');
+
+    const syncQueue = getSyncQueue();
+    if (!syncQueue) {
+      console.log('ℹ️ Bull Board disabled (queue not initialized)');
+      return;
+    }
+
+    const serverAdapter = new ExpressAdapter();
+    serverAdapter.setBasePath('/admin/queues');
+
+    createBullBoard({
+      queues: [new BullMQAdapter(syncQueue)],
+      serverAdapter
+    });
+
+    // Mount Bull Board at /admin/queues
+    app.use('/admin/queues', serverAdapter.getRouter());
+
+    bullBoardInitialized = true;
+    console.log('✅ Bull Board initialized at /admin/queues');
+  } catch (error) {
+    console.warn('⚠️ Bull Board initialization skipped:', error.message);
+  }
+};
+
 // Health check route
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    features: {
+      bullBoard: bullBoardInitialized,
+      redis: redisEnabled,
+      syncMode: redisEnabled ? 'queue' : 'direct'
+    }
   });
 });
 
@@ -59,15 +111,15 @@ try {
   app.use('/api/hosted-contests', require('./routes/hostedContestRoutes'));
   app.use('/api/problem-set', require('./routes/problemSetRoutes'));
   app.use('/api/societies', require('./routes/societyRoutes'));
-  
+
   // Run code endpoint (live compiler)
   const { protect } = require('./middleware/auth');
   const submissionController = require('./controllers/submissionController');
   app.post('/api/run-code', protect, submissionController.runCode);
-  
+
   // Submission status endpoint
   app.get('/api/submissions/:submissionId', protect, submissionController.getSubmission);
-  
+
   console.log('✅ All routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading routes:', error.message);
@@ -80,5 +132,8 @@ app.use(notFound);
 
 // Error handler
 app.use(errorHandler);
+
+// Export the initialization function
+app.initializeBullBoard = initializeBullBoard;
 
 module.exports = app;

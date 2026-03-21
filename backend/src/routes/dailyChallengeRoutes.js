@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { cacheResponse } = require('../middleware/redisCache');
 const dailyChallengeController = require('../controllers/dailyChallengeController');
 const { protect } = require('../middleware/auth');
 
@@ -7,7 +8,7 @@ const { protect } = require('../middleware/auth');
 router.use(protect);
 
 // Get today's challenge
-router.get('/today', dailyChallengeController.getTodayChallenge);
+router.get('/today', cacheResponse(1800), dailyChallengeController.getTodayChallenge);
 
 // Mark challenge as complete (with verification)
 router.post('/complete', dailyChallengeController.completeChallenge);
@@ -19,12 +20,12 @@ router.post('/verify', dailyChallengeController.verifyAndComplete);
 router.post('/skip', dailyChallengeController.skipChallenge);
 
 // Get streak history
-router.get('/streak', dailyChallengeController.getStreakHistory);
+router.get('/streak', cacheResponse(1800), dailyChallengeController.getStreakHistory);
 
 // Get challenge history
-router.get('/history', dailyChallengeController.getChallengeHistory);
+router.get('/history', cacheResponse(1800), dailyChallengeController.getChallengeHistory);
 
 // Get topic stats
-router.get('/topics', dailyChallengeController.getTopicStats);
+router.get('/topics', cacheResponse(1800), dailyChallengeController.getTopicStats);
 
 module.exports = router;

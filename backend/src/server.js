@@ -12,6 +12,28 @@ const PORT = process.env.PORT || 5000;
 
 let server;
 
+// Try to load optional dependencies
+let setSocketIO, syncLogger, startWorker;
+try {
+  const syncWorker = require('./workers/syncWorker');
+  setSocketIO = syncWorker.setSocketIO;
+  startWorker = syncWorker.startWorker;
+} catch (err) {
+  setSocketIO = () => {}; // No-op if worker not available
+  startWorker = null;
+}
+
+try {
+  syncLogger = require('./services/loggerService').syncLogger;
+} catch (err) {
+  syncLogger = {
+    info: console.log,
+    error: console.error,
+    warn: console.warn,
+    debug: console.log
+  };
+}
+
 // Function to check if port is in use
 const isPortInUse = (port) => {
   return new Promise((resolve) => {
@@ -28,7 +50,7 @@ const isPortInUse = (port) => {
 const killProcessOnPort = (port) => {
   return new Promise((resolve) => {
     if (process.platform === 'win32') {
-      exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`, 
+      exec(`powershell -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`,
         () => {
           setTimeout(resolve, 1000); // Wait for port to be freed
         }
@@ -39,6 +61,30 @@ const killProcessOnPort = (port) => {
       });
     }
   });
+};
+
+// Setup sync-specific socket events
+const setupSyncSocketEvents = (io) => {
+  io.on('connection', (socket) => {
+    // Join user-specific room for sync updates
+    socket.on('sync:subscribe', (userId) => {
+      socket.join(`user:${userId}`);
+      if (syncLogger.debug) syncLogger.debug('User subscribed to sync updates', { userId });
+    });
+
+    socket.on('sync:unsubscribe', (userId) => {
+      socket.leave(`user:${userId}`);
+    });
+  });
+
+  // Make io available to the worker (if available)
+  if (setSocketIO) {
+    try {
+      setSocketIO(io);
+    } catch (err) {
+      // Worker not available
+    }
+  }
 };
 
 // Main startup function
@@ -55,12 +101,26 @@ const startServer = async () => {
     // Connect to database first
     await connectDB();
 
+    // Initialize Bull Board (after routes are loaded)
+    if (app.initializeBullBoard) {
+      try {
+        app.initializeBullBoard();
+      } catch (err) {
+        console.warn('⚠️ Bull Board not available:', err.message);
+      }
+    }
+
+    // Start background sync worker
+    if (startWorker && process.env.REDIS_ENABLED === 'true') {
+      console.log('🚀 Starting background Queue Sync Worker...');
+      startWorker().catch(err => console.error('Worker failed to start:', err.message));
+    }
+
     // Start cron jobs for auto-sync and weekly reports
-    // Enable in all environments to keep data fresh
     startAllCronJobs();
     console.log('✅ Auto-sync and weekly report cron jobs enabled');
-    console.log('⏰ Platform data will sync automatically every 15 minutes');
-    console.log('   You can also manually sync using "Sync All Platforms" button');
+    console.log('⏰ Platform sync runs every 15 minutes');
+    console.log('   Manual sync available via "Sync All Platforms" button');
 
     // Create HTTP server and attach Socket.io
     const httpServer = http.createServer(app);
@@ -79,16 +139,16 @@ const startServer = async () => {
 
     // Setup Socket.io handlers
     setupSocketIO(io);
+    setupSyncSocketEvents(io);
     console.log('✅ Socket.io initialized for real-time chat');
 
     // Start server
     server = httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       console.log(`📍 Health check: http://localhost:${PORT}/health`);
-      console.log(`📍 Also try: http://127.0.0.1:${PORT}/health`);
       console.log(`⏰ Server started at: ${new Date().toISOString()}`);
       console.log(`🔄 Keep this terminal open - press Ctrl+C to stop`);
-      
+
       // Test the server immediately
       setTimeout(() => {
         const http = require('http');

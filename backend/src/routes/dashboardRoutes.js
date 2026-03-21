@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { cacheResponse } = require('../middleware/redisCache');
 const { protect } = require('../middleware/auth');
 const dashboardController = require('../controllers/dashboardController');
 const combinedDashboardController = require('../controllers/combinedDashboardController');
@@ -10,7 +11,7 @@ const combinedDashboardController = require('../controllers/combinedDashboardCon
  */
 
 // Get all dashboard data in one call (optimized for performance)
-router.get('/combined', protect, combinedDashboardController.getCombinedDashboardData);
+router.get('/combined', protect, cacheResponse(1800), combinedDashboardController.getCombinedDashboardData);
 
 // Get specific user's profile (public within app)
 router.get('/profile/:userId', protect, dashboardController.getUserProfile);

@@ -1,5 +1,6 @@
 const { DailyChallenge, Streak } = require('../models/DailyChallenge');
 const User = require('../models/User');
+const { clearUserCache } = require('../middleware/redisCache');
 // Live API fetchers — only used for explicit user-triggered verify/complete actions
 const { fetchLeetCodeTodaySubmissions } = require('../services/platforms/leetcodeService');
 const { fetchCodeforcesTodaySubmissions } = require('../services/platforms/codeforcesService');
