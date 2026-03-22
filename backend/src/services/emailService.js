@@ -1,19 +1,29 @@
 const nodemailer = require('nodemailer');
 
 // Create transporter - configure with your email service
-const createTransporter = () => {
-  // For Gmail, you'll need to enable "Less secure app access" or use App Passwords
-  // For production, use services like SendGrid, Mailgun, AWS SES, etc.
-  
-  const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD // Use app-specific password for Gmail
-    }
-  });
-
-  return transporter;
+const createTransporter = async () => {
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    return nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  } else {
+    // Generate a testing account if no real credentials are set
+    console.log('⚠️ No EMAIL_USER found in .env, generating test Ethereal account...');
+    let testAccount = await nodemailer.createTestAccount();
+    return nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false, 
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+  }
 };
 
 /**
@@ -21,11 +31,12 @@ const createTransporter = () => {
  * @param {Object} options - Email options
  * @param {string} options.to - Recipient email
  * @param {Object} options.contest - Contest details
+ * @param {string} options.type - Optional "24h" or "6h"
  */
-const sendContestReminder = async ({ to, contest }) => {
+const sendContestReminder = async ({ to, contest, type }) => {
   try {
-    const transporter = createTransporter();
-    
+    const transporter = await createTransporter();
+
     const platformColors = {
       leetcode: '#FFA116',
       codeforces: '#1F8ACB',
@@ -116,7 +127,7 @@ const sendContestReminder = async ({ to, contest }) => {
                   <!-- Countdown Info -->
                   <div style="background: linear-gradient(135deg, #f59e0b20, #fb923c20); border: 1px solid #f59e0b30; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
                     <p style="color: #f59e0b; margin: 0; font-size: 16px; font-weight: 600;">
-                      🔔 Contest starts in approximately 16 hours
+                      🔔 Contest starts in approximately ${type === '24h' ? '24 hours' : type === '6h' ? '6 hours' : 'a few hours'}
                     </p>
                     <p style="color: #9ca3af; margin: 10px 0 0 0; font-size: 13px;">
                       Make sure you're ready and have registered!
@@ -147,6 +158,8 @@ const sendContestReminder = async ({ to, contest }) => {
     </html>
     `;
 
+    const timeText = type === '24h' ? '24 hours' : type === '6h' ? '6 hours' : 'a few hours';
+
     const textContent = `
 Contest Reminder - ${platformNames[contest.platform] || contest.platform}
 
@@ -156,7 +169,7 @@ ${contest.name}
 ⏰ Time: ${formattedTime}
 ⏱️ Duration: ${durationText}
 
-Contest starts in approximately 16 hours. Make sure you're ready!
+Contest starts in approximately ${timeText}. Make sure you're ready!
 
 Open contest: ${contest.url}
 
@@ -164,16 +177,21 @@ Open contest: ${contest.url}
 This reminder was sent from CodeVerse Contest Tracker.
     `;
 
+    const senderEmail = process.env.EMAIL_USER || 'tracker@codeverse.com';
+
     const mailOptions = {
-      from: `"CodeVerse Contest Tracker" <${process.env.EMAIL_USER}>`,
+      from: `"CodeVerse Contest Tracker" <${senderEmail}>`,
       to,
-      subject: `⏰ Reminder: ${contest.name} starts in 16 hours!`,
+      subject: `⏰ Reminder: ${contest.name} starts in ${timeText}!`,
       text: textContent,
       html: htmlContent
     };
 
     const info = await transporter.sendMail(mailOptions);
     console.log(`✅ Reminder email sent to ${to} for contest: ${contest.name}`);
+    if (!process.env.EMAIL_USER) {
+      console.log(`👉 📧 TEST EMAIL PREVIEW URL: ${nodemailer.getTestMessageUrl(info)}`);
+    }
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`❌ Failed to send reminder email to ${to}:`, error.message);
@@ -186,7 +204,7 @@ This reminder was sent from CodeVerse Contest Tracker.
  */
 const verifyEmailConfig = async () => {
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     await transporter.verify();
     console.log('✅ Email configuration verified');
     return true;

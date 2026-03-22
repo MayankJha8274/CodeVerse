@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/, 'Please provide a valid email']
   },
+  isVerified: {
+    type: Boolean,
+    default: true
+  },
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -94,6 +98,7 @@ const userSchema = new mongoose.Schema({
     publicProfile: { type: Boolean, default: true },
     showEmail: { type: Boolean, default: false },
     emailNotifications: { type: Boolean, default: true },
+    notifyContests: { type: Boolean, default: true },
     weeklyDigest: { type: Boolean, default: true },
     roomInvites: { type: Boolean, default: true }
   },
