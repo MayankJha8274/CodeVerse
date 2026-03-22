@@ -23,6 +23,14 @@ try {
   startWorker = null;
 }
 
+let startEmailWorker;
+try {
+  const emailWorker = require('./workers/emailWorker');
+  startEmailWorker = emailWorker.startEmailWorker;
+} catch (err) {
+  startEmailWorker = null;
+}
+
 try {
   syncLogger = require('./services/loggerService').syncLogger;
 } catch (err) {
@@ -115,7 +123,11 @@ const startServer = async () => {
       console.log('🚀 Starting background Queue Sync Worker...');
       startWorker().catch(err => console.error('Worker failed to start:', err.message));
     }
-
+    // Start background email worker
+    if (startEmailWorker && process.env.REDIS_ENABLED === 'true') {
+      console.log('???? Starting background Email Worker...');
+      startEmailWorker().catch(err => console.error('Email Worker failed to start:', err.message));
+    }
     // Start cron jobs for auto-sync and weekly reports
     startAllCronJobs();
     console.log('✅ Auto-sync and weekly report cron jobs enabled');

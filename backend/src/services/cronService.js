@@ -1,11 +1,13 @@
 const cron = require('node-cron');
 const User = require('../models/User');
+const Contest = require('../models/Contest');
 const ContestReminder = require('../models/ContestReminder');
 const { fetchAllPlatformStats, calculateAggregatedStats } = require('./aggregationService');
 const { generateInsightsSummary } = require('./insightsService');
 const { fetchAllContests } = require('./contestService');
 const { sendContestReminder } = require('./emailService');
-const { addSyncJob } = require('../queues/syncQueue'); // Added queue import
+const { addSyncJob } = require('../queues/syncQueue'); 
+const { initEmailQueue, addEmailJob } = require('../queues/emailQueue');
 
 /**
  * Cron Job Service
@@ -187,8 +189,8 @@ const startAllCronJobs = () => {
     timezone: 'UTC'
   });
 
-  // Check and send contest reminders every 5 minutes
-  const reminderJob = cron.schedule('*/5 * * * *', processContestReminders, {
+// Check and push contest reminders to queue every 10 minutes
+  const reminderJob = cron.schedule('*/10 * * * *', processContestReminders, {   
     scheduled: true,
     timezone: 'UTC'
   });
@@ -213,42 +215,26 @@ const startAllCronJobs = () => {
  */
 const processContestReminders = async () => {
   try {
-    const now = new Date();
+    const now = Date.now();
+    const upcomingContests = await Contest.find({ startTime: { $gt: new Date(now) } });
     
-    // Find reminders that should be sent now
-    const reminders = await ContestReminder.find({
-      reminderSent: false,
-      reminderTime: { $lte: now }
-    });
+    if (upcomingContests.length === 0) return;
+    
+    console.log(`⏰ Checking ${upcomingContests.length} upcoming contests for reminders...`);
+    
+    for (const contest of upcomingContests) {
+      const startTime = new Date(contest.startTime).getTime();
+      const diffHours = (startTime - now) / (1000 * 60 * 60);
 
-    if (reminders.length === 0) {
-      return;
-    }
-
-    console.log(`📧 Processing ${reminders.length} contest reminders...`);
-
-    for (const reminder of reminders) {
-      try {
-        // Send email
-        const result = await sendContestReminder({
-          to: reminder.email,
-          contest: reminder.contestDetails
-        });
-
-        if (result.success) {
-          // Mark as sent
-          reminder.reminderSent = true;
-          await reminder.save();
-          console.log(`✅ Reminder sent for: ${reminder.contestDetails.name}`);
-        } else {
-          console.error(`❌ Failed to send reminder: ${result.error}`);
-        }
-      } catch (err) {
-        console.error(`❌ Error processing reminder ${reminder._id}:`, err.message);
+      if (diffHours <= 24 && diffHours > 23.83) {
+        await addEmailJob({ contestId: contest._id, type: '24h' });
+        console.log(`📬 Pushed 24h reminder job for: ${contest.name}`);
+      }
+      if (diffHours <= 6 && diffHours > 5.83) {
+        await addEmailJob({ contestId: contest._id, type: '6h' });
+        console.log(`📬 Pushed 6h reminder job for: ${contest.name}`);
       }
     }
-
-    console.log(`✅ Finished processing contest reminders`);
   } catch (error) {
     console.error('❌ Error in processContestReminders:', error.message);
   }
