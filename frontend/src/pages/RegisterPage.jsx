@@ -14,6 +14,7 @@ const RegisterPage = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(null);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -52,10 +53,19 @@ const RegisterPage = () => {
     }
   };
 
-  const handleOAuthRegister = (provider) => {
-    // Redirect to backend OAuth route (same as login - OAuth doesn't distinguish register/login)
-    const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-    window.location.href = `${API_URL}/api/auth/${provider}`;
+  const handleOAuthRegister = async (provider) => {
+    try {
+      setOauthLoading(provider);
+      // Redirect to backend OAuth route (same as login - OAuth doesn't distinguish register/login)
+      const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+      // Ping health endpoint to wake up Render instance
+      await fetch(`${API_URL}/health`);
+      window.location.href = `${API_URL}/api/auth/${provider}`;
+    } catch (err) {
+      console.error('Failed to wake up server:', err);
+      setError('Cannot connect to authentication server. Please try again.');
+      setOauthLoading(null);
+    }
   };
 
   return (
@@ -83,17 +93,27 @@ const RegisterPage = () => {
           <div className="space-y-3 mb-6">
             <button
               onClick={() => handleOAuthRegister('github')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-900 dark:text-white transition-colors"
+              disabled={oauthLoading !== null}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-900 dark:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Github className="w-5 h-5" />
-              <span className="font-medium">Continue with GitHub</span>
+              {oauthLoading === 'github' ? (
+                <div className="w-5 h-5 border-2 border-gray-500 border-t-amber-500 rounded-full animate-spin" />
+              ) : (
+                <Github className="w-5 h-5" />
+              )}
+              <span className="font-medium">{oauthLoading === 'github' ? 'Connecting...' : 'Continue with GitHub'}</span>
             </button>
             <button
               onClick={() => handleOAuthRegister('google')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-900 dark:text-white transition-colors"
+              disabled={oauthLoading !== null}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a2e] text-gray-900 dark:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Chrome className="w-5 h-5" />
-              <span className="font-medium">Continue with Google</span>
+              {oauthLoading === 'google' ? (
+                <div className="w-5 h-5 border-2 border-gray-500 border-t-amber-500 rounded-full animate-spin" />
+              ) : (
+                <Chrome className="w-5 h-5" />
+              )}
+              <span className="font-medium">{oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
             </button>
           </div>
 
