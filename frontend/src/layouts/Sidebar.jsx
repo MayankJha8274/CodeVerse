@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/common/Logo';
 
 const Sidebar = ({ isOpen, onClose, onToggle }) => {
   const [userRank, setUserRank] = useState(null);
@@ -149,8 +150,8 @@ const Sidebar = ({ isOpen, onClose, onToggle }) => {
           {/* Logo */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800/50 transition-colors">
             <NavLink to="/dashboard" className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Code2 className="w-4 h-4 text-black" />
+              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+              <Logo className="w-full h-full drop-shadow-md" />
               </div>
               <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight whitespace-nowrap">
                 CodeVerse
