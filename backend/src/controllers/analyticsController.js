@@ -23,6 +23,9 @@ const { fetchLeetCodeRatingHistory } = require('../services/platforms/leetcodeSe
 const { fetchCodeforcesRatingHistory } = require('../services/platforms/codeforcesService');
 const { fetchCodeChefRatingHistory } = require('../services/platforms/codechefService');
 const User = require('../models/User');
+const PlatformStats = require('../models/PlatformStats');
+const ContestSubmission = require('../models/ContestSubmission');
+const HostedContest = require('../models/HostedContest');
 
 /**
  * Analytics Controller
@@ -395,6 +398,76 @@ exports.getAllRatingHistory = async (req, res) => {
       success: false,
       message: 'Error fetching rating history',
       error: error.message
+    });
+  }
+};
+
+/**
+ * Get Global CodeVerse Stats (Public Endpoint)
+ * GET /api/analytics/global
+ */
+exports.getGlobalStats = async (req, res) => {
+  try {
+    // 1. Total Platforms Supported
+    const supportedPlatforms = PlatformStats.schema.path('platform').enumValues || [
+      'leetcode', 'github', 'codeforces', 'codechef', 'geeksforgeeks', 'hackerrank', 'codingninjas'
+    ];
+    const platforms = supportedPlatforms.length; 
+
+    // 2. Total Problems Solved
+    const problemsAggregation = await PlatformStats.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalLeetcodeSolved: { $sum: "$stats.totalSolved" },
+          totalGeneralSolved: { $sum: "$stats.problemsSolved" },
+          totalGithubContributions: { $sum: "$stats.totalContributions" }
+        }
+      }
+    ]);
+    
+    let totalProblems = 0;
+    let totalContributions = 0;
+    if (problemsAggregation.length > 0) {
+      totalProblems = (problemsAggregation[0].totalLeetcodeSolved || 0) + 
+                      (problemsAggregation[0].totalGeneralSolved || 0);
+      totalContributions = problemsAggregation[0].totalGithubContributions || 0;
+    }
+
+    // 3. Total Submissions and Contests
+    const totalSubmissions = await ContestSubmission.countDocuments();
+    const totalContests = await HostedContest.countDocuments();
+
+    // Support a base offset in case DB is mostly empty for visual realism on demo (from your logic)
+    const BUMP_PROBLEMS = 1200;
+    const BUMP_SUBMISSIONS = 5800;
+    const BUMP_CONTESTS = 320;
+    const BUMP_CONTRIBUTIONS = 8900;
+
+    const finalProblems = totalProblems + BUMP_PROBLEMS;
+    const finalSubmissions = totalSubmissions + BUMP_SUBMISSIONS;
+    const finalContests = totalContests + BUMP_CONTESTS;
+    const finalContributions = totalContributions + BUMP_CONTRIBUTIONS;
+
+    const totalActivities = finalProblems + finalSubmissions + finalContests + finalContributions;
+
+    res.json({
+      success: true,
+      data: {
+        platforms,
+        totalProblems: finalProblems,
+        totalSubmissions: finalSubmissions,
+        totalContests: finalContests,
+        totalContributions: finalContributions,
+        totalActivities
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching global stats:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to retrieve global statistics' 
     });
   }
 };

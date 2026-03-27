@@ -29,4 +29,7 @@ router.get('/similar-users', protect, cacheResponse(1800), analyticsController.g
 router.get('/achievements', protect, cacheResponse(1800), analyticsController.getAchievements);
 router.get('/insights', protect, cacheResponse(1800), analyticsController.getInsightsSummary);
 
+// Public Global Stats
+router.get('/global', cacheResponse(300), analyticsController.getGlobalStats);
+
 module.exports = router;

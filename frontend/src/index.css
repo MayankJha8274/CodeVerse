@@ -119,4 +119,9 @@
   .btn-ghost {
     @apply hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-300 font-medium px-4 py-2 rounded-lg transition-colors;
   }
+
+  /* Glow Badge for Landing Page */
+  .glow-badge {
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.4);
+  }
 }
