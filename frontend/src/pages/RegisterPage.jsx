@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Code2, Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/common/Logo';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ const RegisterPage = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-              <Code2 className="w-7 h-7 text-white" />
+            <div className="w-16 h-16 flex items-center justify-center">
+              <Logo className="w-full h-full drop-shadow-xl" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
