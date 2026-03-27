@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import CountUp from 'react-countup';
 import { 
   Code2, 
   TrendingUp, 
@@ -19,6 +20,34 @@ import { useTheme } from '../hooks/useCustomHooks';
 
 const LandingPage = () => {
   const { theme, toggleTheme } = useTheme();
+  
+  const [globalStats, setGlobalStats] = useState({
+    platforms: 7,
+    totalProblems: 1200,
+    totalActivities: 16260
+  });
+
+  useEffect(() => {
+    const fetchGlobalStats = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${API_URL}/analytics/global`);
+        const data = await res.json();
+        
+        if (data.success) {
+          setGlobalStats({
+            platforms: data.data.platforms || 7,
+            totalProblems: data.data.totalProblems || 1200,
+            totalActivities: data.data.totalActivities || 10000
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch global stats:', err);
+      }
+    };
+    fetchGlobalStats();
+  }, []);
+
   const platforms = [
     { name: 'LeetCode', key: 'leetcode', color: '#FFA116' },
     { name: 'Codeforces', key: 'codeforces', color: '#1F8ACB' },
@@ -100,9 +129,8 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="py-12 sm:py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 text-amber-400 text-sm font-medium mb-6">
-            <Zap className="w-4 h-4" />
-            Join 50,000+ developers
+          <div className="glow-badge inline-flex items-center px-4 py-2 rounded-full bg-orange-500/10 border border-orange-400/20 text-orange-300 font-medium text-sm mb-6 transition duration-300 hover:scale-105">
+            ⚡ Track coding across {globalStats.platforms}+ platforms
           </div>
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
             One Dashboard.
@@ -128,17 +156,26 @@ const LandingPage = () => {
           {/* Stats */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div>
-              <div className="text-4xl font-bold text-amber-500 mb-2">7+</div>
+              <div className="text-4xl font-bold text-amber-500 mb-2">
+                <CountUp end={globalStats.platforms} duration={2} />+
+              </div>
               <div className="text-gray-600 dark:text-gray-400">Platforms</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-amber-500 mb-2">1M+</div>
-              <div className="text-gray-600 dark:text-gray-400">Problems Tracked</div>
+              <div className="text-4xl font-bold text-amber-500 mb-2">
+                <CountUp end={globalStats.totalProblems} duration={2} separator="," />+
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">Problems Solved</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-amber-500 mb-2">50K+</div>
-              <div className="text-gray-600 dark:text-gray-400">Developers</div>
+              <div className="text-4xl font-bold text-amber-500 mb-2">
+                <CountUp end={globalStats.totalActivities} duration={2} separator="," />+
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">Coding Activities</div>
             </div>
+          </div>
+          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+            *Includes problems, submissions, contests & contributions
           </div>
         </div>
       </section>
