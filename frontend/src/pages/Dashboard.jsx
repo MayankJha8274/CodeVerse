@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import PLATFORM_CONFIG, { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
 import { 
   Code, 
@@ -63,7 +63,9 @@ const CircularProgress = ({ value, max, size = 120, strokeWidth = 10, color = '#
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { userId } = useParams();
   const { user: authUser } = useAuth();
+  const isOwnProfile = !userId || userId === authUser?._id;
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -79,6 +81,8 @@ const Dashboard = () => {
   const [badges, setBadges] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [contributionCalendar, setContributionCalendar] = useState(null);
+
+  const displayUser = userData?.user || authUser;
 
   const SYNC_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes in ms
   const AUTO_REFRESH_MS = 5 * 60 * 1000; // Auto-refresh dashboard data every 5 minutes (reduced from 15)
@@ -115,7 +119,7 @@ const Dashboard = () => {
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(id);
+  return () => clearInterval(id);
   }, [cooldownRemaining]);
 
   const formatCooldown = (seconds) => {
@@ -135,15 +139,15 @@ const Dashboard = () => {
       }
     };
     loadData();
-  }, [authUser?._id || authUser?.id]);
+  }, [authUser?._id, authUser?.id, userId]);
 
   // ── Auto-refresh: silently re-fetch dashboard data every 15 minutes ──
   useEffect(() => {
     const intervalId = setInterval(() => {
       fetchDashboardData(true); // silent refresh, no loading spinner
     }, AUTO_REFRESH_MS);
-    return () => clearInterval(intervalId);
-  }, [authUser?._id || authUser?.id]);
+  return () => clearInterval(intervalId);
+  }, [authUser?._id, authUser?.id, userId]);
 
   const handleAutoSync = async () => {
     try {
@@ -166,7 +170,7 @@ const Dashboard = () => {
       if (!skipLoadingSpinner) setLoading(true);
       
       // Use the combined endpoint for much faster loading (1 call instead of 8)
-      const dashboardData = await api.getCombinedDashboardData();
+      const dashboardData = await api.getCombinedDashboardData(userId);
 
       setUserData(dashboardData);
       setPlatformStats(dashboardData.platforms || {});
@@ -179,7 +183,7 @@ const Dashboard = () => {
       // Fetch proper per-platform rating history from dedicated endpoint
       // (combined endpoint only has averaged rating, not per-platform data)
       try {
-        const allRatingsData = await api.getAllRatingHistory();
+        const allRatingsData = await api.getAllRatingHistory(90, userId);
         if (allRatingsData?.chartData?.length > 0) {
           setAllRatingHistory(allRatingsData);
         } else {
@@ -196,7 +200,7 @@ const Dashboard = () => {
           api.getStats().catch(() => null),
           api.getAllPlatformStats().catch(() => ({})),
           api.getRatingGrowth().catch(() => []),
-          api.getAllRatingHistory().catch(() => ({ chartData: [], platforms: [] })),
+          api.getAllRatingHistory(90, userId).catch(() => ({ chartData: [], platforms: [] })),
           api.getTopicAnalysis().catch(() => []),
           api.getBadges().catch(() => []),
           api.getAchievements().catch(() => []),
@@ -293,7 +297,7 @@ const Dashboard = () => {
 
   const getConnectedPlatforms = () => {
     const connected = [];
-    const userPlatforms = authUser?.platforms || userData?.user?.platforms || {};
+    const userPlatforms = displayUser?.platforms || {};
     
     Object.entries(userPlatforms).forEach(([platform, username]) => {
       if (username && PLATFORM_CONFIG[platform]) {
@@ -418,7 +422,7 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
+  return (
       <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center transition-colors">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
       </div>
@@ -427,7 +431,7 @@ const Dashboard = () => {
 
   // Empty state for new users
   if (!connectedPlatforms.length) {
-    return (
+  return (
       <div className="min-h-full bg-white dark:bg-[#0d0d14] transition-colors">
         <div className="max-w-2xl mx-auto text-center py-20">
           <div className="w-24 h-24 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
@@ -460,40 +464,41 @@ const Dashboard = () => {
               <div className="flex flex-col items-center mb-6">
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
                   <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#1a1a2e] flex items-center justify-center overflow-hidden transition-colors">
-                    {authUser?.avatar ? (
-                      <img src={authUser.avatar} alt="avatar" className="w-full h-full object-cover" />
+                    {displayUser?.avatar ? (
+                      <img src={displayUser.avatar} alt="avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-4xl">{authUser?.fullName?.[0] || authUser?.username?.[0] || '👤'}</span>
+                      <span className="text-4xl">{displayUser?.fullName?.[0] || displayUser?.username?.[0] || '👤'}</span>
                     )}
                   </div>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{authUser?.fullName || 'User'}</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{displayUser?.fullName || 'User'}</h2>
                 <p className="text-amber-500 text-sm flex items-center gap-1">
-                  <span>@{authUser?.username}</span> <Check className="w-4 h-4 text-green-500" />
+                  <span>@{displayUser?.username}</span> <Check className="w-4 h-4 text-green-500" />
                 </p>
               </div>
               {/* Edit Profile Button */}
-              <button 
-                onClick={() => navigate('/settings')} 
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all"
-              >
-                Edit Profile
-              </button>
-
+              {isOwnProfile && (
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all"
+                >
+                  Edit Profile
+                </button>
+              )}
               <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
 
               {/* Location Info */}
               <div className="space-y-3 mb-4 text-sm">
-                {authUser?.location && (
+                {displayUser?.location && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <MapPin className="w-4 h-4" />
-                    <span>{authUser.location}</span>
+                    <span>{displayUser.location}</span>
                   </div>
                 )}
-                {authUser?.institution && (
+                {displayUser?.institution && (
                   <div className="flex items-center gap-2 text-gray-400">
                     <Building className="w-4 h-4" />
-                    <span className="truncate">{authUser.institution}</span>
+                    <span className="truncate">{displayUser.institution}</span>
                   </div>
                 )}
               </div>
@@ -503,7 +508,7 @@ const Dashboard = () => {
               {/* About Section */}
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{authUser?.bio || 'Passionate about competitive programming and software development.'}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{displayUser?.bio || 'Passionate about competitive programming and software development.'}</p>
               </div>
 
               {/* Problem Solving Stats (non-GitHub) */}
@@ -518,7 +523,7 @@ const Dashboard = () => {
                 {openProblemStats && (
                   <div className="space-y-2">
                     {connectedPlatforms.filter(p => p.key !== 'github').map(platform => {
-                      return (
+  return (
                         <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
                           <div className="flex items-center gap-2">
                             <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
@@ -553,7 +558,7 @@ const Dashboard = () => {
                 {openDevStats && (
                   <div className="space-y-2">
                     {connectedPlatforms.filter(p => p.key === 'github').map(platform => {
-                      return (
+  return (
                         <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
                           <div className="flex items-center gap-2">
                             <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
@@ -662,7 +667,7 @@ const Dashboard = () => {
                 {['leetcode', 'codeforces', 'codechef'].map(platform => {
                   const hasData = allRatingHistory.byPlatform?.[platform]?.length > 0;
                   const platformName = PLATFORM_CONFIG[platform]?.name || platform;
-                  return (
+  return (
                     <button
                       key={platform}
                       onClick={() => setSelectedRatingPlatform(platform)}
@@ -828,7 +833,7 @@ const Dashboard = () => {
                     if (!stats || !stats.rating) return null;
                     const label = PLATFORM_CONFIG[p]?.name || p;
                     const color = platformRatingColors[p] || '#f59e0b';
-                    return (
+  return (
                       <div className="text-center">
                         <div className="text-xl font-bold" style={{ color }}>{stats.rating}</div>
                         <div className="text-xs text-gray-500"><PlatformIcon platform={p} className="w-4 h-4 inline-block mr-2" />{label}</div>
@@ -874,7 +879,7 @@ const Dashboard = () => {
                     // Different colors based on ranking
                     const barColors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
                     const barColor = barColors[idx % barColors.length];
-                    return (
+  return (
                       <div key={idx} className="group">
                         <div className="flex justify-between items-center mb-1">
                           <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
@@ -991,7 +996,7 @@ const Dashboard = () => {
                     strokeWidth={8}
                     color="#f59e0b"
                   />
-                  <div className="space-y-1">
+                  <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <PlatformIcon platform="codechef" className="w-5 h-5" color={PLATFORM_CONFIG['codechef']?.color} />
                       <span className="text-sm text-gray-600 dark:text-gray-300">Codechef</span>
@@ -1008,16 +1013,17 @@ const Dashboard = () => {
             </div>
 
             {/* Sync Button with Cooldown Timer */}
-            <div className="space-y-2">
-              <button
-                onClick={handleSync}
-                disabled={syncing || cooldownRemaining > 0}
-                className={`w-full font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors ${
-                  cooldownRemaining > 0
-                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black'
-                }`}
-              >
+            {isOwnProfile && (
+              <div className="space-y-2">
+                <button
+                  onClick={handleSync}
+                  disabled={syncing || cooldownRemaining > 0}
+                  className={`w-full font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors ${
+                    cooldownRemaining > 0
+                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black'
+                  }`}
+                >
                 <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
                 {syncing 
                   ? 'Syncing all platforms...' 
@@ -1043,6 +1049,7 @@ const Dashboard = () => {
               })()}
               <p className="text-[10px] text-gray-600 text-center">Refreshes problem counts, ratings, and contest data from all platforms</p>
             </div>
+            )}
 
             {/* Quick Links */}
             <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
@@ -1086,3 +1093,9 @@ const getPlatformUrl = (platform, username) => {
 };
 
 export default Dashboard;
+
+
+
+
+
+

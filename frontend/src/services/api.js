@@ -130,13 +130,15 @@ export const api = {
   },
 
   // Stats APIs
-  async getCombinedDashboardData() {
-    const data = await authFetch('/dashboard/combined');
+  async getCombinedDashboardData(userId = null) {
+    const url = userId ? `/dashboard/combined?userId=${userId}` : '/dashboard/combined';
+    const data = await authFetch(url);
     return data.data;
   },
 
-  async getStats() {
-    const data = await authFetch('/dashboard/summary');
+  async getStats(userId = null) {
+    const url = userId ? `/dashboard/summary?userId=${userId}` : '/dashboard/summary';
+    const data = await authFetch(url);
     return data.data;
   },
 
@@ -167,13 +169,15 @@ export const api = {
     return data.data;
   },
 
-  async getRatingGrowth() {
-    const data = await authFetch('/analytics/rating-history/leetcode?days=90');
+async getRatingGrowth(userId = null) {
+    const url = userId ? `/analytics/rating-history/leetcode?days=90&userId=${userId}` : '/analytics/rating-history/leetcode?days=90';
+    const data = await authFetch(url); 
     return data.data;
   },
 
-  async getAllRatingHistory(days = 90) {
-    const data = await authFetch(`/analytics/all-rating-history?days=${days}`);
+  async getAllRatingHistory(days = 90, userId = null) {
+    const url = userId ? `/analytics/all-rating-history?days=${days}&userId=${userId}` : `/analytics/all-rating-history?days=${days}`;
+    const data = await authFetch(url); 
     return data.data;
   },
 

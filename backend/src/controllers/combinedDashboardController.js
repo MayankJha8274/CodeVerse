@@ -122,7 +122,7 @@ function buildCalendarFromStoredData(platformStats) {
  */
 exports.getCombinedDashboardData = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.query.userId || req.user.id;
 
     // Execute all queries in parallel
     const [user, platformStats, recentProgress, todayProgress] = await Promise.all([

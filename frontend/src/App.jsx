@@ -60,7 +60,7 @@ function App() {
           {/* Protected Routes with Dashboard Layout */}
           <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="dashboard/profile/:userId" element={<UserProfilePage />} />
+            <Route path="dashboard/profile/:userId" element={<Dashboard />} />
             <Route path="platforms" element={<PlatformDetailPage />} />
             <Route path="rooms" element={<RoomsPage />} />
             <Route path="rooms/:societyId" element={<SocietyDetailPage />} />
