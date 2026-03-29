@@ -6,12 +6,22 @@ const SocietyStreak = require('../models/SocietyStreak');
 const User = require('../models/User');
 const crypto = require('crypto');
 
+let addBatchSyncJobs;
+let queueAvailable = false;
+try {
+  const syncQueue = require('../queues/syncQueue');
+  addBatchSyncJobs = syncQueue.addBatchSyncJobs;
+  queueAvailable = !!addBatchSyncJobs;
+} catch (err) {
+  console.warn('⚠️ Sync Queue not available for Society member syncs');
+}
+
 // @desc    Create a new society
 // @route   POST /api/societies
 // @access  Private
 const createSociety = async (req, res, next) => {
   try {
-    const { name, description, tags, institution, settings } = req.body;
+    const { name, description, tags, institution, settings, type } = req.body;
     const userId = req.user.id;
 
     if (!name || name.trim().length < 3) {
@@ -21,6 +31,7 @@ const createSociety = async (req, res, next) => {
     const society = await Society.create({
       name: name.trim(),
       description: description || '',
+      type: type === 'room' ? 'room' : 'society',
       owner: userId,
       tags: tags || [],
       institution: institution || '',
@@ -69,13 +80,16 @@ const createSociety = async (req, res, next) => {
   }
 };
 
-// @desc    Get all societies (explore)
+// @desc    Get all active societies/rooms (with search & filters)
 // @route   GET /api/societies
 // @access  Private
 const exploreSocieties = async (req, res, next) => {
   try {
-    const { search, tag, sort, page = 1, limit = 20 } = req.query;
+    const { search, tag, sort, type, page = 1, limit = 20 } = req.query;
     const query = { isActive: true };
+
+    // Filter by type: 'room' or 'society'. Defaults to 'society'.
+    query.type = type === 'room' ? 'room' : 'society';
 
     if (search) {
       const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -134,7 +148,7 @@ const exploreSocieties = async (req, res, next) => {
   }
 };
 
-// @desc    Get user's joined societies
+// @desc    Get user's joined societies/rooms
 // @route   GET /api/societies/my
 // @access  Private
 const getMySocieties = async (req, res, next) => {
@@ -146,9 +160,12 @@ const getMySocieties = async (req, res, next) => {
     }).lean();
 
     const societyIds = memberships.map(m => m.society);
+    const typeFilter = req.query.type === 'room' ? 'room' : 'society';
+    
     const societies = await Society.find({
       _id: { $in: societyIds },
-      isActive: true
+      isActive: true,
+      type: typeFilter
     })
       .populate('owner', 'username fullName avatar')
       .sort({ updatedAt: -1 })
@@ -229,7 +246,11 @@ const updateSociety = async (req, res, next) => {
     if (institution !== undefined) update.institution = institution;
     if (avatar) update.avatar = avatar;
     if (banner) update.banner = banner;
-    if (settings) update.settings = { ...req.society.settings.toObject(), ...settings };
+    if (settings && typeof settings === 'object') {
+      for (const [key, value] of Object.entries(settings)) {
+        update[`settings.${key}`] = value;
+      }
+    }
 
     const society = await Society.findByIdAndUpdate(
       req.params.societyId,
@@ -706,6 +727,59 @@ const searchUsers = async (req, res, next) => {
   }
 };
 
+// @desc    Sync all members' platform data
+// @route   POST /api/societies/:societyId/sync
+// @access  Private (super_admin or society_admin)
+const syncAllMembersData = async (req, res, next) => {
+  try {
+    const { societyId } = req.params;
+
+    if (!queueAvailable) {
+      return res.status(503).json({
+        success: false,
+        message: 'Sync queue is currently unavailable. Please try again later.'
+      });
+    }
+
+    // Get all active members
+    const members = await SocietyMember.find({
+      society: societyId,
+      isBanned: false
+    }).select('user').lean();
+
+    if (!members.length) {
+      return res.status(404).json({ success: false, message: 'No members found' });
+    }
+
+    const userIds = members.map(m => m.user);
+
+    // Queue sync jobs
+    await addBatchSyncJobs(userIds, {
+      priority: 5, // PRIORITY.NORMAL
+      triggeredBy: 'society_sync'
+    });
+
+    // Log the manual sync activity
+    await ActivityLog.create({
+      society: societyId,
+      user: req.user.id,
+      action: 'settings_updated',
+      targetType: 'society',
+      targetId: societyId,
+      details: { action: 'Triggered platform stats sync for all members' }
+    });
+
+    res.status(202).json({
+      success: true,
+      message: `Enqueued data sync for ${userIds.length} members. This may take a few minutes.`,
+      enqueuedCount: userIds.length
+    });
+  } catch (error) {
+    console.error('Error triggering member syncs:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   createSociety,
   exploreSocieties,
@@ -722,5 +796,6 @@ module.exports = {
   toggleMuteMember,
   regenerateInviteCode,
   addMemberManually,
-  searchUsers
+  searchUsers,
+  syncAllMembersData
 };

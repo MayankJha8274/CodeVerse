@@ -13,6 +13,11 @@ const societySchema = new mongoose.Schema({
     unique: true,
     lowercase: true
   },
+  type: {
+    type: String,
+    enum: ['society', 'room'],
+    default: 'society'
+  },
   description: {
     type: String,
     maxlength: 1000,

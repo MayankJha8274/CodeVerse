@@ -83,17 +83,27 @@ const SocietyDetailPage = () => {
   const isAdmin = ADMIN_TABS.includes(society?.userRole);
   const isRoom = society?.type === 'room' || window.location.pathname.includes('/rooms/');
   const baseTabs = TABS.filter(t => {
-    if (t.id === 'chat' && society?.settings?.enableChat === false) return false;
-    if (t.id === 'events' && society?.settings?.enableEvents === false) return false;
-    if (t.id === 'leaderboard' && society?.settings?.enableLeaderboard === false) return false;
-    
-    // Rooms specifically hide events and announcements
-    if (isRoom && ['events', 'announcements'].includes(t.id)) return false;
+    // Hide disabled features based on society settings (ignore for Rooms)
+    if (!isRoom) {
+      if (t.id === 'chat' && society?.settings?.enableChat === false) return false;
+      if (t.id === 'events' && society?.settings?.enableEvents === false) return false;
+      if (t.id === 'leaderboard' && society?.settings?.enableLeaderboard === false) return false;
+    }
+
+    // Rooms specifically show ONLY chat, leaderboard, and members
+    if (isRoom && !['chat', 'leaderboard', 'members'].includes(t.id)) return false;
 
     return true;
   });
 
   const allTabs = isAdmin ? [...baseTabs, { id: 'admin', label: 'Admin', icon: Settings }] : baseTabs;
+
+  // Fallback to exactly active tab if initial is blocked
+  useEffect(() => {
+    if (society && !allTabs.find(t => t.id === activeTab)) {
+      setActiveTab(isRoom ? 'chat' : allTabs[0]?.id || 'chat');
+    }
+  }, [society, activeTab, allTabs, isRoom]);
   
   console.log('Society userRole:', society?.userRole);
   console.log('isAdmin:', isAdmin);

@@ -3,11 +3,18 @@ const router = express.Router();
 const { cacheResponse } = require('../middleware/redisCache');
 const { protect } = require('../middleware/auth');
 const analyticsController = require('../controllers/analyticsController');
+const userAnalyticsController = require('../controllers/userAnalyticsController');
 
 /**
  * Analytics Routes
  * All routes require authentication
  */
+
+// User Analytics for Society/Room Leaderboards
+router.get('/entity/:entityId/trend', protect, cacheResponse(600), userAnalyticsController.getAnalyticsTrend);
+router.get('/entity/:entityId/comparison', protect, cacheResponse(600), userAnalyticsController.getAnalyticsComparison);
+router.get('/entity/:entityId/weekly', protect, cacheResponse(600), userAnalyticsController.getAnalyticsWeekly);
+router.get('/entity/:entityId/streak', protect, cacheResponse(600), userAnalyticsController.getAnalyticsStreak);
 
 // Aggregation & Progress Analytics
 router.get('/streaks', protect, cacheResponse(1800), analyticsController.getStreaks);

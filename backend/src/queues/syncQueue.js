@@ -4,57 +4,50 @@
  * Queue is OPTIONAL - works without Redis using direct sync
  */
 
-const { Queue } = require('bullmq');
-const { getRedisClient } = require('../config/redisClient');
+const { isRedisAvailable, getRedisConnection } = require('../config/redis');
 
-let syncQueue = null;
-
-const getSyncQueue = () => {
-  if (!syncQueue) {
-    const redisClient = getRedisClient();
-    if (redisClient) {
-      syncQueue = new Queue('sync-queue', {
-        connection: redisClient,
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 10000, // 10 seconds
-          },
-          removeOnComplete: {
-            count: 1000,
-            age: 3600 * 24, // 24 hours
-          },
-          removeOnFail: {
-            count: 5000,
-            age: 3600 * 24 * 7, // 7 days
-          },
-        },
-      });
-    }
-  }
-  return syncQueue;
+// Platform-specific delays (in milliseconds)
+const PLATFORM_DELAYS = {
+  github: 500,      // Fast - has good rate limits with token
+  codeforces: 1000, // Medium - public API
+  leetcode: 2000,   // Slow - stricter rate limits
+  codechef: 2000,   // Slow - web scraping
+  geeksforgeeks: 3000, // Very slow - Puppeteer
+  hackerrank: 1500, // Medium
+  codingninjas: 3000 // Very slow - Puppeteer
 };
 
-const addSyncJob = async (userId, options = {}) => {
-  const queue = getSyncQueue();
-  if (queue) {
-    try {
-      await queue.add('sync-user', { userId }, options);
-      console.log(`✅ Queued sync for user: ${userId}`);
-    } catch (error) {
-      console.error(`❌ Failed to add sync job for user ${userId}:`, error.message);
-    }
-  } else {
-    console.warn('⚠️ Sync queue not available. Sync job was not added.');
-    // Optionally, you could fall back to a direct, non-queued call here
+// Platform cooldowns (minimum time between syncs)
+const PLATFORM_COOLDOWNS = {
+  github: 5 * 60 * 1000,      // 5 minutes
+  codeforces: 10 * 60 * 1000, // 10 minutes
+  leetcode: 15 * 60 * 1000,   // 15 minutes
+  codechef: 15 * 60 * 1000,   // 15 minutes
+  geeksforgeeks: 20 * 60 * 1000, // 20 minutes
+  hackerrank: 10 * 60 * 1000, // 10 minutes
+  codingninjas: 20 * 60 * 1000 // 20 minutes
+};
+
+// Default job options with retry and backoff
+const defaultJobOptions = {
+  attempts: 3,
+  backoff: {
+    type: 'exponential',
+    delay: 5000 // Start with 5 second delay, then 10s, 20s...
+  },
+  removeOnComplete: {
+    count: 100, // Keep last 100 completed jobs
+    age: 24 * 3600 // Keep for 24 hours
+  },
+  removeOnFail: {
+    count: 50 // Keep last 50 failed jobs for debugging
   }
 };
 
-module.exports = {
-  getSyncQueue,
-  addSyncJob,
-};
+// Priority levels
+const PRIORITY = {
+  HIGH: 1,    // Active users, manual sync
+  NORMAL: 5,  // Regular sync
   LOW: 10     // Inactive users
 };
 

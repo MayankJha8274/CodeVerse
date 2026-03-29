@@ -12,7 +12,8 @@ import {
   BookOpen,
   ChevronDown,
   Users,
-  Zap
+  Zap,
+  TrendingUp
 } from 'lucide-react';
 import { 
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
