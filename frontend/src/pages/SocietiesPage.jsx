@@ -9,7 +9,7 @@ import api from '../services/api';
 import ProfileLink from '../components/ProfileLink';
 import { useAuth } from '../context/AuthContext';
 
-const SocietiesPage = () => {
+const SocietiesPage = ({ entityType = 'society' }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('my'); // 'my' | 'explore'
@@ -30,21 +30,21 @@ const SocietiesPage = () => {
 
   const loadMySocieties = useCallback(async () => {
     try {
-      const res = await api.getMySocieties();
+      const res = await api.getMySocieties({ type: entityType });
       setMySocieties(res.data || []);
     } catch (err) {
-      console.error('Failed to load societies:', err);
+      console.error(`Failed to load ${entityType}s:`, err);
     }
-  }, []);
+  }, [entityType]);
 
   const loadExploreSocieties = useCallback(async () => {
     try {
-      const res = await api.exploreSocieties({ search, sort, limit: 50 });
+      const res = await api.exploreSocieties({ search, sort, limit: 50, type: entityType });
       setExploreSocieties(res.data || []);
     } catch (err) {
-      console.error('Failed to explore societies:', err);
+      console.error(`Failed to explore ${entityType}s:`, err);
     }
-  }, [search, sort]);
+  }, [search, sort, entityType]);
 
   useEffect(() => {
     const load = async () => {
@@ -73,14 +73,15 @@ const SocietiesPage = () => {
       const res = await api.createSociety({
         name: createForm.name,
         description: createForm.description,
+        type: entityType,
         settings: { isPrivate: createForm.isPrivate },
         tags: createForm.tags ? createForm.tags.split(',').map(t => t.trim()).filter(Boolean) : []
       });
       setShowCreateModal(false);
       setCreateForm({ name: '', description: '', isPrivate: false, tags: '' });
-      navigate(`/societies/${res.data._id}`);
+      navigate(`/${entityType === 'room' ? 'rooms' : 'societies'}/${res.data._id}`);
     } catch (err) {
-      setCreateError(err.message || 'Failed to create society');
+      setCreateError(err.message || `Failed to create ${entityType}`);
     } finally {
       setCreateLoading(false);
     }
@@ -94,7 +95,7 @@ const SocietiesPage = () => {
       const res = await api.joinSociety(inviteCode.trim());
       setShowJoinModal(false);
       setInviteCode('');
-      navigate(`/societies/${res.data.societyId}`);
+      navigate(`/${entityType === 'room' ? 'rooms' : 'societies'}/${res.data.societyId}`);
     } catch (err) {
       setJoinError(err.message || 'Invalid invite code');
     } finally {
@@ -104,7 +105,7 @@ const SocietiesPage = () => {
 
   const SocietyCard = ({ society }) => (
     <div
-      onClick={() => navigate(`/societies/${society._id}`)}
+      onClick={() => navigate(`/${entityType === 'room' ? 'rooms' : 'societies'}/${society._id}`)}
       className="group bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800/50 rounded-xl p-5 hover:border-amber-500/50 transition-all cursor-pointer hover:shadow-lg hover:shadow-amber-500/5"
     >
       <div className="flex items-start justify-between mb-3">
@@ -187,10 +188,10 @@ const SocietiesPage = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-amber-500" /> Societies
+            <Building2 className="w-6 h-6 text-amber-500" /> {entityType === 'room' ? 'Rooms' : 'Societies'}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Join coding communities, chat, attend events, and climb leaderboards
+            {entityType === 'room' ? 'Join private rooms, chat, and climb leaderboards' : 'Join coding communities, chat, attend events, and climb leaderboards'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -204,7 +205,7 @@ const SocietiesPage = () => {
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 text-sm rounded-lg bg-amber-500 text-black font-medium hover:bg-amber-400 transition-colors flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" /> Create Society
+            <Plus className="w-4 h-4" /> Create {entityType === 'room' ? 'Room' : 'Society'}
           </button>
         </div>
       </div>
@@ -212,7 +213,7 @@ const SocietiesPage = () => {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 p-1 bg-gray-100 dark:bg-[#111118] rounded-lg w-fit">
         {[
-          { id: 'my', label: 'My Societies', count: mySocieties.length },
+          { id: 'my', label: `My ${entityType === 'room' ? 'Rooms' : 'Societies'}`, count: mySocieties.length },
           { id: 'explore', label: 'Explore', icon: Sparkles }
         ].map(t => (
           <button
@@ -240,7 +241,7 @@ const SocietiesPage = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search societies..."
+              placeholder={`Search ${entityType === 'room' ? 'rooms' : 'societies'}...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"

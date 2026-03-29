@@ -69,7 +69,7 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
 
   const canActOn = (targetMember) => {
     if (!canManage) return false;
-    if (targetMember.user?._id === user?.id) return false;
+    if (targetMember.user?._id === user?.id || targetMember.user?._id === user?._id) return false;
     const targetRoleIndex = ROLE_HIERARCHY.indexOf(targetMember.role);
     return myRoleIndex > targetRoleIndex;
   };
