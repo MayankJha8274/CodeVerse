@@ -13,6 +13,15 @@ const EMOJI_LIST = ['👍', '❤️', '😂', '🎉', '🤔', '👀', '🔥', '�
 const SocietyChatTab = ({ societyId, society, channels = [] }) => {
   const { user } = useAuth();
   const socket = useSocket();
+
+  // Robustly detect if we are in a 'room' view (either from the data or the URL route)
+  const isRoom = society?.type === 'room' || window.location.pathname.includes('/rooms/');
+
+  // If this is a room, only keep the 'general' channel
+  const displayChannels = isRoom 
+    ? channels.filter(c => c.name.toLowerCase() === 'general')
+    : channels;
+
   const [activeChannel, setActiveChannel] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -25,10 +34,10 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
 
   // Set default channel
   useEffect(() => {
-    if (channels.length > 0 && !activeChannel) {
-      setActiveChannel(channels[0]);
+    if (displayChannels.length > 0 && !activeChannel) {
+      setActiveChannel(displayChannels[0]);
     }
-  }, [channels]);
+  }, [displayChannels]);
 
   // Join society and channel socket rooms
   useEffect(() => {
@@ -181,12 +190,12 @@ const SocietyChatTab = ({ societyId, society, channels = [] }) => {
   return (
     <div className="flex h-[calc(100vh-220px)] bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
       {/* Channel Sidebar */}
-      <div className="w-52 flex-shrink-0 border-r border-gray-200 dark:border-gray-800/50 bg-gray-50 dark:bg-[#111118]">
+      <div className="w-52 flex-shrink-0 border-r border-gray-200 dark:border-gray-800/50 bg-gray-50 dark:bg-[#111118] flex flex-col">
         <div className="p-3 border-b border-gray-200 dark:border-gray-800/50">
           <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Channels</h3>
         </div>
         <div className="p-1.5 space-y-0.5 overflow-y-auto">
-          {channels.map(ch => (
+          {displayChannels.map(ch => (
             <button
               key={ch._id}
               onClick={() => setActiveChannel(ch)}

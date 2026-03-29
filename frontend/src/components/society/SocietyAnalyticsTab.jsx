@@ -3,8 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts';
-import CalendarHeatmap from 'react-calendar-heatmap';
-import 'react-calendar-heatmap/dist/styles.css';
+import { Flame, Medal, Calendar } from 'lucide-react';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00C49F'];
 
@@ -28,7 +27,8 @@ const SocietyAnalyticsTab = ({ societyId, societyType = 'society' }) => {
   const [timeRange, setTimeRange] = useState('1M');
   const [trendData, setTrendData] = useState([]);
   const [comparisonData, setComparisonData] = useState({ labels: [], datasets: [] });
-  const [heatmapData, setHeatmapData] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [streakData, setStreakData] = useState({ current: 0, best: 0, activeDays: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,11 +40,11 @@ const SocietyAnalyticsTab = ({ societyId, societyType = 'society' }) => {
   const fetchAnalyticsData = async () => {
     setLoading(true);
     try {
-      // Parallel requests using standard fetch
-      const [trendRes, compRes, heatmapRes] = await Promise.all([
+      const [trendRes, compRes, weeklyRes, streakRes] = await Promise.all([
         authFetch(`/analytics/entity/${societyId}/trend?range=${timeRange}`),
         authFetch(`/analytics/entity/${societyId}/comparison`),
-        authFetch(`/analytics/entity/${societyId}/heatmap`)
+        authFetch(`/analytics/entity/${societyId}/weekly`),
+        authFetch(`/analytics/entity/${societyId}/streak`)
       ]);
 
       if (trendRes.success) {
@@ -74,8 +74,12 @@ const SocietyAnalyticsTab = ({ societyId, societyType = 'society' }) => {
         });
       }
 
-      if (heatmapRes.success) {
-        setHeatmapData(heatmapRes.data || []);
+if (weeklyRes.success) {
+          setWeeklyData(weeklyRes.data || []);
+        }
+
+        if (streakRes.success) {
+          setStreakData(streakRes.data || { current: 0, best: 0, activeDays: 0 });
       }
 
     } catch (error) {
@@ -189,55 +193,54 @@ const SocietyAnalyticsTab = ({ societyId, societyType = 'society' }) => {
           </div>
         </div>
 
-        {/* Heatmap: Society Global Activity */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-6">Entity Activity Pulse</h3>
-          <div className="w-full">
-            <CalendarHeatmap
-              startDate={shiftDate(today, -150)}
-              endDate={today}
-              values={heatmapData}
-              classForValue={(value) => {
-                if (!value) {
-                  return 'color-empty';
-                }
-                return `color-scale-${Math.min(value.count, 4)}`;
-              }}
-              tooltipDataAttrs={(value) => {
-                return {
-                  'data-tip': `${value.date || 'No'} activity: ${value.count || 0}`
-                };
-              }}
-              showWeekdayLabels={true}
-            />
-            <div className="flex justify-end items-center mt-4 text-xs text-slate-400">
-              <span className="mr-2">Less</span>
-              <div className="flex space-x-1">
-                <div className="w-3 h-3 bg-slate-700 rounded-sm"></div>
-                <div className="w-3 h-3 bg-blue-900 rounded-sm"></div>
-                <div className="w-3 h-3 bg-blue-700 rounded-sm"></div>
-                <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                <div className="w-3 h-3 bg-blue-300 rounded-sm"></div>
-              </div>
-              <span className="ml-2">More</span>
+        {/* Weekly Activity Area */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <Calendar className="w-5 h-5 text-purple-400" />
+              <h3 className="text-lg font-semibold text-white">Weekly Activity Pulse</h3>
             </div>
             
-            {/* Some CSS specifically for this heatmap block */}
-            <style dangerouslySetInnerHTML={{__html: `
-              .react-calendar-heatmap rect {
-                rx: 3;
-                ry: 3;
-              }
-              .react-calendar-heatmap .color-empty { fill: #334155; }
-              .react-calendar-heatmap .color-scale-1 { fill: #1e3a8a; }
-              .react-calendar-heatmap .color-scale-2 { fill: #1d4ed8; }
-              .react-calendar-heatmap .color-scale-3 { fill: #3b82f6; }
-              .react-calendar-heatmap .color-scale-4 { fill: #93c5fd; }
-              .react-calendar-heatmap text {
-                fill: #94a3b8;
-                font-size: 10px;
-              }
-            `}} />
+            <div className="h-[200px] w-full mb-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                  <XAxis dataKey="day" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                  <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px' }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="#a855f7"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Streaks Cards inside the same flex column */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-900/50 p-4 rounded-lg flex items-center justify-between border border-slate-700">
+              <div>
+                <p className="text-sm text-slate-400 font-medium mb-1">Current Streak</p>
+                <p className="text-2xl font-bold text-white">{streakData?.current || 0} <span className="text-sm font-normal text-slate-500">days</span></p>
+              </div>
+              <div className="p-3 bg-orange-500/20 rounded-lg">
+                <Flame className="w-6 h-6 text-orange-400" />
+              </div>
+            </div>
+            <div className="bg-slate-900/50 p-4 rounded-lg flex items-center justify-between border border-slate-700">
+              <div>
+                <p className="text-sm text-slate-400 font-medium mb-1">Best Streak</p>
+                <p className="text-2xl font-bold text-white">{streakData?.best || 0} <span className="text-sm font-normal text-slate-500">days</span></p>
+              </div>
+              <div className="p-3 bg-yellow-500/20 rounded-lg">
+                <Medal className="w-6 h-6 text-yellow-400" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

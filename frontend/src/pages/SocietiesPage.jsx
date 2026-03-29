@@ -188,7 +188,7 @@ const SocietiesPage = ({ entityType = 'society' }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-amber-500" /> {entityType === 'room' ? 'Rooms' : 'Societies'}
+            {entityType === 'room' ? <Hash className="w-6 h-6 text-amber-500" /> : <Building2 className="w-6 h-6 text-amber-500" />} {entityType === 'room' ? 'Rooms' : 'Societies'}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {entityType === 'room' ? 'Join private rooms, chat, and climb leaderboards' : 'Join coding communities, chat, attend events, and climb leaderboards'}

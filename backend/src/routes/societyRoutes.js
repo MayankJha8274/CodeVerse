@@ -80,5 +80,6 @@ router.get('/:societyId/streak', requireSocietyMember, leaderboard.getUserStreak
 // ============ ANALYTICS & ADMIN ============
 router.get('/:societyId/analytics', requireSocietyMember, requirePermission('view_analytics'), analytics.getSocietyAnalytics);
 router.get('/:societyId/activity-log', requireSocietyMember, requirePermission('view_activity_log'), analytics.getActivityLog);
+router.post('/:societyId/sync', requireSocietyMember, requireMinRole('society_admin'), society.syncAllMembersData);
 
 module.exports = router;
