@@ -40,28 +40,22 @@ exports.getAnalyticsTrend = async (req, res, next) => {
       });
     });
 
-    let finalUsers = Object.values(usersData);
+    let finalUsers = Object.values(usersData).map(u => {
+      let maxProblems = 0;
+      let maxXp = 0;
+      let maxScore = 0;
+      u.data.sort((a,b) => new Date(a.date) - new Date(b.date));
+      u.data = u.data.map(d => {
+        maxProblems = Math.max(maxProblems, d.problemsSolved);
+        maxXp = Math.max(maxXp, d.xp);
+        maxScore = Math.max(maxScore, d.contestScore);
+        return { ...d, problemsSolved: maxProblems, xp: maxXp, contestScore: maxScore };
+      });
+      return u;
+    });
 
-    // MOCK DATA FALLBACK IF EMPTY
     if (finalUsers.length === 0) {
-      finalUsers = [
-        {
-          userId: 'mock1', name: 'Alice',
-          data: Array.from({length: 10}).map((_,i) => {
-            const d = new Date(startDate.getTime());
-            d.setDate(d.getDate() + i);
-            return { date: d.toISOString().split('T')[0], problemsSolved: Math.floor(Math.random()*5), xp: i*10, contestScore: Math.floor(Math.random()*200) }
-          })
-        },
-        {
-          userId: 'mock2', name: 'Bob',
-          data: Array.from({length: 10}).map((_,i) => {
-            const d = new Date(startDate.getTime());
-            d.setDate(d.getDate() + i);
-            return { date: d.toISOString().split('T')[0], problemsSolved: Math.floor(Math.random()*8), xp: i*15, contestScore: Math.floor(Math.random()*250) }
-          })
-        }
-      ];
+      finalUsers = [];
     }
 
     res.json({ success: true, users: finalUsers });
@@ -106,33 +100,43 @@ exports.getAnalyticsComparison = async (req, res, next) => {
       };
     });
 
-    // MOCK DATA FALLBACK IF EMPTY
-    if (datasets.length === 0) {
-      datasets = [
-        { name: 'Alice', data: [45, 120, 85] },
-        { name: 'Bob', data: [32, 95, 110] },
-        { name: 'Carol', data: [78, 140, 60] }
-      ];
-    }
-
     res.json({ success: true, labels: ["Problems Solved", "Contest Score (x10)", "Commits"], datasets });
   } catch (error) { next(error); }
 };
 
 exports.getAnalyticsWeekly = async (req, res, next) => {
   try {
+    const { entityId } = req.params;
+    const members = await SocietyMember.find({ society: entityId });
+    const userIds = members.map(m => m.user).filter(Boolean);
+
+    let startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+
+    const stats = await DailyProgress.find({
+      userId: { $in: userIds },
+      date: { $gte: startDate }
+    }).sort({ date: 1 }).lean();
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const pulseMap = {};
+    for (let i = 0; i < 7; i++) {
+        let d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        let ds = d.toISOString().split('T')[0];
+        pulseMap[ds] = { day: days[d.getDay()], date: ds, count: 0 };
+    }
+
+    stats.forEach(s => {
+        let ds = s.date.toISOString().split('T')[0];
+        if (pulseMap[ds]) {
+            pulseMap[ds].count += (s.aggregatedStats?.platformsActive || 1);
+        }
+    });
+
     res.json({
       success: true,
-      data: Array.from({length: 7}).map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        return { 
-          day: days[d.getDay()], 
-          date: d.toISOString().split('T')[0], 
-          count: Math.floor(Math.random() * 20) + 1 
-        };
-      })
+      data: Object.values(pulseMap)
     });
   } catch (error) { next(error); }
 };

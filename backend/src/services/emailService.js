@@ -45,13 +45,12 @@ const createTransporter = async () => {
  * @returns {string} The HTML content of the email.
  */
 function generateContestReminderTemplate(user, contest) {
-  // Replace with your publicly hosted logo URL.
-  const logoUrl = 'https://i.imgur.com/gE29H8A.png'; // Placeholder CodeVerse logo
-
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #EAEAEA; background-color: #121212; max-width: 600px; margin: 20px auto; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
       <div style="background-color: #1F1F1F; padding: 20px; text-align: center; border-bottom: 1px solid #333;">
-        <img src="${logoUrl}" alt="CodeVerse Logo" style="max-width: 150px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+        <h1 style="color: #4A90E2; font-size: 28px; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+          <span style="font-size: 32px;">⚡</span> CodeVerse
+        </h1>
       </div>
       <div style="padding: 25px;">
         <h2 style="color: #FFFFFF; font-size: 24px; margin-top: 0;">🔥 Contest Reminder: ${contest.name}</h2>
