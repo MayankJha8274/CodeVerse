@@ -1,20 +1,10 @@
-const Society = require('../models/Society');
-const SocietyMember = require('../models/SocietyMember');
-const ChatChannel = require('../models/ChatChannel');
-const ActivityLog = require('../models/ActivityLog');
-const SocietyStreak = require('../models/SocietyStreak');
-const User = require('../models/User');
-const crypto = require('crypto');
-
-let addBatchSyncJobs;
-let queueAvailable = false;
-try {
-  const syncQueue = require('../queues/syncQueue');
-  addBatchSyncJobs = syncQueue.addBatchSyncJobs;
-  queueAvailable = !!addBatchSyncJobs;
-} catch (err) {
-  console.warn('⚠️ Sync Queue not available for Society member syncs');
-}
+const Society = require("../models/Society");
+const SocietyMember = require("../models/SocietyMember");
+const ChatChannel = require("../models/ChatChannel");
+const ActivityLog = require("../models/ActivityLog");
+const SocietyStreak = require("../models/SocietyStreak");
+const User = require("../models/User");
+const crypto = require("crypto");
 
 // @desc    Create a new society
 // @route   POST /api/societies
@@ -25,29 +15,34 @@ const createSociety = async (req, res, next) => {
     const userId = req.user.id;
 
     if (!name || name.trim().length < 3) {
-      return res.status(400).json({ success: false, message: 'Society name must be at least 3 characters' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Society name must be at least 3 characters",
+        });
     }
 
     const society = await Society.create({
       name: name.trim(),
-      description: description || '',
-      type: type === 'room' ? 'room' : 'society',
+      description: description || "",
+      type: type === "room" ? "room" : "society",
       owner: userId,
       tags: tags || [],
-      institution: institution || '',
+      institution: institution || "",
       settings: {
         ...settings,
         isPrivate: settings?.isPrivate || false,
-        maxMembers: Math.min(settings?.maxMembers || 500, 1000)
+        maxMembers: Math.min(settings?.maxMembers || 500, 1000),
       },
-      stats: { totalMembers: 1, activeMembers: 1 }
+      stats: { totalMembers: 1, activeMembers: 1 },
     });
 
     // Create owner membership
     await SocietyMember.create({
       society: society._id,
       user: userId,
-      role: 'super_admin'
+      role: "super_admin",
     });
 
     // Create default chat channels
@@ -60,21 +55,26 @@ const createSociety = async (req, res, next) => {
     await ActivityLog.create({
       society: society._id,
       user: userId,
-      action: 'society_created',
-      targetType: 'society',
-      targetId: society._id
+      action: "society_created",
+      targetType: "society",
+      targetId: society._id,
     });
 
-    await society.populate('owner', 'username fullName avatar');
+    await society.populate("owner", "username fullName avatar");
 
     res.status(201).json({
       success: true,
-      message: 'Society created successfully',
-      data: society
+      message: "Society created successfully",
+      data: society,
     });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: 'A society with this name already exists' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "A society with this name already exists",
+        });
     }
     next(error);
   }
@@ -89,14 +89,14 @@ const exploreSocieties = async (req, res, next) => {
     const query = { isActive: true };
 
     // Filter by type: 'room' or 'society'. Defaults to 'society'.
-    query.type = type === 'room' ? 'room' : 'society';
+    query.type = type === "room" ? "room" : "society";
 
     if (search) {
-      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       query.$or = [
-        { name: { $regex: sanitized, $options: 'i' } },
-        { description: { $regex: sanitized, $options: 'i' } },
-        { tags: { $regex: sanitized, $options: 'i' } }
+        { name: { $regex: sanitized, $options: "i" } },
+        { description: { $regex: sanitized, $options: "i" } },
+        { tags: { $regex: sanitized, $options: "i" } },
       ];
     }
 
@@ -104,16 +104,16 @@ const exploreSocieties = async (req, res, next) => {
       query.tags = tag;
     }
 
-    let sortOption = { 'stats.totalMembers': -1 };
-    if (sort === 'newest') sortOption = { createdAt: -1 };
-    if (sort === 'active') sortOption = { 'stats.weeklyActive': -1 };
-    if (sort === 'name') sortOption = { name: 1 };
+    let sortOption = { "stats.totalMembers": -1 };
+    if (sort === "newest") sortOption = { createdAt: -1 };
+    if (sort === "active") sortOption = { "stats.weeklyActive": -1 };
+    if (sort === "name") sortOption = { name: 1 };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const total = await Society.countDocuments(query);
 
     const societies = await Society.find(query)
-      .populate('owner', 'username fullName avatar')
+      .populate("owner", "username fullName avatar")
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit))
@@ -123,14 +123,16 @@ const exploreSocieties = async (req, res, next) => {
     const membershipMap = {};
     const memberships = await SocietyMember.find({
       user: req.user.id,
-      society: { $in: societies.map(s => s._id) }
+      society: { $in: societies.map((s) => s._id) },
     }).lean();
-    memberships.forEach(m => { membershipMap[m.society.toString()] = m.role; });
+    memberships.forEach((m) => {
+      membershipMap[m.society.toString()] = m.role;
+    });
 
-    const enriched = societies.map(s => ({
+    const enriched = societies.map((s) => ({
       ...s,
       userRole: membershipMap[s._id.toString()] || null,
-      isMember: !!membershipMap[s._id.toString()]
+      isMember: !!membershipMap[s._id.toString()],
     }));
 
     res.status(200).json({
@@ -140,8 +142,8 @@ const exploreSocieties = async (req, res, next) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     next(error);
@@ -156,33 +158,35 @@ const getMySocieties = async (req, res, next) => {
     const memberships = await SocietyMember.find({
       user: req.user.id,
       isBanned: false,
-      isActive: true
+      isActive: true,
     }).lean();
 
-    const societyIds = memberships.map(m => m.society);
-    const typeFilter = req.query.type === 'room' ? 'room' : 'society';
-    
+    const societyIds = memberships.map((m) => m.society);
+    const typeFilter = req.query.type === "room" ? "room" : "society";
+
     const societies = await Society.find({
       _id: { $in: societyIds },
       isActive: true,
-      type: typeFilter
+      type: typeFilter,
     })
-      .populate('owner', 'username fullName avatar')
+      .populate("owner", "username fullName avatar")
       .sort({ updatedAt: -1 })
       .lean();
 
     const roleMap = {};
-    memberships.forEach(m => { roleMap[m.society.toString()] = m.role; });
+    memberships.forEach((m) => {
+      roleMap[m.society.toString()] = m.role;
+    });
 
-    const enriched = societies.map(s => ({
+    const enriched = societies.map((s) => ({
       ...s,
-      userRole: roleMap[s._id.toString()]
+      userRole: roleMap[s._id.toString()],
     }));
 
     res.status(200).json({
       success: true,
       count: enriched.length,
-      data: enriched
+      data: enriched,
     });
   } catch (error) {
     next(error);
@@ -194,26 +198,32 @@ const getMySocieties = async (req, res, next) => {
 // @access  Private
 const getSocietyById = async (req, res, next) => {
   try {
-    const society = await Society.findById(req.params.societyId)
-      .populate('owner', 'username fullName avatar');
+    const society = await Society.findById(req.params.societyId).populate(
+      "owner",
+      "username fullName avatar",
+    );
 
     if (!society || !society.isActive) {
-      return res.status(404).json({ success: false, message: 'Society not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Society not found" });
     }
 
     const membership = await SocietyMember.findOne({
       society: society._id,
-      user: req.user.id
+      user: req.user.id,
     }).lean();
 
     const channels = await ChatChannel.find({
       society: society._id,
-      isActive: true
-    }).sort({ isDefault: -1, name: 1 }).lean();
+      isActive: true,
+    })
+      .sort({ isDefault: -1, name: 1 })
+      .lean();
 
     const memberCount = await SocietyMember.countDocuments({
       society: society._id,
-      isBanned: false
+      isBanned: false,
     });
 
     res.status(200).json({
@@ -224,8 +234,8 @@ const getSocietyById = async (req, res, next) => {
         isMember: !!membership,
         isBanned: membership?.isBanned || false,
         channels,
-        memberCount
-      }
+        memberCount,
+      },
     });
   } catch (error) {
     next(error);
@@ -237,7 +247,8 @@ const getSocietyById = async (req, res, next) => {
 // @access  Private (admin+)
 const updateSociety = async (req, res, next) => {
   try {
-    const { name, description, tags, institution, settings, avatar, banner } = req.body;
+    const { name, description, tags, institution, settings, avatar, banner } =
+      req.body;
     const update = {};
 
     if (name) update.name = name.trim();
@@ -246,7 +257,7 @@ const updateSociety = async (req, res, next) => {
     if (institution !== undefined) update.institution = institution;
     if (avatar) update.avatar = avatar;
     if (banner) update.banner = banner;
-    if (settings && typeof settings === 'object') {
+    if (settings && typeof settings === "object") {
       for (const [key, value] of Object.entries(settings)) {
         update[`settings.${key}`] = value;
       }
@@ -255,19 +266,21 @@ const updateSociety = async (req, res, next) => {
     const society = await Society.findByIdAndUpdate(
       req.params.societyId,
       { $set: update },
-      { new: true, runValidators: true }
-    ).populate('owner', 'username fullName avatar');
+      { new: true, runValidators: true },
+    ).populate("owner", "username fullName avatar");
 
     await ActivityLog.create({
       society: society._id,
       user: req.user.id,
-      action: 'society_updated',
-      targetType: 'society',
+      action: "society_updated",
+      targetType: "society",
       targetId: society._id,
-      details: { fieldsUpdated: Object.keys(update) }
+      details: { fieldsUpdated: Object.keys(update) },
     });
 
-    res.status(200).json({ success: true, message: 'Society updated', data: society });
+    res
+      .status(200)
+      .json({ success: true, message: "Society updated", data: society });
   } catch (error) {
     next(error);
   }
@@ -285,12 +298,12 @@ const deleteSociety = async (req, res, next) => {
     await ActivityLog.create({
       society: societyId,
       user: req.user.id,
-      action: 'society_deleted',
-      targetType: 'society',
-      targetId: societyId
+      action: "society_deleted",
+      targetType: "society",
+      targetId: societyId,
     });
 
-    res.status(200).json({ success: true, message: 'Society deleted' });
+    res.status(200).json({ success: true, message: "Society deleted" });
   } catch (error) {
     next(error);
   }
@@ -303,33 +316,52 @@ const joinSociety = async (req, res, next) => {
   try {
     const { inviteCode } = req.body;
     if (!inviteCode) {
-      return res.status(400).json({ success: false, message: 'Invite code is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invite code is required" });
     }
 
     const society = await Society.findOne({ inviteCode, isActive: true });
     if (!society) {
-      return res.status(404).json({ success: false, message: 'Invalid invite code' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Invalid invite code" });
     }
 
     // Check if already a member
-    const existing = await SocietyMember.findOne({ society: society._id, user: req.user.id });
+    const existing = await SocietyMember.findOne({
+      society: society._id,
+      user: req.user.id,
+    });
     if (existing) {
       if (existing.isBanned) {
-        return res.status(403).json({ success: false, message: 'You are banned from this society' });
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: "You are banned from this society",
+          });
       }
-      return res.status(400).json({ success: false, message: 'You are already a member' });
+      return res
+        .status(400)
+        .json({ success: false, message: "You are already a member" });
     }
 
     // Check member limit
-    const memberCount = await SocietyMember.countDocuments({ society: society._id, isBanned: false });
+    const memberCount = await SocietyMember.countDocuments({
+      society: society._id,
+      isBanned: false,
+    });
     if (memberCount >= society.settings.maxMembers) {
-      return res.status(400).json({ success: false, message: 'Society is full' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Society is full" });
     }
 
     await SocietyMember.create({
       society: society._id,
       user: req.user.id,
-      role: 'member'
+      role: "member",
     });
 
     await SocietyStreak.create({ user: req.user.id, society: society._id });
@@ -340,12 +372,18 @@ const joinSociety = async (req, res, next) => {
     await ActivityLog.create({
       society: society._id,
       user: req.user.id,
-      action: 'member_joined',
-      targetType: 'member',
-      targetUser: req.user.id
+      action: "member_joined",
+      targetType: "member",
+      targetUser: req.user.id,
     });
 
-    res.status(200).json({ success: true, message: `Joined ${society.name} successfully`, data: { societyId: society._id } });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: `Joined ${society.name} successfully`,
+        data: { societyId: society._id },
+      });
   } catch (error) {
     next(error);
   }
@@ -361,23 +399,35 @@ const leaveSociety = async (req, res, next) => {
 
     // Owner can't leave
     if (req.society.owner.toString() === userId) {
-      return res.status(400).json({ success: false, message: 'Owner cannot leave. Transfer ownership first.' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Owner cannot leave. Transfer ownership first.",
+        });
     }
 
     await SocietyMember.findOneAndDelete({ society: societyId, user: userId });
 
-    const memberCount = await SocietyMember.countDocuments({ society: societyId, isBanned: false });
-    await Society.findByIdAndUpdate(societyId, { 'stats.totalMembers': memberCount });
+    const memberCount = await SocietyMember.countDocuments({
+      society: societyId,
+      isBanned: false,
+    });
+    await Society.findByIdAndUpdate(societyId, {
+      "stats.totalMembers": memberCount,
+    });
 
     await ActivityLog.create({
       society: societyId,
       user: userId,
-      action: 'member_left',
-      targetType: 'member',
-      targetUser: userId
+      action: "member_left",
+      targetType: "member",
+      targetUser: userId,
     });
 
-    res.status(200).json({ success: true, message: 'Left society successfully' });
+    res
+      .status(200)
+      .json({ success: true, message: "Left society successfully" });
   } catch (error) {
     next(error);
   }
@@ -395,25 +445,49 @@ const getMembers = async (req, res, next) => {
     if (role) query.role = role;
 
     let members = await SocietyMember.find(query)
-      .populate('user', 'username fullName avatar email platforms')
+      .populate("user", "username fullName avatar email platforms")
       .sort({ role: 1, createdAt: 1 })
       .skip((parseInt(page) - 1) * parseInt(limit))
       .limit(parseInt(limit))
       .lean();
 
     if (search) {
-      const regex = new RegExp(search, 'i');
-      members = members.filter(m => 
-        regex.test(m.user?.username) || regex.test(m.user?.fullName)
+      const regex = new RegExp(search, "i");
+      members = members.filter(
+        (m) => regex.test(m.user?.username) || regex.test(m.user?.fullName),
       );
     }
 
-    const total = await SocietyMember.countDocuments(query);
+    // Fetch PlatformStats for all members and add codingScore
+    const PlatformStats = require("../models/PlatformStats");
+    const userIds = members.map((m) => m.user?._id).filter(Boolean);
+    const platformStats = await PlatformStats.find({
+      userId: { $in: userIds },
+    }).lean();
 
-    res.status(200).json({
-      success: true,
-      data: members,
-      pagination: { page: parseInt(page), limit: parseInt(limit), total }
+    const statsMap = new Map();
+    platformStats.forEach((stat) => {
+      const key = stat.userId.toString();
+      if (!statsMap.has(key)) statsMap.set(key, []);
+      statsMap.get(key).push(stat);
+    });
+
+    members = members.map((member) => {
+      const userIdStr = member.user?._id?.toString();
+      const userStats = statsMap.get(userIdStr) || [];
+
+      let codingScore = 0;
+      if (userStats.length > 0) {
+        const totalScore = userStats.reduce(
+          (sum, stat) => sum + (stat.stats?.score || 0),
+          0,
+        );
+        codingScore = Math.round(totalScore / userStats.length);
+      }
+      return {
+        ...member,
+        codingScore,
+      };
     });
   } catch (error) {
     next(error);
@@ -428,34 +502,54 @@ const kickMember = async (req, res, next) => {
     const { societyId, userId } = req.params;
 
     if (userId === req.user.id) {
-      return res.status(400).json({ success: false, message: 'Cannot kick yourself' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Cannot kick yourself" });
     }
 
-    const targetMember = await SocietyMember.findOne({ society: societyId, user: userId });
+    const targetMember = await SocietyMember.findOne({
+      society: societyId,
+      user: userId,
+    });
     if (!targetMember) {
-      return res.status(404).json({ success: false, message: 'Member not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Member not found" });
     }
 
     // Can't kick someone with equal or higher role
-    const { ROLE_HIERARCHY } = require('../middleware/societyAuth');
-    if (ROLE_HIERARCHY.indexOf(targetMember.role) >= ROLE_HIERARCHY.indexOf(req.membership.role)) {
-      return res.status(403).json({ success: false, message: 'Cannot kick a member with equal or higher role' });
+    const { ROLE_HIERARCHY } = require("../middleware/societyAuth");
+    if (
+      ROLE_HIERARCHY.indexOf(targetMember.role) >=
+      ROLE_HIERARCHY.indexOf(req.membership.role)
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Cannot kick a member with equal or higher role",
+        });
     }
 
     await SocietyMember.findOneAndDelete({ society: societyId, user: userId });
 
-    const memberCount = await SocietyMember.countDocuments({ society: societyId, isBanned: false });
-    await Society.findByIdAndUpdate(societyId, { 'stats.totalMembers': memberCount });
+    const memberCount = await SocietyMember.countDocuments({
+      society: societyId,
+      isBanned: false,
+    });
+    await Society.findByIdAndUpdate(societyId, {
+      "stats.totalMembers": memberCount,
+    });
 
     await ActivityLog.create({
       society: societyId,
       user: req.user.id,
-      action: 'member_kicked',
-      targetType: 'member',
-      targetUser: userId
+      action: "member_kicked",
+      targetType: "member",
+      targetUser: userId,
     });
 
-    res.status(200).json({ success: true, message: 'Member removed' });
+    res.status(200).json({ success: true, message: "Member removed" });
   } catch (error) {
     next(error);
   }
@@ -469,33 +563,51 @@ const banMember = async (req, res, next) => {
     const { societyId, userId } = req.params;
     const { reason } = req.body;
 
-    const targetMember = await SocietyMember.findOne({ society: societyId, user: userId });
+    const targetMember = await SocietyMember.findOne({
+      society: societyId,
+      user: userId,
+    });
     if (!targetMember) {
-      return res.status(404).json({ success: false, message: 'Member not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Member not found" });
     }
 
-    const { ROLE_HIERARCHY } = require('../middleware/societyAuth');
-    if (ROLE_HIERARCHY.indexOf(targetMember.role) >= ROLE_HIERARCHY.indexOf(req.membership.role)) {
-      return res.status(403).json({ success: false, message: 'Cannot ban a member with equal or higher role' });
+    const { ROLE_HIERARCHY } = require("../middleware/societyAuth");
+    if (
+      ROLE_HIERARCHY.indexOf(targetMember.role) >=
+      ROLE_HIERARCHY.indexOf(req.membership.role)
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Cannot ban a member with equal or higher role",
+        });
     }
 
     targetMember.isBanned = true;
-    targetMember.banReason = reason || 'Violated community guidelines';
+    targetMember.banReason = reason || "Violated community guidelines";
     await targetMember.save();
 
-    const memberCount = await SocietyMember.countDocuments({ society: societyId, isBanned: false });
-    await Society.findByIdAndUpdate(societyId, { 'stats.totalMembers': memberCount });
+    const memberCount = await SocietyMember.countDocuments({
+      society: societyId,
+      isBanned: false,
+    });
+    await Society.findByIdAndUpdate(societyId, {
+      "stats.totalMembers": memberCount,
+    });
 
     await ActivityLog.create({
       society: societyId,
       user: req.user.id,
-      action: 'member_banned',
-      targetType: 'member',
+      action: "member_banned",
+      targetType: "member",
       targetUser: userId,
-      details: { reason }
+      details: { reason },
     });
 
-    res.status(200).json({ success: true, message: 'Member banned' });
+    res.status(200).json({ success: true, message: "Member banned" });
   } catch (error) {
     next(error);
   }
@@ -509,20 +621,33 @@ const changeMemberRole = async (req, res, next) => {
     const { societyId, userId } = req.params;
     const { role } = req.body;
 
-    const validRoles = ['member', 'moderator', 'society_admin'];
+    const validRoles = ["member", "moderator", "society_admin"];
     if (!validRoles.includes(role)) {
-      return res.status(400).json({ success: false, message: 'Invalid role' });
+      return res.status(400).json({ success: false, message: "Invalid role" });
     }
 
-    const targetMember = await SocietyMember.findOne({ society: societyId, user: userId });
+    const targetMember = await SocietyMember.findOne({
+      society: societyId,
+      user: userId,
+    });
     if (!targetMember) {
-      return res.status(404).json({ success: false, message: 'Member not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Member not found" });
     }
 
-    const { ROLE_HIERARCHY } = require('../middleware/societyAuth');
+    const { ROLE_HIERARCHY } = require("../middleware/societyAuth");
     // Can't promote to same or higher level than yourself
-    if (ROLE_HIERARCHY.indexOf(role) >= ROLE_HIERARCHY.indexOf(req.membership.role)) {
-      return res.status(403).json({ success: false, message: 'Cannot assign a role equal to or higher than yours' });
+    if (
+      ROLE_HIERARCHY.indexOf(role) >=
+      ROLE_HIERARCHY.indexOf(req.membership.role)
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Cannot assign a role equal to or higher than yours",
+        });
     }
 
     const oldRole = targetMember.role;
@@ -532,10 +657,10 @@ const changeMemberRole = async (req, res, next) => {
     await ActivityLog.create({
       society: societyId,
       user: req.user.id,
-      action: 'member_role_changed',
-      targetType: 'member',
+      action: "member_role_changed",
+      targetType: "member",
       targetUser: userId,
-      details: { oldRole, newRole: role }
+      details: { oldRole, newRole: role },
     });
 
     res.status(200).json({ success: true, message: `Role changed to ${role}` });
@@ -552,9 +677,14 @@ const toggleMuteMember = async (req, res, next) => {
     const { societyId, userId } = req.params;
     const { duration } = req.body; // in minutes, 0 = unmute
 
-    const targetMember = await SocietyMember.findOne({ society: societyId, user: userId });
+    const targetMember = await SocietyMember.findOne({
+      society: societyId,
+      user: userId,
+    });
     if (!targetMember) {
-      return res.status(404).json({ success: false, message: 'Member not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Member not found" });
     }
 
     if (duration && duration > 0) {
@@ -563,23 +693,34 @@ const toggleMuteMember = async (req, res, next) => {
       await targetMember.save();
 
       await ActivityLog.create({
-        society: societyId, user: req.user.id,
-        action: 'member_muted', targetType: 'member', targetUser: userId,
-        details: { durationMinutes: duration }
+        society: societyId,
+        user: req.user.id,
+        action: "member_muted",
+        targetType: "member",
+        targetUser: userId,
+        details: { durationMinutes: duration },
       });
 
-      res.status(200).json({ success: true, message: `Member muted for ${duration} minutes` });
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: `Member muted for ${duration} minutes`,
+        });
     } else {
       targetMember.isMuted = false;
       targetMember.mutedUntil = null;
       await targetMember.save();
 
       await ActivityLog.create({
-        society: societyId, user: req.user.id,
-        action: 'member_unmuted', targetType: 'member', targetUser: userId
+        society: societyId,
+        user: req.user.id,
+        action: "member_unmuted",
+        targetType: "member",
+        targetUser: userId,
       });
 
-      res.status(200).json({ success: true, message: 'Member unmuted' });
+      res.status(200).json({ success: true, message: "Member unmuted" });
     }
   } catch (error) {
     next(error);
@@ -591,14 +732,16 @@ const toggleMuteMember = async (req, res, next) => {
 // @access  Private (admin+)
 const regenerateInviteCode = async (req, res, next) => {
   try {
-    const newCode = crypto.randomBytes(4).toString('hex').toUpperCase();
-    await Society.findByIdAndUpdate(req.params.societyId, { inviteCode: newCode });
+    const newCode = crypto.randomBytes(4).toString("hex").toUpperCase();
+    await Society.findByIdAndUpdate(req.params.societyId, {
+      inviteCode: newCode,
+    });
 
     await ActivityLog.create({
       society: req.params.societyId,
       user: req.user.id,
-      action: 'invite_code_regenerated',
-      targetType: 'society'
+      action: "invite_code_regenerated",
+      targetType: "society",
     });
 
     res.status(200).json({ success: true, data: { inviteCode: newCode } });
@@ -624,34 +767,56 @@ const addMemberManually = async (req, res, next) => {
     } else if (email) {
       targetUser = await User.findOne({ email: email.toLowerCase() });
     } else {
-      return res.status(400).json({ success: false, message: 'User ID, username, or email is required' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "User ID, username, or email is required",
+        });
     }
 
     if (!targetUser) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Check if already a member
-    const existing = await SocietyMember.findOne({ society: societyId, user: targetUser._id });
+    const existing = await SocietyMember.findOne({
+      society: societyId,
+      user: targetUser._id,
+    });
     if (existing) {
       if (existing.isBanned) {
-        return res.status(403).json({ success: false, message: 'User is banned from this society' });
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: "User is banned from this society",
+          });
       }
-      return res.status(400).json({ success: false, message: 'User is already a member' });
+      return res
+        .status(400)
+        .json({ success: false, message: "User is already a member" });
     }
 
     // Check member limit
     const society = await Society.findById(societyId);
-    const memberCount = await SocietyMember.countDocuments({ society: societyId, isBanned: false });
+    const memberCount = await SocietyMember.countDocuments({
+      society: societyId,
+      isBanned: false,
+    });
     if (memberCount >= society.settings.maxMembers) {
-      return res.status(400).json({ success: false, message: 'Society is full' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Society is full" });
     }
 
     // Add member
     await SocietyMember.create({
       society: societyId,
       user: targetUser._id,
-      role: 'member'
+      role: "member",
     });
 
     await SocietyStreak.create({ user: targetUser._id, society: societyId });
@@ -662,16 +827,16 @@ const addMemberManually = async (req, res, next) => {
     await ActivityLog.create({
       society: societyId,
       user: req.user.id,
-      action: 'member_added_manually',
-      targetType: 'member',
+      action: "member_added_manually",
+      targetType: "member",
       targetUser: targetUser._id,
-      details: { addedBy: req.user.id }
+      details: { addedBy: req.user.id },
     });
 
     res.status(200).json({
       success: true,
       message: `${targetUser.username} added successfully`,
-      data: { userId: targetUser._id, username: targetUser.username }
+      data: { userId: targetUser._id, username: targetUser.username },
     });
   } catch (error) {
     next(error);
@@ -686,7 +851,7 @@ const searchUsers = async (req, res, next) => {
     const { query, limit = 20 } = req.query;
     const { societyId } = req.params;
 
-    console.log('Search request:', { societyId, query, limit });
+    console.log("Search request:", { societyId, query, limit });
 
     if (!query || query.trim().length < 2) {
       return res.status(200).json({ success: true, count: 0, data: [] });
@@ -694,35 +859,37 @@ const searchUsers = async (req, res, next) => {
 
     // Find existing member IDs to exclude them
     const existingMembers = await SocietyMember.find({
-      society: societyId
-    }).select('user').lean();
-    const memberIds = existingMembers.map(m => m.user.toString());
+      society: societyId,
+    })
+      .select("user")
+      .lean();
+    const memberIds = existingMembers.map((m) => m.user.toString());
 
-    console.log('Existing member IDs:', memberIds);
+    console.log("Existing member IDs:", memberIds);
 
     // Search for users (case-insensitive)
-    const searchRegex = new RegExp(query.trim(), 'i');
+    const searchRegex = new RegExp(query.trim(), "i");
     const users = await User.find({
       _id: { $nin: memberIds },
       $or: [
         { username: searchRegex },
         { email: searchRegex },
-        { fullName: searchRegex }
-      ]
+        { fullName: searchRegex },
+      ],
     })
-      .select('username email fullName avatar')
+      .select("username email fullName avatar")
       .limit(parseInt(limit))
       .lean();
 
-    console.log('Found users:', users.length);
+    console.log("Found users:", users.length);
 
     res.status(200).json({
       success: true,
       count: users.length,
-      data: users
+      data: users,
     });
   } catch (error) {
-    console.error('Search users error:', error);
+    console.error("Search users error:", error);
     next(error);
   }
 };
@@ -734,48 +901,62 @@ const syncAllMembersData = async (req, res, next) => {
   try {
     const { societyId } = req.params;
 
+    let queueAvailable = false;
+    let addBatchSyncJobs;
+    try {
+      const syncQueue = require("../queues/syncQueue");
+      addBatchSyncJobs = syncQueue.addBatchSyncJobs;
+      queueAvailable = !!addBatchSyncJobs;
+    } catch (err) {
+      console.warn("⚠️ Sync Queue not available for Society member syncs");
+    }
+
     if (!queueAvailable) {
       return res.status(503).json({
         success: false,
-        message: 'Sync queue is currently unavailable. Please try again later.'
+        message: "Sync queue is currently unavailable. Please try again later.",
       });
     }
 
     // Get all active members
     const members = await SocietyMember.find({
       society: societyId,
-      isBanned: false
-    }).select('user').lean();
+      isBanned: false,
+    })
+      .select("user")
+      .lean();
 
     if (!members.length) {
-      return res.status(404).json({ success: false, message: 'No members found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "No members found" });
     }
 
-    const userIds = members.map(m => m.user);
+    const userIds = members.map((m) => m.user);
 
     // Queue sync jobs
     await addBatchSyncJobs(userIds, {
       priority: 5, // PRIORITY.NORMAL
-      triggeredBy: 'society_sync'
+      triggeredBy: "society_sync",
     });
 
     // Log the manual sync activity
     await ActivityLog.create({
       society: societyId,
       user: req.user.id,
-      action: 'settings_updated',
-      targetType: 'society',
+      action: "settings_updated",
+      targetType: "society",
       targetId: societyId,
-      details: { action: 'Triggered platform stats sync for all members' }
+      details: { action: "Triggered platform stats sync for all members" },
     });
 
     res.status(202).json({
       success: true,
       message: `Enqueued data sync for ${userIds.length} members. This may take a few minutes.`,
-      enqueuedCount: userIds.length
+      enqueuedCount: userIds.length,
     });
   } catch (error) {
-    console.error('Error triggering member syncs:', error);
+    console.error("Error triggering member syncs:", error);
     next(error);
   }
 };
@@ -797,5 +978,5 @@ module.exports = {
   regenerateInviteCode,
   addMemberManually,
   searchUsers,
-  syncAllMembersData
+  syncAllMembersData,
 };
