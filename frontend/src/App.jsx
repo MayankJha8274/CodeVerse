@@ -63,6 +63,8 @@ function App() {
             <Route path="dashboard/profile/:userId" element={<UserProfilePage />} />
             <Route path="platforms" element={<PlatformDetailPage />} />
             <Route path="rooms" element={<RoomsPage />} />
+            <Route path="rooms/:societyId" element={<SocietyDetailPage />} />
+            <Route path="rooms/:societyId/:tab" element={<SocietyDetailPage />} />
             <Route path="societies" element={<SocietiesPage />} />
             <Route path="societies/:societyId" element={<SocietyDetailPage />} />
             <Route path="societies/:societyId/:tab" element={<SocietyDetailPage />} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart3, Users, MessageSquare, Calendar, AlertTriangle, Activity, Settings, Loader2, RefreshCw, ChevronDown, Save, Shield, UserPlus, Search, X, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, Users, MessageSquare, Calendar, AlertTriangle, Activity, Settings, Loader2, RefreshCw, ChevronDown, Save, Shield, UserPlus, Search, X, Check, Trash2, DatabaseZap } from 'lucide-react';
 import api from '../../services/api';
 import ProfileLink from '../ProfileLink';
 
@@ -21,6 +22,12 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
   const [addingMember, setAddingMember] = useState({});
   const [addSuccess, setAddSuccess] = useState(null);
   const [addError, setAddError] = useState(null);
+  
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const navigate = useNavigate();
   
   const isSuperAdmin = society?.userRole === 'super_admin';
 
@@ -148,6 +155,39 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  const handleSyncData = async () => {
+    if (!window.confirm(`Are you sure you want to sync platform data for all members? This action runs in the background and may take a few minutes.`)) {
+      return;
+    }
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await api.syncAllSocietyMembers(societyId);
+      setSyncMessage({ type: 'success', text: res?.data?.message || res?.message || 'Sync triggered successfully.' });
+    } catch (err) {
+      console.error('Failed to sync members data:', err);
+      setSyncMessage({ type: 'error', text: err.response?.data?.message || 'Failed to trigger sync.' });
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('WARNING: Are you sure you want to completely delete this? This action cannot be undone.')) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await api.deleteSociety(societyId);
+      navigate(society.type === 'room' ? '/rooms' : '/societies');
+    } catch (err) {
+      console.error('Failed to delete:', err);
+      alert('Failed to delete. Wait and try again later.');
+      setDeleting(false);
+    }
+  };
 
   const sections = isSuperAdmin ? [
     { key: 'members', label: 'Add Members', icon: UserPlus },
@@ -577,6 +617,62 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Changes
             </button>
+          </div>
+
+          <div className="bg-white dark:bg-[#1a1a2e] border border-red-500/20 rounded-xl p-5 mt-6">
+            <h4 className="text-sm font-semibold text-red-500 mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Danger Zone & Tools
+            </h4>
+            
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg bg-gray-50/50 dark:bg-[#111118]/50 border border-gray-100 dark:border-gray-800/50">
+                <div>
+                  <h5 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <DatabaseZap className="w-4 h-4 text-blue-500" />
+                    Sync Data
+                  </h5>
+                  <p className="text-xs text-gray-500 mt-1 max-w-md">
+                    Force a background refresh of LeetCode/Codeforces stats for all members. This updates the leaderboard.
+                  </p>
+                  {syncMessage && (
+                    <p className={`text-xs mt-2 ${syncMessage.type === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+                      {syncMessage.text}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={handleSyncData}
+                  disabled={syncing}
+                  className="shrink-0 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 hover:dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  {syncing ? 'Enqueuing...' : 'Sync Members'}
+                </button>
+              </div>
+
+              {isSuperAdmin && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg bg-red-50/50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/10">
+                  <div>
+                    <h5 className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      Delete {society.type === 'room' ? 'Room' : 'Society'}
+                    </h5>
+                    <p className="text-xs text-red-500/70 mt-1 max-w-md">
+                      Permanently remove this and all of its contents. This cannot be undone.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="shrink-0 px-4 py-2 bg-red-100 hover:bg-red-200 dark:bg-red-500/10 hover:dark:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -807,7 +807,10 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return authFetch(`/societies${q ? `?${q}` : ''}`);
   },
-  async getMySocieties() { return authFetch('/societies/my'); },
+  async getMySocieties(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return authFetch(`/societies/my${q ? `?${q}` : ''}`);
+  },
   async getSociety(id) { return authFetch(`/societies/${id}`); },
   async createSociety(data) {
     return authFetch('/societies', { method: 'POST', body: JSON.stringify(data) });
@@ -835,6 +838,9 @@ export const api = {
   },
   async addMemberManually(societyId, data) {
     return authFetch(`/societies/${societyId}/members/add`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async syncAllSocietyMembers(societyId) {
+    return authFetch(`/societies/${societyId}/sync`, { method: 'POST' });
   },
   async searchSocietyUsers(societyId, query, limit = 20) {
     return authFetch(`/societies/${societyId}/search-users?query=${encodeURIComponent(query)}&limit=${limit}`);

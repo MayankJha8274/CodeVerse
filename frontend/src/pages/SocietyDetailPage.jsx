@@ -57,7 +57,8 @@ const SocietyDetailPage = () => {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    navigate(`/societies/${societyId}/${tabId}`, { replace: true });
+    const isRoomRoute = window.location.pathname.includes('/rooms/');
+    navigate(`/${isRoomRoute ? 'rooms' : 'societies'}/${societyId}/${tabId}`, { replace: true });
   };
 
   const handleCopyInvite = () => {
@@ -67,11 +68,11 @@ const SocietyDetailPage = () => {
   };
 
   const handleLeave = async () => {
-    if (!confirm('Are you sure you want to leave this society?')) return;
+    if (!confirm(`Are you sure you want to leave this ${window.location.pathname.includes('/rooms/') ? 'room' : 'society'}?`)) return;
     setLeaving(true);
     try {
       await api.leaveSociety(societyId);
-      navigate('/societies');
+      navigate(window.location.pathname.includes('/rooms/') ? '/rooms' : '/societies');
     } catch (err) {
       alert(err.message || 'Failed to leave');
     } finally {
@@ -80,7 +81,19 @@ const SocietyDetailPage = () => {
   };
 
   const isAdmin = ADMIN_TABS.includes(society?.userRole);
-  const allTabs = isAdmin ? [...TABS, { id: 'admin', label: 'Admin', icon: BarChart3 }] : TABS;
+  const isRoom = society?.type === 'room' || window.location.pathname.includes('/rooms/');
+  const baseTabs = TABS.filter(t => {
+    if (t.id === 'chat' && society?.settings?.enableChat === false) return false;
+    if (t.id === 'events' && society?.settings?.enableEvents === false) return false;
+    if (t.id === 'leaderboard' && society?.settings?.enableLeaderboard === false) return false;
+    
+    // Rooms specifically hide events and announcements
+    if (isRoom && ['events', 'announcements'].includes(t.id)) return false;
+
+    return true;
+  });
+
+  const allTabs = isAdmin ? [...baseTabs, { id: 'admin', label: 'Admin', icon: Settings }] : baseTabs;
   
   console.log('Society userRole:', society?.userRole);
   console.log('isAdmin:', isAdmin);
@@ -98,8 +111,8 @@ const SocietyDetailPage = () => {
     return (
       <div className="text-center py-16">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Society not found</h2>
-        <button onClick={() => navigate('/societies')} className="text-amber-500 hover:underline text-sm">
-          Back to Societies
+        <button onClick={() => navigate(window.location.pathname.includes('/rooms/') ? '/rooms' : '/societies')} className="text-amber-500 hover:underline text-sm">
+          {window.location.pathname.includes('/rooms/') ? 'Back to Rooms' : 'Back to Societies'}
         </button>
       </div>
     );
@@ -112,7 +125,7 @@ const SocietyDetailPage = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/societies')}
+              onClick={() => navigate(window.location.pathname.includes('/rooms/') ? '/rooms' : '/societies')}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
