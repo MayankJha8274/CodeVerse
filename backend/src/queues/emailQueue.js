@@ -1,61 +1,38 @@
 const { Queue } = require('bullmq');
-const { isRedisAvailable, getRedisConnection } = require('../config/redis');
+const { getRedisClient } = require('../config/redisClient');
 
 let emailQueue = null;
 
-const initEmailQueue = async () => {
-  if (!isRedisAvailable()) {
-    console.log('⚠️ Redis disabled. Email Queue will not initialize.');
-    return null;
-  }
-
-  const connection = getRedisConnection();
-  emailQueue = new Queue('email-queue', {
-    connection,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 5000 // 5s, 10s, 20s
-      },
-      removeOnComplete: {
-        count: 100,
-        age: 24 * 3600 // Keep for 24h
-      },
-      removeOnFail: {
-        count: 500
-      }
+const getEmailQueue = () => {
+  if (!emailQueue) {
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      emailQueue = new Queue('email-queue', {
+        connection: redisClient,
+        defaultJobOptions: {
+          attempts: 5,
+          backoff: {
+            type: 'exponential',
+            delay: 60000, // 1 minute
+          },
+          removeOnComplete: {
+            count: 1000,
+            age: 3600 * 24,
+          },
+          removeOnFail: {
+            count: 5000,
+            age: 3600 * 24 * 7,
+          },
+        },
+      });
     }
-  });
-
-  console.log('✅ Email queue initialized');
+  }
   return emailQueue;
 };
 
-const getEmailQueue = () => emailQueue;
-
-/**
- * Add an email reminder job to the queue
- */
-const addEmailJob = async (jobData) => {
-  if (!emailQueue) return false;
-
-  const jobId = `reminder-${jobData.contestId}-${jobData.type}`;
-  
-  try {
-    await emailQueue.add('send-reminder', jobData, {
-      jobId, 
-      priority: 3
-    });
-    return true;
-  } catch (error) {
-    console.error('❌ Failed to add email job:', error.message);
-    return false;
-  }
-};
+// Initialize the queue when this module is loaded
+getEmailQueue();
 
 module.exports = {
-  initEmailQueue,
-  getEmailQueue,
-  addEmailJob
+  emailQueue: getEmailQueue(),
 };

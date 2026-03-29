@@ -6,110 +6,65 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const { Worker } = require('bullmq');
 const mongoose = require('mongoose');
-const { createWorkerConnection } = require('../config/redis');
-const User = require('../models/User');
-const Contest = require('../models/Contest');
-const NotificationLog = require('../models/NotificationLog');
-const { sendContestReminder } = require('../services/emailService');
+const { getRedisClient } = require('../config/redisClient');
+const { sendEmail } = require('../services/emailService');
 
 let worker = null;
 
 const processEmailJob = async (job) => {
-  const { contestId, type } = job.data;
-  console.log(`[EmailWorker] Processing ${type} reminder for contest ${contestId}...`);
+  const { to, subject, html } = job.data;
+  console.log(`[EmailWorker] Processing email job for: ${to}`);
 
   try {
-    const contest = await Contest.findById(contestId);
-    if (!contest) {
-      console.log(`[EmailWorker] Contest ${contestId} not found, skipping.`);
-      return;
-    }
-
-    // 1. Fetch opted-in users
-    // Criteria: notifyContests = true, isVerified = true
-    const users = await User.find({
-      'settings.emailNotifications': true,
-      'settings.notifyContests': true,
-      isVerified: true
-    }).select('email username _id');
-
-    console.log(`[EmailWorker] Found ${users.length} eligible users.`);
-
-    let sentCount = 0;
-    let skipCount = 0;
-    
-    // 2. Iterate users and send email if not sent before
-    for (const user of users) {
-      // Check NotificationLog
-      const existingLog = await NotificationLog.findOne({
-        userId: user._id,
-        contestId: contest._id,
-        type: type
-      });
-
-      if (existingLog) {
-        skipCount++;
-        continue;
-      }
-
-      // Prepare contest data matching emailService format
-      // Passing user info to potentially personalize if needed
-      const result = await sendContestReminder({
-        to: user.email,
-        contest: contest,
-        type: type,
-        username: user.username
-      });
-
-      if (result.success) {
-        // Construct log
-        await NotificationLog.create({
-          userId: user._id,
-          contestId: contest._id,
-          type: type,
-          sent: true
-        });
-        sentCount++;
-      } else {
-        console.error(`[EmailWorker] Failed to send ${type} reminder to ${user.email}`);
-      }
-      
-      // Delay (rate-limiting) -- e.g., max 10 emails/sec 
-      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms
-    }
-
-    console.log(`[EmailWorker] Finished ${type} reminder for ${contest.name}: Sent -> ${sentCount}, Skipped -> ${skipCount}`);
-    return { success: true, sent: sentCount, skipped: skipCount };
-
+    await sendEmail({ to, subject, html });
+    console.log(`[EmailWorker] Successfully sent email to ${to}`);
+    // Add a small delay to avoid hitting rate limits if jobs are processed very quickly
+    await new Promise(res => setTimeout(res, 5000)); // 5-second delay
+    return { success: true };
   } catch (error) {
-    console.error(`[EmailWorker] Job failed: ${error.message}`);
+    console.error(`[EmailWorker] Failed to send email to ${to}:`, error.message);
+    // The error will be re-thrown, and BullMQ will handle the job failure.
     throw error;
   }
 };
 
 const startEmailWorker = async () => {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ MongoDB connected for email worker');
+    try {
+      await mongoose.connect(process.env.MONGODB_URI);
+      console.log('✅ MongoDB connected for email worker');
+    } catch (error) {
+      console.error('❌ MongoDB connection failed for email worker:', error);
+      process.exit(1);
+    }
   }
 
-  const connection = createWorkerConnection();
+  const connection = getRedisClient();
+  if (!connection) {
+    console.error('❌ Could not create Redis connection for email worker. Is Redis running?');
+    return;
+  }
+  
   worker = new Worker('email-queue', processEmailJob, {
     connection,
-    concurrency: 1 // Single worker
+    concurrency: 5, // Process up to 5 emails concurrently
+    limiter: {
+      max: 10, // Max 10 jobs
+      duration: 60000, // per 60 seconds
+    },
   });
 
-  worker.on('completed', (job, result) => {
-    console.log(`✅ [EmailWorker] Job ${job.id} completed. Sent: ${result.sent}`);
+  worker.on('completed', (job) => {
+    console.log(`✅ [EmailWorker] Job ${job.id} for ${job.data.to} completed.`);
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`❌ [EmailWorker] Job ${job.id} failed:`, err.message);
+    console.error(`❌ [EmailWorker] Job ${job.id} for ${job.data.to} failed:`, err.message);
   });
 
-  console.log('✅ Email worker started & listening to queue...');
+  console.log('✅ Email worker started & listening to the email-queue...');
 };
 
 module.exports = {
-  startEmailWorker
+  startEmailWorker,
 };

@@ -3,6 +3,7 @@ import { Menu, LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from '../components/UserAvatar';
 import { useTheme } from '../hooks/useCustomHooks';
+import NotificationBell from '../components/common/NotificationBell';
 
 const Navbar = ({ user, onMenuClick, onLogout }) => {
   const { theme, toggleTheme } = useTheme();
@@ -52,6 +53,9 @@ const Navbar = ({ user, onMenuClick, onLogout }) => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707 8 8 0 1017.293 13.293z"/></svg>
             )}
           </button>
+
+          {/* Notification Bell */}
+          <NotificationBell />
 
           {/* User Menu */}
           <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-gray-200 dark:border-gray-700">
