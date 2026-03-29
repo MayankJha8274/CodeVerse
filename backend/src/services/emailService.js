@@ -2,7 +2,19 @@ const nodemailer = require('nodemailer');
 
 // Create transporter - configure with your email service
 const createTransporter = async () => {
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+  if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    // Standard SMTP connection for ESPs (Resend, SendGrid, Mailgun)
+    return nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT, 10) || 587,
+      secure: parseInt(process.env.EMAIL_PORT, 10) === 465, 
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  } else if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    // Fallback to basic service (e.g. gmail App passwords)
     return nodemailer.createTransport({
       service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
@@ -27,177 +39,77 @@ const createTransporter = async () => {
 };
 
 /**
- * Send contest reminder email
+ * Generates a branded HTML email template for contest reminders.
+ * @param {object} user - The user object.
+ * @param {object} contest - The contest object.
+ * @returns {string} The HTML content of the email.
+ */
+function generateContestReminderTemplate(user, contest) {
+  // Replace with your publicly hosted logo URL.
+  const logoUrl = 'https://i.imgur.com/gE29H8A.png'; // Placeholder CodeVerse logo
+
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #EAEAEA; background-color: #121212; max-width: 600px; margin: 20px auto; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #1F1F1F; padding: 20px; text-align: center; border-bottom: 1px solid #333;">
+        <img src="${logoUrl}" alt="CodeVerse Logo" style="max-width: 150px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+      </div>
+      <div style="padding: 25px;">
+        <h2 style="color: #FFFFFF; font-size: 24px; margin-top: 0;">🔥 Contest Reminder: ${contest.name}</h2>
+        <p style="font-size: 16px;">Hey ${user.username},</p>
+        <p style="font-size: 16px;">Get ready to code! The contest, <strong>${contest.name}</strong>, is scheduled to start in approximately one hour.</p>
+        <p style="font-size: 16px;">
+          <strong>Starts at:</strong> ${new Date(contest.startTime).toLocaleString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${contest.url}" style="background-color: #4A90E2; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+            Go to Contest 🚀
+          </a>
+        </div>
+        <p style="font-size: 16px;">Good luck, and may the best algorithm win!</p>
+        <p style="font-size: 16px;"><em>— The CodeVerse Team</em></p>
+      </div>
+      <div style="background-color: #1F1F1F; color: #888; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #333;">
+        <p>You're receiving this because you opted in for contest reminders on CodeVerse.</p>
+        <p>&copy; ${new Date().getFullYear()} CodeVerse. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Send an email. This is a more generic email sending function.
  * @param {Object} options - Email options
  * @param {string} options.to - Recipient email
- * @param {Object} options.contest - Contest details
- * @param {string} options.type - Optional "24h" or "6h"
+ * @param {string} options.subject - Email subject
+ * @param {string} options.html - HTML content of the email
  */
-const sendContestReminder = async ({ to, contest, type }) => {
+async function sendEmail(options) {
   try {
     const transporter = await createTransporter();
-
-    const platformColors = {
-      leetcode: '#FFA116',
-      codeforces: '#1F8ACB',
-      codechef: '#5B4638',
-      atcoder: '#222222',
-      hackerrank: '#00EA64'
-    };
-
-    const platformNames = {
-      leetcode: 'LeetCode',
-      codeforces: 'Codeforces',
-      codechef: 'CodeChef',
-      atcoder: 'AtCoder',
-      hackerrank: 'HackerRank'
-    };
-
-    const startTime = new Date(contest.startTime);
-    const formattedDate = startTime.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const formattedTime = startTime.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    });
-
-    const durationHours = Math.floor(contest.duration / 60);
-    const durationMins = contest.duration % 60;
-    const durationText = durationHours > 0 
-      ? `${durationHours}h ${durationMins}m` 
-      : `${durationMins} minutes`;
-
-    const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Contest Reminder</title>
-    </head>
-    <body style="margin: 0; padding: 0; background-color: #0d0d14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0d0d14; padding: 40px 20px;">
-        <tr>
-          <td align="center">
-            <table width="100%" max-width="600px" cellpadding="0" cellspacing="0" style="background-color: #16161f; border-radius: 16px; overflow: hidden; max-width: 600px;">
-              <!-- Header -->
-              <tr>
-                <td style="background: linear-gradient(135deg, ${platformColors[contest.platform] || '#f59e0b'}20, transparent); padding: 30px; text-align: center;">
-                  <h1 style="color: #ffffff; margin: 0 0 10px 0; font-size: 24px;">⏰ Contest Reminder</h1>
-                  <p style="color: #9ca3af; margin: 0; font-size: 14px;">Don't miss your upcoming contest!</p>
-                </td>
-              </tr>
-              
-              <!-- Contest Details -->
-              <tr>
-                <td style="padding: 30px;">
-                  <!-- Platform Badge -->
-                  <div style="margin-bottom: 20px;">
-                    <span style="background-color: ${platformColors[contest.platform] || '#f59e0b'}30; color: ${platformColors[contest.platform] || '#f59e0b'}; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
-                      ${platformNames[contest.platform] || contest.platform}
-                    </span>
-                  </div>
-                  
-                  <!-- Contest Name -->
-                  <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 22px; line-height: 1.4;">
-                    ${contest.name}
-                  </h2>
-                  
-                  <!-- Details Cards -->
-                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
-                    <tr>
-                      <td style="background-color: #1a1a2e; border-radius: 12px; padding: 20px; width: 48%;">
-                        <p style="color: #9ca3af; margin: 0 0 5px 0; font-size: 12px; text-transform: uppercase;">📅 Date & Time</p>
-                        <p style="color: #ffffff; margin: 0; font-size: 14px; font-weight: 600;">${formattedDate}</p>
-                        <p style="color: ${platformColors[contest.platform] || '#f59e0b'}; margin: 5px 0 0 0; font-size: 16px; font-weight: 700;">${formattedTime}</p>
-                      </td>
-                      <td style="width: 4%;"></td>
-                      <td style="background-color: #1a1a2e; border-radius: 12px; padding: 20px; width: 48%;">
-                        <p style="color: #9ca3af; margin: 0 0 5px 0; font-size: 12px; text-transform: uppercase;">⏱️ Duration</p>
-                        <p style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 700;">${durationText}</p>
-                      </td>
-                    </tr>
-                  </table>
-                  
-                  <!-- Countdown Info -->
-                  <div style="background: linear-gradient(135deg, #f59e0b20, #fb923c20); border: 1px solid #f59e0b30; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
-                    <p style="color: #f59e0b; margin: 0; font-size: 16px; font-weight: 600;">
-                      🔔 Contest starts in approximately ${type === '24h' ? '24 hours' : type === '6h' ? '6 hours' : 'a few hours'}
-                    </p>
-                    <p style="color: #9ca3af; margin: 10px 0 0 0; font-size: 13px;">
-                      Make sure you're ready and have registered!
-                    </p>
-                  </div>
-                  
-                  <!-- CTA Button -->
-                  <a href="${contest.url}" style="display: block; background-color: ${platformColors[contest.platform] || '#f59e0b'}; color: #000000; text-decoration: none; padding: 16px 30px; border-radius: 10px; font-weight: 700; font-size: 16px; text-align: center;">
-                    Open Contest Page →
-                  </a>
-                </td>
-              </tr>
-              
-              <!-- Footer -->
-              <tr>
-                <td style="padding: 20px 30px 30px; border-top: 1px solid #2a2a3e;">
-                  <p style="color: #6b7280; margin: 0; font-size: 12px; text-align: center;">
-                    This reminder was sent from CodeVerse Contest Tracker.<br>
-                    You set this reminder to be notified about upcoming contests.
-                  </p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-    `;
-
-    const timeText = type === '24h' ? '24 hours' : type === '6h' ? '6 hours' : 'a few hours';
-
-    const textContent = `
-Contest Reminder - ${platformNames[contest.platform] || contest.platform}
-
-${contest.name}
-
-📅 Date: ${formattedDate}
-⏰ Time: ${formattedTime}
-⏱️ Duration: ${durationText}
-
-Contest starts in approximately ${timeText}. Make sure you're ready!
-
-Open contest: ${contest.url}
-
----
-This reminder was sent from CodeVerse Contest Tracker.
-    `;
-
-    const senderEmail = process.env.EMAIL_USER || 'tracker@codeverse.com';
+    const senderEmail = process.env.EMAIL_FROM || `"CodeVerse" <${process.env.EMAIL_USER}>`;
 
     const mailOptions = {
-      from: `"CodeVerse Contest Tracker" <${senderEmail}>`,
-      to,
-      subject: `⏰ Reminder: ${contest.name} starts in ${timeText}!`,
-      text: textContent,
-      html: htmlContent
+      from: senderEmail,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      // You can add a text version as a fallback
+      text: options.html.replace(/<[^>]*>?/gm, ''),
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Reminder email sent to ${to} for contest: ${contest.name}`);
-    if (!process.env.EMAIL_USER) {
-      console.log(`👉 📧 TEST EMAIL PREVIEW URL: ${nodemailer.getTestMessageUrl(info)}`);
+    let info = await transporter.sendMail(mailOptions);
+
+    // Log URL for Ethereal test emails
+    if (process.env.NODE_ENV !== 'production' && !process.env.EMAIL_HOST) {
+      console.log(`📧 Email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
     }
-    return { success: true, messageId: info.messageId };
+
+    return info;
   } catch (error) {
-    console.error(`❌ Failed to send reminder email to ${to}:`, error.message);
-    return { success: false, error: error.message };
+    console.error(`❌ Error sending email to ${options.to}:`, error);
+    throw error; // Re-throw the error to be caught by the worker
   }
-};
+}
 
 /**
  * Verify email configuration
@@ -215,6 +127,7 @@ const verifyEmailConfig = async () => {
 };
 
 module.exports = {
-  sendContestReminder,
+  sendEmail,
+  generateContestReminderTemplate,
   verifyEmailConfig
 };

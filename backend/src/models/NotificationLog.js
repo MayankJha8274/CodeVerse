@@ -13,12 +13,16 @@ const notificationLogSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['24h', '6h'],
+    enum: ['contest-reminder'],
     required: true
   },
-  sent: {
+  message: {
+    type: String,
+    required: true
+  },
+  read: {
     type: Boolean,
-    default: true
+    default: false
   },
   sentAt: {
     type: Date,
@@ -28,7 +32,7 @@ const notificationLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index to prevent duplicate emails for the same user, contest, and reminder type
+// Index to prevent duplicate notifications for the same user and contest
 notificationLogSchema.index({ userId: 1, contestId: 1, type: 1 }, { unique: true });
 
 module.exports = mongoose.model('NotificationLog', notificationLogSchema);

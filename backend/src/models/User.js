@@ -134,6 +134,14 @@ const userSchema = new mongoose.Schema({
     enum: ['high', 'normal', 'low'],
     default: 'normal'
   },
+  lastNotifiedAt: {
+    type: Date,
+    default: null
+  },
+  contestCount: {
+    type: Number,
+    default: 0
+  },
   lastActivityAt: {
     type: Date,
     default: null
