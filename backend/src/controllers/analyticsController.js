@@ -38,7 +38,7 @@ const HostedContest = require('../models/HostedContest');
  */
 exports.getStreaks = async (req, res) => {
   try {
-    const streaks = await calculateStreaks(req.user.id);
+    const streaks = await calculateStreaks((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: streaks
@@ -58,7 +58,7 @@ exports.getStreaks = async (req, res) => {
  */
 exports.getLanguages = async (req, res) => {
   try {
-    const languages = await calculateLanguageBreakdown(req.user.id);
+    const languages = await calculateLanguageBreakdown((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: languages
@@ -78,7 +78,7 @@ exports.getLanguages = async (req, res) => {
  */
 exports.getWeeklyProgress = async (req, res) => {
   try {
-    const progress = await calculateWeeklyProgress(req.user.id);
+    const progress = await calculateWeeklyProgress((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: progress
@@ -101,7 +101,7 @@ exports.getRatingHistory = async (req, res) => {
     const { platform } = req.params;
     const days = parseInt(req.query.days) || 90;
     
-    const history = await trackRatingHistory(req.user.id, platform, days);
+    const history = await trackRatingHistory((req.query.userId || req.user.id), platform, days);
     res.json({
       success: true,
       data: history
@@ -121,7 +121,7 @@ exports.getRatingHistory = async (req, res) => {
  */
 exports.getRatingChanges = async (req, res) => {
   try {
-    const changes = await detectRatingChanges(req.user.id);
+    const changes = await detectRatingChanges((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: changes
@@ -142,7 +142,7 @@ exports.getRatingChanges = async (req, res) => {
 exports.getRatingPrediction = async (req, res) => {
   try {
     const { platform } = req.params;
-    const prediction = await predictNextRating(req.user.id, platform);
+    const prediction = await predictNextRating((req.query.userId || req.user.id), platform);
     res.json({
       success: true,
       data: prediction
@@ -162,7 +162,7 @@ exports.getRatingPrediction = async (req, res) => {
  */
 exports.getContestPerformance = async (req, res) => {
   try {
-    const performance = await analyzeContestPerformance(req.user.id);
+    const performance = await analyzeContestPerformance((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: performance
@@ -182,7 +182,7 @@ exports.getContestPerformance = async (req, res) => {
  */
 exports.getHighestRated = async (req, res) => {
   try {
-    const highest = await getHighestRatedPlatform(req.user.id);
+    const highest = await getHighestRatedPlatform((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: highest
@@ -202,7 +202,7 @@ exports.getHighestRated = async (req, res) => {
  */
 exports.getWeakAreas = async (req, res) => {
   try {
-    const weakAreas = await identifyWeakAreas(req.user.id);
+    const weakAreas = await identifyWeakAreas((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: weakAreas
@@ -222,7 +222,7 @@ exports.getWeakAreas = async (req, res) => {
  */
 exports.getDailyGoals = async (req, res) => {
   try {
-    const goals = await suggestDailyGoals(req.user.id);
+    const goals = await suggestDailyGoals((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: goals
@@ -243,7 +243,7 @@ exports.getDailyGoals = async (req, res) => {
 exports.getSimilarUsers = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
-    const similarUsers = await findSimilarUsers(req.user.id, limit);
+    const similarUsers = await findSimilarUsers((req.query.userId || req.user.id), limit);
     res.json({
       success: true,
       data: similarUsers
@@ -263,7 +263,7 @@ exports.getSimilarUsers = async (req, res) => {
  */
 exports.getAchievements = async (req, res) => {
   try {
-    const achievements = await detectAchievements(req.user.id);
+    const achievements = await detectAchievements((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: achievements
@@ -283,7 +283,7 @@ exports.getAchievements = async (req, res) => {
  */
 exports.getInsightsSummary = async (req, res) => {
   try {
-    const insights = await generateInsightsSummary(req.user.id);
+    const insights = await generateInsightsSummary((req.query.userId || req.user.id));
     res.json({
       success: true,
       data: insights
@@ -304,7 +304,7 @@ exports.getInsightsSummary = async (req, res) => {
 exports.getAllRatingHistory = async (req, res) => {
   try {
     // Get user's linked platform usernames
-    const user = await User.findById(req.user.id).select('platforms');
+    const user = await User.findById((req.query.userId || req.user.id)).select('platforms');
     if (!user || !user.platforms) {
       return res.json({
         success: true,
