@@ -1,6 +1,7 @@
 const SocietyMember = require('../models/SocietyMember');
 const LeaderboardSnapshot = require('../models/LeaderboardSnapshot');
 const PlatformStats = require('../models/PlatformStats');
+const DailyProgress = require('../models/DailyProgress');
 const SocietyStreak = require('../models/SocietyStreak');
 const UserBadge = require('../models/UserBadge');
 const { calculateCodingScore } = require('./leaderboardController');
@@ -35,6 +36,45 @@ const getLeaderboard = async (req, res, next) => {
     const userIds = members.map(m => m.user._id || m.user);
     const platformStats = await PlatformStats.find({ userId: { $in: userIds } }).lean();
     const streaks = await SocietyStreak.find({ society: societyId, user: { $in: userIds } }).lean();
+
+    // Calculate date range based on period
+    let startDate = new Date();
+    switch (period) {
+      case 'daily':
+        startDate.setDate(startDate.getDate() - 1);
+        break;
+      case 'weekly':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case 'monthly':
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case 'yearly':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      case 'alltime':
+      default:
+        startDate = new Date(0); // Beginning of time
+        break;
+    }
+
+    const isAllTime = period === 'alltime' || !period;
+
+    // Get daily progress in date range for delta calculations
+    const dailyProgress = isAllTime ? [] : await DailyProgress.find({
+      userId: { $in: userIds },
+      date: { $gte: startDate }
+    }).lean();
+
+    const progressMap = {};
+    dailyProgress.forEach(dp => {
+      const uid = dp.userId.toString();
+      if (!progressMap[uid]) {
+        progressMap[uid] = { problemsDelta: 0, commitsDelta: 0 };
+      }
+      progressMap[uid].problemsDelta += (dp.changes?.problemsDelta || 0);
+      progressMap[uid].commitsDelta += (dp.changes?.commitsDelta || 0);
+    });
 
     const statsMap = {};
     platformStats.forEach(ps => {
@@ -82,20 +122,34 @@ const getLeaderboard = async (req, res, next) => {
       const streak = streakMap[uid] || { currentStreak: 0, totalActiveDays: 0 };
 
       // Build stats object that matches what calculateCodingScore expects
+      const leetcode = platformStats.find(s => s.userId.toString() === uid && s.platform === 'leetcode') || { stats: {} };
+      const github = platformStats.find(s => s.userId.toString() === uid && s.platform === 'github') || { stats: {} };
+      const codeforces = platformStats.find(s => s.userId.toString() === uid && s.platform === 'codeforces') || { stats: {} };
+      const codechef = platformStats.find(s => s.userId.toString() === uid && s.platform === 'codechef') || { stats: {} };
+
+      const prog = progressMap[uid] || { problemsDelta: 0, commitsDelta: 0 };
+      
       const statsForCodingScore = {
-        totalProblems: ps.totalSolved,
-        leetcode: platformStats.find(s => s.userId.toString() === uid && s.platform === 'leetcode') || {},
-        codeforces: platformStats.find(s => s.userId.toString() === uid && s.platform === 'codeforces') || {},
-        codechef: platformStats.find(s => s.userId.toString() === uid && s.platform === 'codechef') || {},
-        github: platformStats.find(s => s.userId.toString() === uid && s.platform === 'github') || {},
+        totalProblems: isAllTime ? ps.totalSolved : prog.problemsDelta,
+        leetcode,
+        codeforces,
+        codechef,
+        github: {
+          ...github,
+          stats: {
+             ...github.stats,
+             totalContributions: isAllTime ? (github.stats?.totalContributions || 0) : prog.commitsDelta
+          }
+        }
       };
+
       const codingScore = calculateCodingScore(m.user, statsForCodingScore);
 
       // Current rating: best current rating across platforms
       const currentRating = ps.contestRating || 0;
 
       const breakdown = {
-        problemsSolved: ps.totalSolved,
+        problemsSolved: isAllTime ? ps.totalSolved : prog.problemsDelta,
         contestScore: Math.floor(ps.contestRating / 10),
         chatContribution: m.messagesCount || 0,
         eventParticipation: m.eventsAttended || 0,
@@ -112,15 +166,15 @@ const getLeaderboard = async (req, res, next) => {
         codingScore,
         breakdown,
         codingProfile: {
-          totalSolved: ps.totalSolved,
+          totalSolved: isAllTime ? ps.totalSolved : prog.problemsDelta,
           easySolved: ps.easySolved,
           mediumSolved: ps.mediumSolved,
           hardSolved: ps.hardSolved,
           contestRating: ps.contestRating,
           currentRating,
           maxRating: ps.maxRating,
-          totalCommits: ps.totalCommits,
-          totalContributions: ps.totalContributions,
+          totalCommits: isAllTime ? ps.totalCommits : prog.commitsDelta,
+          totalContributions: isAllTime ? ps.totalContributions : prog.commitsDelta,
           totalSubmissions: ps.totalSubmissions,
           contestsParticipated: ps.contestsParticipated,
           platforms: ps.platforms

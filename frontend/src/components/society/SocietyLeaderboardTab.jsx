@@ -1,127 +1,149 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Trophy, Flame, Medal, Loader2, Code2, GitCommit,
-  Swords, ChevronDown, ChevronUp, Target, Users, Zap, Filter, BarChart3, TrendingUp
+  Trophy, Medal, Crown, Loader2, Target, Users, Zap, Search, ChevronLeft, ChevronRight, Globe, Star, Award, BarChart3
 } from 'lucide-react';
 import api from '../../services/api';
 import ProfileLink from '../ProfileLink';
+import UserAvatar from '../UserAvatar';
+import SkeletonLoader from '../SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import { PlatformIcon } from '../../utils/platformConfig';
-import SocietyAnalyticsTab from './SocietyAnalyticsTab';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const SORT_OPTIONS = [
-  { key: 'score', label: 'Coding Score', icon: Zap },
-  { key: 'totalSolved', label: 'Total Questions', icon: Code2 },
-  { key: 'currentRating', label: 'Current Rating', icon: Swords },
-  { key: 'totalContributions', label: 'Contributions', icon: GitCommit },
-  { key: 'totalSubmissions', label: 'Submissions', icon: Target },
-  { key: 'currentStreak', label: 'Streak', icon: Flame },
+const CHART_COLORS = [
+  { stroke: 'rgba(255, 99, 132, 1)', fill: 'rgba(255, 99, 132, 0.2)' },
+  { stroke: 'rgba(255, 159, 64, 1)', fill: 'rgba(255, 159, 64, 0.2)' },
+  { stroke: 'rgba(255, 205, 86, 1)', fill: 'rgba(255, 205, 86, 0.2)' },
+  { stroke: 'rgba(75, 192, 192, 1)', fill: 'rgba(75, 192, 192, 0.2)' },
+  { stroke: 'rgba(54, 162, 235, 1)', fill: 'rgba(54, 162, 235, 0.2)' },
+  { stroke: 'rgba(153, 102, 255, 1)', fill: 'rgba(153, 102, 255, 0.2)' },
+  { stroke: 'rgba(201, 203, 207, 1)', fill: 'rgba(201, 203, 207, 0.2)' }
 ];
 
-const PLATFORM_FILTERS = [
-  { key: 'all', label: 'All Platforms' },
-  { key: 'leetcode', label: 'LeetCode' },
-  { key: 'codeforces', label: 'Codeforces' },
-  { key: 'codechef', label: 'CodeChef' },
-  { key: 'geeksforgeeks', label: 'GFG' },
-  { key: 'hackerrank', label: 'HackerRank' },
-  { key: 'github', label: 'GitHub' },
+const rankingTypes = [
+  { id: 'codingScore', label: 'Coding Score', icon: Zap, color: 'amber', description: 'Comprehensive Coding Score' },
+  { id: 'problems', label: 'Total Questions', icon: Target, color: 'green', description: 'Total Questions Solved' },
+  { id: 'leetcode', label: 'LeetCode', icon: null, color: 'orange', description: 'LeetCode Rating' },
+  { id: 'codeforces', label: 'Codeforces', icon: null, color: 'blue', description: 'Codeforces Rating' },
+  { id: 'codechef', label: 'CodeChef', icon: null, color: 'amber', description: 'CodeChef Rating' },
+  { id: 'github', label: 'GitHub', icon: null, color: 'gray', description: 'GitHub Contributions' }
 ];
 
-const PLATFORM_COLORS = {
-  leetcode: { bg: 'bg-amber-500/10', text: 'text-amber-500', label: 'LeetCode' },
-  codeforces: { bg: 'bg-blue-500/10', text: 'text-blue-500', label: 'Codeforces' },
-  codechef: { bg: 'bg-orange-500/10', text: 'text-orange-500', label: 'CodeChef' },
-  github: { bg: 'bg-gray-500/10', text: 'text-gray-400', label: 'GitHub' },
-  geeksforgeeks: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'GFG' },
-  hackerrank: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', label: 'HackerRank' },
-  codingninjas: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'CodingNinjas' },
-};
+const TIME_FILTERS = [
+  { key: 'daily', label: '1 Day' },
+  { key: 'weekly', label: '1 Week' },
+  { key: 'monthly', label: '1 Month' },
+  { key: 'yearly', label: '1 Year' },
+  { key: 'alltime', label: 'All Time' },
+];
 
 const SocietyLeaderboardTab = ({ societyId }) => {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [streak, setStreak] = useState(null);
-  const [badges, setBadges] = useState([]);
-  const [sortBy, setSortBy] = useState('score');
-  const [platformFilter, setPlatformFilter] = useState('all');
-  const [expandedUser, setExpandedUser] = useState(null);
-  const [viewMode, setViewMode] = useState('charts'); // 'charts' or 'table'
+  
+  // States mapped from Global Leaderboard
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rankingType, setRankingType] = useState('codingScore');
+  const [timeFilter, setTimeFilter] = useState('alltime');
+  const [viewMode, setViewMode] = useState('table');
+
+  const limit = 50;
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch ALL members by setting a high limit (no pagination for charts)
-      const lbRes = await api.getSocietyLeaderboard(societyId, { limit: 1000 });
-      
-      // Validate data structure
-      if (!lbRes?.data) {
-        throw new Error('Invalid response format');
-      }
-      
+      const lbRes = await api.getSocietyLeaderboard(societyId, { limit: 1000, period: timeFilter });
+      if (!lbRes?.data) throw new Error('Invalid response format');
       setData(lbRes.data);
-
-      // Fetch secondary data (streak & badges) — don't let failures break the whole tab
-      const [streakRes, badgesRes] = await Promise.allSettled([
-        api.getSocietyStreak(societyId),
-        api.getSocietyBadges(societyId)
-      ]);
-      setStreak(streakRes.status === 'fulfilled' ? streakRes.value?.data : null);
-      setBadges(badgesRes.status === 'fulfilled' ? (badgesRes.value?.data || []) : []);
     } catch (err) {
       console.error('Failed to load leaderboard:', err);
       setError(err.response?.data?.message || err.message || 'Failed to load leaderboard data');
     } finally {
       setLoading(false);
     }
-  }, [societyId]);
+  }, [societyId, timeFilter]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Helper to get platform-specific solved count
-  const getPlatformSolved = useCallback((entry, platform) => {
-    if (platform === 'all') return entry.codingProfile?.totalSolved || 0;
-    return entry.codingProfile?.platforms?.[platform]?.solved || 0;
-  }, []);
+  const getRankingValue = useCallback((entry) => {
+    const cp = entry.codingProfile || {};
+    switch (rankingType) {
+      case 'codingScore': return Math.round(entry.codingScore ?? entry.score ?? 0);
+      case 'problems': return cp.totalSolved ?? entry.totalProblems ?? 0;
+      case 'leetcode': return cp.platforms?.leetcode?.rating ?? cp.leetcode?.stats?.rating ?? 0;
+      case 'codeforces': return cp.platforms?.codeforces?.rating ?? cp.codeforces?.stats?.rating ?? 0;
+      case 'codechef': return cp.platforms?.codechef?.rating ?? cp.codechef?.stats?.rating ?? 0;
+      case 'github': return cp.totalContributions ?? cp.totalCommits ?? entry.totalCommits ?? 0;
+      default: return Math.round(entry.codingScore ?? entry.score ?? 0);
+    }
+  }, [rankingType]);
 
-  // Re-sort rankings on client side
   const sortedRankings = useMemo(() => {
     if (!data?.rankings) return [];
     const sorted = [...data.rankings];
-    if (sortBy === 'score') {
-      sorted.sort((a, b) => (b.codingScore || b.score || 0) - (a.codingScore || a.score || 0));
-    } else if (sortBy === 'totalSolved') {
-      sorted.sort((a, b) => getPlatformSolved(b, platformFilter) - getPlatformSolved(a, platformFilter));
-    } else if (sortBy === 'currentRating') {
-      sorted.sort((a, b) => (b.codingProfile?.currentRating || b.codingProfile?.contestRating || 0) - (a.codingProfile?.currentRating || a.codingProfile?.contestRating || 0));
-    } else if (sortBy === 'totalContributions') {
-      sorted.sort((a, b) => (b.codingProfile?.totalContributions || 0) - (a.codingProfile?.totalContributions || 0));
-    } else if (sortBy === 'totalSubmissions') {
-      sorted.sort((a, b) => (b.codingProfile?.totalSubmissions || 0) - (a.codingProfile?.totalSubmissions || 0));
-    } else if (sortBy === 'currentStreak') {
-      sorted.sort((a, b) => (b.currentStreak || 0) - (a.currentStreak || 0));
-    }
+    sorted.sort((a, b) => getRankingValue(b) - getRankingValue(a));
+    // Assign display rank sequentially after sort to perfectly mimic global view
     sorted.forEach((r, i) => { r.displayRank = i + 1; });
     return sorted;
-  }, [data, sortBy, platformFilter, getPlatformSolved]);
+  }, [data, getRankingValue]);
 
-  // Prepare chart data for top users
-    const getRankStyle = (rank) => {
-    if (rank === 1) return 'from-yellow-500 to-amber-500 text-black';
-    if (rank === 2) return 'from-gray-300 to-gray-400 text-gray-800';
-    if (rank === 3) return 'from-amber-700 to-amber-800 text-white';
-    return 'from-gray-600 to-gray-700 text-white';
+  const filteredLeaderboard = useMemo(() => {
+    let filtered = sortedRankings;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(entry => 
+        (entry.user?.username || entry.username || '').toLowerCase().includes(q) ||
+        (entry.user?.fullName || entry.fullName || '').toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [sortedRankings, searchQuery]);
+
+  const paginatedLeaderboard = useMemo(() => {
+    const start = (currentPage - 1) * limit;
+    return filteredLeaderboard.slice(start, start + limit);
+  }, [filteredLeaderboard, currentPage, limit]);
+
+  const totalPages = Math.ceil(filteredLeaderboard.length / limit);
+
+  // Helper functions matching LeaderboardPage.jsx exactly
+  const getRankingLabel = () => rankingTypes.find(t => t.id === rankingType)?.label || 'Score';
+  
+  const getRankingColor = () => {
+    const type = rankingTypes.find(t => t.id === rankingType);
+    const colorMap = {
+      amber: 'text-amber-500 bg-amber-500/20',
+      green: 'text-green-500 bg-green-500/20',
+      orange: 'text-orange-500 bg-orange-500/20',
+      blue: 'text-blue-500 bg-blue-500/20',
+      gray: 'text-gray-300 bg-gray-500/20'
+    };
+    return colorMap[type?.color] || colorMap.amber;
   };
 
-  // Compute max values for comparison bars
-    if (loading) {
-    return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-amber-500" /></div>;
+  const getRankBadge = (rank) => {
+    if (rank === 1) return <Crown className="w-6 h-6 text-yellow-400" />;
+    if (rank === 2) return <Medal className="w-6 h-6 text-gray-300" />;
+    if (rank === 3) return <Medal className="w-6 h-6 text-amber-600" />;
+    return null;
+  };
+
+  const getRankColor = (rank) => {
+    if (rank === 1) return 'from-yellow-500/20 to-amber-500/20 border-yellow-500/50';
+    if (rank === 2) return 'from-gray-400/20 to-gray-500/20 border-gray-400/50';
+    if (rank === 3) return 'from-amber-600/20 to-orange-600/20 border-amber-600/50';
+    return 'from-transparent to-transparent border-gray-700';
+  };
+
+  if (loading && !data) {
+    return <div className="py-8"><SkeletonLoader type="list" /></div>;
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="text-center py-16">
         <Trophy className="w-10 h-10 mx-auto mb-3 text-red-400 opacity-50" />
@@ -134,289 +156,465 @@ const SocietyLeaderboardTab = ({ societyId }) => {
     );
   }
 
+  // Calculate current user's rank specifically from the newly sorted array
+  const meRanking = sortedRankings.find(r => (r.user?._id || r.user)?.toString() === authUser?.id);
+  const myRank = meRanking?.displayRank || data?.currentUser?.rank;
+  const myScore = meRanking ? getRankingValue(meRanking) : (data?.currentUser?.score || 0);
+  const myTotal = meRanking?.codingProfile?.totalSolved || meRanking?.totalProblems || data?.currentUser?.totalProblems || 0;
+  const percentile = Math.round(((sortedRankings.length - (myRank || sortedRankings.length)) / (sortedRankings.length || 1)) * 100);
+
+  const topThree = sortedRankings.slice(0, 3);
+
   return (
-    <div>
-      {/* User Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <StatCard label="Your Rank" value={`#${data?.currentUser?.rank || '—'}`}
-          sub={`Top ${data?.currentUser?.percentile || 0}% · ${data?.currentUser?.score || 0} pts`}
-          icon={Trophy} color="text-amber-500" />
-        <StatCard label="Streak" value={`${streak?.currentStreak || 0}d`}
-          sub={`Best: ${streak?.longestStreak || 0}d`}
-          icon={Flame} color="text-orange-500" />
-        <StatCard label="Badges" value={badges.length}
-          sub={badges.slice(0, 4).map(b => b.badge?.icon || '🏅').join(' ') || 'None yet'}
-          icon={Medal} color="text-purple-500" />
-        <StatCard label="Members" value={data?.totalParticipants || 0}
-          sub="competing" icon={Users} color="text-blue-500" />
-      </div>
-
-      {/* View Mode Toggle */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('charts')}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg font-medium transition-all ${
-              viewMode === 'charts'
-                ? 'bg-amber-500 text-black'
-                : 'bg-gray-100 dark:bg-[#111118] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Charts View
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg font-medium transition-all ${
-              viewMode === 'table'
-                ? 'bg-amber-500 text-black'
-                : 'bg-gray-100 dark:bg-[#111118] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Table View
-          </button>
-        </div>
-      </div>
-
-      {/* Charts View */}
-      {viewMode === 'charts' && (
-        <div className="space-y-6">
-          <SocietyAnalyticsTab societyId={societyId} />
+    <div className="text-gray-900 dark:text-white transition-colors">
+      
+      {/* Current User Stats Card identical to LeaderboardPage.jsx */}
+      {authUser && (myRank || data?.currentUser) && (
+        <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <ProfileLink userId={authUser?.id}>
+                  <UserAvatar user={{ avatar: authUser?.avatar, name: authUser?.fullName, username: authUser?.username }} size="lg" />
+                </ProfileLink>
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1">
+                  <Star className="w-4 h-4 text-black" />
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-amber-400 font-medium mb-1">Your Rank</div>
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl font-bold text-gray-900 dark:text-white">#{myRank || '—'}</span>
+                  <div className="text-sm text-gray-400">
+                    out of {data?.totalParticipants || sortedRankings.length} members
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-4 sm:gap-8">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-amber-500">{myScore}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{getRankingLabel()}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{myTotal}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Problems</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{percentile}%</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Top Percentile</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Table View */}
-      {viewMode === 'table' && (
-        <>
-          {/* Sort by */}
-          <div className="flex flex-wrap items-center gap-1.5 mb-4">
-            <span className="text-xs text-gray-400 mr-1">Sort by:</span>
-            {SORT_OPTIONS.map(opt => {
-              const Icon = opt.icon;
-              return (
-                <button key={opt.key} onClick={() => { setSortBy(opt.key); if (opt.key !== 'totalSolved') setPlatformFilter('all'); }}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-lg font-medium transition-all ${
-                    sortBy === opt.key
-                      ? 'bg-amber-500 text-black'
-                      : 'bg-gray-100 dark:bg-[#111118] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}>
-                  <Icon className="w-3 h-3" /> {opt.label}
-                </button>
-              );
-            })}
-          </div>
+      {/* View Mode Toggle (kept for society charts compatibility) */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold">Society Standings</h3>
+        <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111118] p-1 rounded-lg">
+          <button onClick={() => setViewMode('charts')} 
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'charts' ? 'bg-amber-500 text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>
+            <span className="flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> Charts</span>
+          </button>
+          <button onClick={() => setViewMode('table')} 
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'table' ? 'bg-amber-500 text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>
+            <span className="flex items-center gap-1.5"><Users className="w-4 h-4"/> Table</span>
+          </button>
+        </div>
+      </div>
 
-          {/* Platform filter (shown when Total Questions is selected) */}
-          {sortBy === 'totalSolved' && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-4">
-              <Filter className="w-3 h-3 text-gray-400" />
-              <span className="text-[10px] text-gray-400 mr-1">Platform:</span>
-              {PLATFORM_FILTERS.map(pf => (
-                <button key={pf.key} onClick={() => setPlatformFilter(pf.key)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded-md font-medium transition-all ${
-                    platformFilter === pf.key
-                      ? 'bg-green-500 text-black'
-                      : 'bg-gray-100 dark:bg-[#111118] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+
+
+      {/* Time Filter, Search, and Labels Row */}
+      <div className="bg-gray-50 dark:bg-[#16161f] rounded-xl p-4 mb-6 transition-colors">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Scope Tag & Time Filter */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button className="px-4 py-2 rounded-lg flex items-center gap-2 bg-amber-500 text-black font-medium text-sm">
+                <Globe className="w-4 h-4" /> Society
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center bg-white dark:bg-[#1a1a2e] p-1 rounded-lg border border-gray-200 dark:border-gray-700">
+              {TIME_FILTERS.map(tf => (
+                <button key={tf.key} onClick={() => setTimeFilter(tf.key)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    timeFilter === tf.key
+                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-500'
+                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}>
-                  {pf.key !== 'all' && <PlatformIcon platform={pf.key} className="w-3 h-3" />}
-                  {pf.label}
+                  {tf.label}
                 </button>
               ))}
             </div>
-          )}
+          </div>
+          {/* Search */}
+          <div className="flex-1 md:max-w-xs relative ml-auto">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input type="text" placeholder="Search members..." value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 rounded-lg pl-10 pr-4 py-2 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-colors text-sm"
+            />
+          </div>
+        </div>
+      </div>
 
-          {/* Comparison Table */}
-          <div className="bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
-            {/* Header */}
-            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800/50 bg-gray-50 dark:bg-[#111118] text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-              <div className="col-span-1">#</div>
-              <div className="col-span-3">Member</div>
-              <div className="col-span-2 text-center">Questions</div>
-              <div className="col-span-2 text-center">Current Rating</div>
-              <div className="col-span-2 text-center">Contributions</div>
-              <div className="col-span-2 text-center">Coding Score</div>
-            </div>
+      {/* Ranking Type Tabs */}
+      <div className="mb-4">
+        <div className="flex overflow-x-auto no-scrollbar gap-2 bg-gray-50 dark:bg-[#16161f] rounded-xl p-3 transition-colors">
+          {rankingTypes.map((type) => (
+            <button key={type.id} onClick={() => { setRankingType(type.id); setCurrentPage(1); }}
+              className={`px-4 py-2 whitespace-nowrap rounded-lg flex items-center gap-2 transition-all ${
+                rankingType === type.id 
+                  ? type.id === 'codingScore' ? 'bg-amber-500 text-black font-semibold' :
+                    type.id === 'problems' ? 'bg-green-500 text-black font-semibold' :
+                    type.id === 'leetcode' ? 'bg-orange-500 text-black font-semibold' :
+                    type.id === 'codeforces' ? 'bg-blue-500 text-black font-semibold' :
+                    type.id === 'codechef' ? 'bg-amber-600 text-black font-semibold' :
+                    'bg-gray-400 text-black font-semibold'
+                  : 'bg-white dark:bg-[#1a1a2e] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#252536] border border-gray-200 dark:border-gray-700 transition-colors'
+              }`}
+            >
+              {type.icon && <type.icon className="w-4 h-4" />}
+              {!type.icon && ['leetcode', 'codeforces', 'github', 'codechef'].includes(type.id) && (
+                <PlatformIcon platform={type.id} className="w-4 h-4" />
+              )}
+              {type.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-gray-500 mt-2 ml-2">
+          {rankingTypes.find(t => t.id === rankingType)?.description} 
+          {timeFilter !== 'alltime' ? ' • Time filtered' : ''}
+        </p>
+      </div>
 
-        {/* Rows */}
-        <div className="divide-y divide-gray-100 dark:divide-gray-800/30">
-          {sortedRankings.map((entry) => {
-            const isMe = (entry.user?._id || entry.user)?.toString() === user?.id;
-            const isExpanded = expandedUser === (entry.user?._id || entry.user);
-            const cp = entry.codingProfile || {};
+      {viewMode === 'charts' && (
+        <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 mb-8 mt-6">
+          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-amber-500" />
+            Top Members Breakdown
+          </h2>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={sortedRankings.slice(0, 7).map(item => ({
+                  ...item,
+                  chartValue: getRankingValue(item),
+                  usernameDisplay: item.user?.username || item.username || 'Unknown'
+                }))} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.3} />
+                <XAxis 
+                  dataKey="usernameDisplay" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                  dy={10}
+                  interval={0}
+                  tickFormatter={(val) => val.length > 10 ? val.substring(0,10) + '...' : val}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                  dx={-10}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                  contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#fff' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Bar dataKey="chartValue" name={getRankingLabel()}>
+                  {sortedRankings.slice(0, 7).map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={CHART_COLORS[index % CHART_COLORS.length].fill} 
+                      stroke={CHART_COLORS[index % CHART_COLORS.length].stroke}
+                      strokeWidth={2}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
-            return (
-              <div key={entry.user?._id || entry.displayRank}>
-                {/* Main Row */}
-                <div
-                  className={`flex flex-wrap md:grid md:grid-cols-12 gap-2 px-4 py-3 items-center cursor-pointer transition-colors ${
-                    isMe ? 'bg-amber-500/5' : 'hover:bg-gray-50 dark:hover:bg-[#111118]'
-                  }`}
-                  onClick={() => setExpandedUser(isExpanded ? null : (entry.user?._id || entry.user))}
-                >
-                  {/* Rank */}
-                  <div className="md:col-span-1 flex-shrink-0">
-                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${getRankStyle(entry.displayRank)} flex items-center justify-center text-[10px] font-bold`}>
-                      {entry.displayRank}
+      {viewMode === 'table' && (
+        <>
+          {/* Top 3 Podium matching Global layout exactly */}
+          {topThree.length >= 3 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                Top Performers
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                {/* 2nd Place */}
+                <div className={`bg-gradient-to-br ${getRankColor(2)} border rounded-xl p-6 order-1 md:order-1`}>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative mb-4">
+                      <ProfileLink userId={topThree[1].user?._id || topThree[1].user}>
+                        <UserAvatar user={{ avatar: topThree[1].user?.avatar, name: topThree[1].user?.fullName, username: topThree[1].user?.username }} size="xl" />
+                      </ProfileLink>
+                      <div className="absolute -top-2 -right-2">
+                        <Medal className="w-8 h-8 text-gray-300" />
+                      </div>
                     </div>
-                  </div>
-
-                  {/* User */}
-                  <div className="md:col-span-3 flex items-center gap-2 min-w-0 flex-1">
-                    <ProfileLink user={entry.user} className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                      {entry.user?.username?.charAt(0)?.toUpperCase() || '?'}
+                    <div className="text-2xl font-bold text-gray-300 mb-1">#2</div>
+                    <ProfileLink userId={topThree[1].user?._id || topThree[1].user} className="text-lg font-semibold text-gray-900 dark:text-white hover:text-amber-500 mb-1 transition-colors w-full truncate">
+                      {topThree[1].user?.fullName || topThree[1].user?.username}
                     </ProfileLink>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1">
-                        <ProfileLink user={entry.user} className="truncate hover:text-amber-500 transition-colors">
-                          {entry.user?.fullName || entry.user?.username || 'Unknown'}
-                        </ProfileLink>
-                        {isMe && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-500 font-medium">you</span>}
-                      </div>
-                      <ProfileLink user={entry.user} className="text-[10px] text-gray-400 hover:text-amber-500 transition-colors">@{entry.user?.username}</ProfileLink>
-                    </div>
-                  </div>
-
-                  {/* Questions */}
-                  <div className="hidden md:block md:col-span-2 text-center">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">{getPlatformSolved(entry, platformFilter)}</div>
-                    {platformFilter === 'all' ? (
-                      <div className="flex justify-center gap-0.5 mt-0.5">
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/10 text-green-500">{cp.easySolved || 0}E</span>
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-500">{cp.mediumSolved || 0}M</span>
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/10 text-red-500">{cp.hardSolved || 0}H</span>
-                      </div>
-                    ) : (
-                      <div className="text-[10px] text-gray-400">{PLATFORM_FILTERS.find(p => p.key === platformFilter)?.label}</div>
-                    )}
-                  </div>
-
-                  {/* Current Rating */}
-                  <div className="hidden md:block md:col-span-2 text-center">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">{cp.currentRating || cp.contestRating || 0}</div>
-                    <div className="text-[10px] text-gray-400">
-                      {cp.maxRating > (cp.currentRating || cp.contestRating || 0) && (
-                        <span className="text-amber-500">max: {cp.maxRating} · </span>
-                      )}
-                      {cp.contestsParticipated || 0} contests
-                    </div>
-                  </div>
-
-                  {/* Contributions */}
-                  <div className="hidden md:block md:col-span-2 text-center">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">{cp.totalContributions || cp.totalCommits || 0}</div>
-                    <div className="text-[10px] text-gray-400">{cp.totalCommits || 0} commits</div>
-                  </div>
-
-                  {/* Coding Score */}
-                  <div className="md:col-span-2 flex items-center justify-between ml-auto">
-                    <div>
-                      <div className="text-sm font-bold text-amber-500">{(entry.codingScore || entry.score || 0).toLocaleString()}</div>
-                      <div className="text-[10px] text-gray-400">🔥{entry.currentStreak || 0}d</div>
-                    </div>
-                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                    <ProfileLink userId={topThree[1].user?._id || topThree[1].user} className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-500 mb-3 transition-colors w-full truncate">
+                      @{topThree[1].user?.username}
+                    </ProfileLink>
+                    <div className={`text-2xl font-bold ${getRankingColor().split(' ')[0]}`}>{getRankingValue(topThree[1])}</div>
+                    <div className="text-xs text-gray-500">{getRankingLabel()}</div>
                   </div>
                 </div>
 
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 bg-gray-50/50 dark:bg-[#111118]/50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
-                      {/* Comparison Bars */}
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Coding Profile Comparison</h4>
-                        <ComparisonBar label="Questions Solved" value={cp.totalSolved || 0} max={maxVals.totalSolved} color="bg-amber-500" />
-                        <ComparisonBar label="Current Rating" value={cp.currentRating || cp.contestRating || 0} max={maxVals.contestRating} color="bg-blue-500" />
-                        {(cp.maxRating > (cp.currentRating || cp.contestRating || 0)) && (
-                          <div className="text-[10px] text-gray-400 -mt-1 ml-1">Max Rating: <span className="text-amber-500 font-semibold">{cp.maxRating}</span></div>
-                        )}
-                        <ComparisonBar label="Contributions" value={cp.totalContributions || cp.totalCommits || 0} max={maxVals.totalContributions || maxVals.totalCommits} color="bg-green-500" />
-                        <ComparisonBar label="Submissions" value={cp.totalSubmissions || 0} max={maxVals.totalSubmissions} color="bg-purple-500" />
-                        <ComparisonBar label="Coding Score" value={entry.codingScore || entry.score || 0} max={maxVals.score} color="bg-amber-500" />
+                {/* 1st Place */}
+                <div className={`bg-gradient-to-br ${getRankColor(1)} border-2 rounded-xl p-8 order-0 md:order-2`}>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative mb-4">
+                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                        <Crown className="w-10 h-10 text-yellow-400" />
                       </div>
+                      <ProfileLink userId={topThree[0].user?._id || topThree[0].user}>
+                        <UserAvatar user={{ avatar: topThree[0].user?.avatar, name: topThree[0].user?.fullName, username: topThree[0].user?.username }} size="xl" />
+                      </ProfileLink>
+                    </div>
+                    <div className="text-3xl font-bold text-yellow-400 mb-1">#1</div>
+                    <ProfileLink userId={topThree[0].user?._id || topThree[0].user} className="text-xl font-semibold text-gray-900 dark:text-white hover:text-amber-500 mb-1 transition-colors w-full truncate">
+                      {topThree[0].user?.fullName || topThree[0].user?.username}
+                    </ProfileLink>
+                    <ProfileLink userId={topThree[0].user?._id || topThree[0].user} className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-500 mb-3 transition-colors w-full truncate">
+                      @{topThree[0].user?.username}
+                    </ProfileLink>
+                    <div className={`text-3xl font-bold ${getRankingColor().split(' ')[0]}`}>{getRankingValue(topThree[0])}</div>
+                    <div className="text-xs text-gray-500">{getRankingLabel()}</div>
+                  </div>
+                </div>
 
-                      {/* Platform Breakdown */}
-                      <div>
-                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Platform Breakdown</h4>
-                        <div className="space-y-2">
-                          {cp.platforms && Object.entries(cp.platforms).map(([platform, stats]) => {
-                            const pCfg = PLATFORM_COLORS[platform] || { bg: 'bg-gray-500/10', text: 'text-gray-500', label: platform };
-                            return (
-                              <div key={platform} className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-[#1a1a2e] border border-gray-100 dark:border-gray-800/30">
-                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${pCfg.bg} ${pCfg.text}`}>
-                                  {pCfg.label}
-                                </span>
-                                <div className="flex-1 flex items-center gap-3 text-[11px] text-gray-500">
-                                  {(stats.solved > 0 || platform !== 'github') && <span>{stats.solved || 0} solved</span>}
-                                  {stats.rating > 0 && <span className="text-amber-500 font-medium">⭐ {stats.rating}</span>}
-                                  {stats.commits > 0 && <span>{stats.commits} commits</span>}
-                                  {stats.contributions > 0 && <span>{stats.contributions} contrib</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {(!cp.platforms || Object.keys(cp.platforms).length === 0) && (
-                            <div className="text-xs text-gray-400 py-2">No platform data linked yet</div>
-                          )}
-                        </div>
+                {/* 3rd Place */}
+                <div className={`bg-gradient-to-br ${getRankColor(3)} border rounded-xl p-6 order-2 md:order-3`}>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative mb-4">
+                      <ProfileLink userId={topThree[2].user?._id || topThree[2].user}>
+                        <UserAvatar user={{ avatar: topThree[2].user?.avatar, name: topThree[2].user?.fullName, username: topThree[2].user?.username }} size="xl" />
+                      </ProfileLink>
+                      <div className="absolute -top-2 -right-2">
+                        <Medal className="w-8 h-8 text-amber-600" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-bold text-amber-600 mb-1">#3</div>
+                    <ProfileLink userId={topThree[2].user?._id || topThree[2].user} className="text-lg font-semibold text-gray-900 dark:text-white hover:text-amber-500 mb-1 transition-colors w-full truncate">
+                      {topThree[2].user?.fullName || topThree[2].user?.username}
+                    </ProfileLink>
+                    <ProfileLink userId={topThree[2].user?._id || topThree[2].user} className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-500 mb-3 transition-colors w-full truncate">
+                      @{topThree[2].user?.username}
+                    </ProfileLink>
+                    <div className={`text-2xl font-bold ${getRankingColor().split(' ')[0]}`}>{getRankingValue(topThree[2])}</div>
+                    <div className="text-xs text-gray-500">{getRankingLabel()}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-                        {/* Score breakdown */}
-                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2">Score Breakdown</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {entry.breakdown && Object.entries(entry.breakdown).map(([key, val]) => (
-                            <div key={key} className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800/50 text-[10px]">
-                              <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                              <span className="ml-1 font-semibold text-gray-700 dark:text-gray-300">{val}</span>
-                            </div>
-                          ))}
+          {/* Leaderboard Table (Flat style mirroring Global precisely) */}
+          <div className="bg-white dark:bg-[#16161f] rounded-xl overflow-hidden transition-colors">
+            {/* Header */}
+            <div className="hidden sm:grid grid-cols-12 gap-4 p-4 bg-gray-100 dark:bg-[#1a1a2e] text-sm font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 transition-colors">
+              <div className="col-span-1">Rank</div>
+              <div className="col-span-4">User</div>
+              <div className="col-span-2 text-center">{getRankingLabel()}</div>
+              <div className="col-span-2 text-center">{rankingType === 'problems' ? 'Coding Score' : 'Questions'}</div>
+              <div className="col-span-3 text-center">Platform Stats</div>
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              {paginatedLeaderboard.map((entry, index) => {
+                const isMe = (entry.user?._id || entry.user)?.toString() === authUser?.id;
+                const cp = entry.codingProfile || {};
+                const platforms = cp.platforms || {};
+                
+                const lcInfo = platforms.leetcode?.solved || platforms.leetcode?.rating || cp.leetcode?.stats?.totalSolved;
+                const cfInfo = platforms.codeforces?.solved || platforms.codeforces?.rating || cp.codeforces?.stats?.rating;
+                const ccInfo = platforms.codechef?.solved || platforms.codechef?.rating || cp.codechef?.stats?.rating;
+                const ghInfo = platforms.github?.commits || platforms.github?.contributions || cp.totalCommits || cp.totalContributions || entry.totalCommits;
+                const hasNoPlatform = !lcInfo && !cfInfo && !ccInfo && !ghInfo;
+
+                return (
+                  <div 
+                    key={entry.user?._id || index}
+                    className={`grid grid-cols-3 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center hover:bg-gray-50 dark:hover:bg-[#1a1a2e] transition-colors ${
+                      isMe ? 'bg-amber-500/10 border-l-4 border-amber-500' : 'border-l-4 border-transparent'
+                    }`}
+                  >
+                    {/* Rank */}
+                    <div className="col-span-1">
+                      <div className="flex items-center gap-2">
+                        {getRankBadge(entry.displayRank)}
+                        <span className={`font-bold ${
+                          entry.displayRank === 1 ? 'text-yellow-400' :
+                          entry.displayRank === 2 ? 'text-gray-300' :
+                          entry.displayRank === 3 ? 'text-amber-600' :
+                          'text-gray-900 dark:text-white'
+                        }`}>
+                          #{entry.displayRank}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="col-span-2 sm:col-span-4 flex items-center gap-2 sm:gap-3 min-w-0">
+                      <ProfileLink userId={entry.user?._id || entry.user}>
+                        <UserAvatar user={{ avatar: entry.user?.avatar, name: entry.user?.fullName, username: entry.user?.username }} size="md" />
+                      </ProfileLink>
+                      <div className="min-w-0">
+                        <ProfileLink userId={entry.user?._id || entry.user} className="block font-semibold text-gray-900 dark:text-white hover:text-amber-500 truncate transition-colors">
+                          {entry.user?.fullName || entry.user?.username}
+                          {isMe && <span className="ml-2 text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-500 font-medium align-middle">you</span>}
+                        </ProfileLink>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                          <ProfileLink userId={entry.user?._id || entry.user} className="hover:text-amber-500 transition-colors">@{entry.user?.username}</ProfileLink>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
 
-        {sortedRankings.length === 0 && (
-          <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-            <Trophy className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No rankings available yet</p>
-            <p className="text-xs mt-1">Members need to link their coding platforms</p>
+                    {/* Primary Ranking Value */}
+                    <div className="col-span-1 sm:col-span-2 text-center">
+                      <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg ${getRankingColor()}`}>
+                        {rankingType === 'codingScore' && <Zap className="w-4 h-4" />}
+                        {rankingType === 'problems' && <Target className="w-4 h-4" />}
+                        <span className="font-bold">{getRankingValue(entry)}</span>
+                      </div>
+                    </div>
+
+                    {/* Secondary Value */}
+                    <div className="hidden sm:block col-span-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {rankingType === 'problems' ? (
+                          <>
+                            <Zap className="w-4 h-4 text-amber-500" />
+                            <span className="font-semibold text-amber-500">{entry.codingScore || entry.score || 0}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Target className="w-4 h-4 text-green-500" />
+                            <span className="font-semibold text-gray-900 dark:text-white">{cp.totalSolved || entry.totalProblems || 0}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Platform Stats Display */}
+                    <div className="hidden sm:block col-span-3">
+                      <div className="flex items-center justify-center gap-3 flex-wrap">
+                        {lcInfo ? (
+                          <div className="flex items-center gap-1 text-orange-400" title="LeetCode Stat">
+                            <PlatformIcon platform="leetcode" className="w-4 h-4" />
+                            <span className="text-sm">{platforms.leetcode?.solved || platforms.leetcode?.rating || cp.leetcode?.stats?.totalSolved || cp.leetcode?.stats?.rating || '-'}</span>
+                          </div>
+                        ) : null}
+                        {cfInfo ? (
+                          <div className="flex items-center gap-1 text-blue-400" title="Codeforces Stat">
+                            <PlatformIcon platform="codeforces" className="w-4 h-4" />
+                            <span className="text-sm">{platforms.codeforces?.solved || platforms.codeforces?.rating || cp.codeforces?.stats?.rating || '-'}</span>
+                          </div>
+                        ) : null}
+                        {ccInfo ? (
+                          <div className="flex items-center gap-1 text-amber-500" title="CodeChef Stat">
+                            <PlatformIcon platform="codechef" className="w-4 h-4" />
+                            <span className="text-sm">{platforms.codechef?.solved || platforms.codechef?.rating || cp.codechef?.stats?.rating || '-'}</span>
+                          </div>
+                        ) : null}
+                        {ghInfo ? (
+                          <div className="flex items-center gap-1 text-gray-400 dark:text-gray-300" title="GitHub Stat">
+                            <PlatformIcon platform="github" className="w-4 h-4" />
+                            <span className="text-sm">{platforms.github?.commits || platforms.github?.contributions || cp.totalCommits || cp.totalContributions || entry.totalCommits || '-'}</span>
+                          </div>
+                        ) : null}
+                        {hasNoPlatform && (
+                          <span className="text-gray-500 text-sm">No platforms</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {paginatedLeaderboard.length === 0 && (
+                <div className="p-12 text-center text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No members found matching your search</p>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Pagination Component matching Global */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="text-sm text-gray-400">
+                Page {currentPage} of {totalPages}
+                {' '}• {filteredLeaderboard.length} members
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#1a1a2e] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#1a1a2e] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Informational Footer from Global Leaderboard */}
+          <div className="mt-8 bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-500" />
+              How Coding Score is Calculated
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-4 transition-colors">
+                <div className="text-amber-500 font-bold mb-1">Problems Solved</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Up to 400 points based on total problems solved across platforms</div>
+              </div>
+              <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-4 transition-colors">
+                <div className="text-amber-500 font-bold mb-1">Platform Ratings</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Up to 300 points from LeetCode, Codeforces, and CodeChef ratings</div>
+              </div>
+              <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-4 transition-colors">
+                <div className="text-amber-500 font-bold mb-1">GitHub Activity</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Up to 150 points based on GitHub contributions</div>
+              </div>
+              <div className="bg-gray-50 dark:bg-[#1a1a2e] rounded-lg p-4 transition-colors">
+                <div className="text-amber-500 font-bold mb-1">Consistency</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Up to 150 points from streaks and metrics delta</div>
+              </div>
+            </div>
           </div>
         </>
       )}
-    </div>
-  );
-};
-
-// --- Sub-components ---
-
-const StatCard = ({ label, value, sub, icon: Icon, color }) => (
-  <div className="bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-800/50 rounded-xl p-4">
-    <div className="flex items-center justify-between mb-1.5">
-      <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{label}</span>
-      <Icon className={`w-4 h-4 ${color}`} />
-    </div>
-    <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-    <div className="text-[11px] text-gray-400 mt-0.5">{sub}</div>
-  </div>
-);
-
-const ComparisonBar = ({ label, value, max, color }) => {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] text-gray-500">{label}</span>
-        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">{value.toLocaleString()}</span>
-      </div>
-      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
-      </div>
     </div>
   );
 };
