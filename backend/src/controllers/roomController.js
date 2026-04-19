@@ -389,7 +389,7 @@ const getRoomLeaderboard = async (req, res, next) => {
     let startDate = new Date();
     switch (period) {
       case 'daily':
-        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(startDate.getDate() - 1);
         break;
       case 'weekly':
         startDate.setDate(startDate.getDate() - 7);
@@ -397,11 +397,14 @@ const getRoomLeaderboard = async (req, res, next) => {
       case 'monthly':
         startDate.setMonth(startDate.getMonth() - 1);
         break;
+      case 'yearly':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
       case 'alltime':
         startDate = new Date(0); // Beginning of time
         break;
-      default:
-        startDate.setDate(startDate.getDate() - 7);
+      default: // default to alltime if undefined period behavior is expected or keep weekly
+        startDate = new Date(0);
     }
 
     // Get stats for all members
@@ -438,24 +441,51 @@ const getRoomLeaderboard = async (req, res, next) => {
           ? cpPlatforms.reduce((sum, p) => sum + (p.stats?.rating || 0), 0) / cpPlatforms.length
           : 0;
 
-        // Problems solved in period
-        const problemsInPeriod = dailyProgress.reduce((sum, day) => {
-          return sum + (day.aggregatedStats?.totalProblemsSolved || 0);
-        }, 0);
+        // Deltas in period
+        let problemsDelta = 0;
+        let commitsDelta = 0;
+
+        if (period === 'alltime') {
+          problemsDelta = totalProblems;
+          commitsDelta = totalCommits;
+        } else {
+          problemsDelta = dailyProgress.reduce((sum, day) => {
+            return sum + (day.changes?.problemsDelta || 0);
+          }, 0);
+          commitsDelta = dailyProgress.reduce((sum, day) => {
+            return sum + (day.changes?.commitsDelta || 0);
+          }, 0);
+        }
 
         const member = validMembers.find(m => m.user._id.toString() === memberId.toString());
 
+        // We use delta scoring for periods, and alltime scoring for alltime
+        const baseScore = problemsDelta + commitsDelta + Math.round(avgRating / 10);
+
         return {
           userId: memberId,
+          user: {
+            _id: member.user._id,
+            username: member.user.username,
+            fullName: member.user.fullName,
+            avatar: member.user.avatar,
+          },
           username: member.user.username,
           fullName: member.user.fullName,
           avatar: member.user.avatar,
           totalProblems,
           totalCommits,
           avgRating: Math.round(avgRating),
-          problemsInPeriod,
-          joinedAt: member.joinedAt,
-          score: totalProblems + totalCommits + Math.round(avgRating / 10) // Simple scoring
+          problemsInPeriod: problemsDelta,
+          commitsInPeriod: commitsDelta,
+          codingScore: baseScore,
+          score: baseScore, // Frontend expects codingScore or score
+          codingProfile: {
+             totalSolved: period === 'alltime' ? totalProblems : problemsDelta,
+             totalCommits: period === 'alltime' ? totalCommits : commitsDelta,
+             currentRating: Math.round(avgRating)
+          },
+          joinedAt: member.joinedAt
         };
       })
     );
