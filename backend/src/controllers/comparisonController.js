@@ -199,19 +199,28 @@ exports.compareWithRoom = async (req, res) => {
 
     // Get all members' stats
     const memberIds = room.members.map(m => m.user);
-    const allMembersData = [];
 
-    for (const memberId of memberIds) {
-      const memberStats = await PlatformStats.find({
-        userId: memberId,
-        fetchStatus: 'success'
-      });
+    // Fetch member stats in a single parallel query
+    const allMemberStats = await PlatformStats.find({
+      userId: { $in: memberIds },
+      fetchStatus: 'success'
+    }).lean();
+
+    const statsByMemberId = {};
+    allMemberStats.forEach(stat => {
+      const uId = stat.userId.toString();
+      if (!statsByMemberId[uId]) statsByMemberId[uId] = [];
+      statsByMemberId[uId].push(stat);
+    });
+
+    const allMembersData = memberIds.map(memberId => {
+      const memberStats = statsByMemberId[memberId.toString()] || [];
       const totals = calculateTotals(memberStats);
-      allMembersData.push({
+      return {
         userId: memberId,
         totals
-      });
-    }
+      };
+    });
 
     // Calculate room averages
     const roomAverages = {
@@ -288,23 +297,29 @@ exports.getTopPerformers = async (req, res) => {
       userIds = allUsers.map(u => u._id);
     }
 
-    // Get stats for all users
-    const topPerformers = [];
+    // Parallel fetch batch queries to prevent N+1 queries
+    const users = await User.find({ _id: { $in: userIds } }).select('-password').lean();
+    const allStats = await PlatformStats.find({
+      userId: { $in: userIds },
+      fetchStatus: 'success'
+    }).lean();
 
-    for (const userId of userIds) {
-      const user = await User.findById(userId).select('-password');
-      if (!user) continue;
-      const stats = await PlatformStats.find({
-        userId,
-        fetchStatus: 'success'
-      });
+    // Organize stats by userId to avoid nested array finding
+    const statsByUserId = {};
+    allStats.forEach(stat => {
+      const uId = stat.userId.toString();
+      if (!statsByUserId[uId]) statsByUserId[uId] = [];
+      statsByUserId[uId].push(stat);
+    });
 
+    const topPerformers = users.map(user => {
+      const stats = statsByUserId[user._id.toString()] || [];
       const totals = calculateTotals(stats);
-
+      
       // Calculate score (problems + commits + rating/10)
       const score = totals.problems + totals.commits + Math.round(totals.rating / 10);
 
-      topPerformers.push({
+      return {
         user: {
           id: user._id,
           username: user.username,
@@ -312,8 +327,8 @@ exports.getTopPerformers = async (req, res) => {
         },
         totals,
         score
-      });
-    }
+      };
+    });
 
     // Sort by score and get top N
     topPerformers.sort((a, b) => b.score - a.score);

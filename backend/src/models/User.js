@@ -194,6 +194,7 @@ userSchema.methods.generateAuthToken = function() {
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ isActive: 1 });
+userSchema.index({ institution: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastActivityAt: -1 });
 userSchema.index({ lastSynced: 1 });
