@@ -83,15 +83,13 @@ const SocietyDetailPage = () => {
   const isAdmin = ADMIN_TABS.includes(society?.userRole);
   const isRoom = society?.type === 'room' || window.location.pathname.includes('/rooms/');
   const baseTabs = TABS.filter(t => {
-    // Hide disabled features based on society settings (ignore for Rooms)
-    if (!isRoom) {
-      if (t.id === 'chat' && society?.settings?.enableChat === false) return false;
-      if (t.id === 'events' && society?.settings?.enableEvents === false) return false;
-      if (t.id === 'leaderboard' && society?.settings?.enableLeaderboard === false) return false;
-    }
+    // Hide disabled features based on settings (applies to both Rooms and Societies)
+    if (t.id === 'chat' && society?.settings?.enableChat === false) return false;
+    if (t.id === 'events' && society?.settings?.enableEvents === false) return false;
+    if (t.id === 'leaderboard' && society?.settings?.enableLeaderboard === false) return false;
 
-    // Rooms specifically show ONLY chat, leaderboard, and members
-    if (isRoom && !['chat', 'leaderboard', 'members'].includes(t.id)) return false;
+    // Rooms specifically never show announcements
+    if (isRoom && t.id === 'announcements') return false;
 
     return true;
   });

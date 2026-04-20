@@ -44,8 +44,6 @@ const societySchema = new mongoose.Schema({
   settings: {
     isPrivate: { type: Boolean, default: false },
     maxMembers: { type: Number, default: 500 },
-    allowMemberInvite: { type: Boolean, default: true },
-    requireApproval: { type: Boolean, default: false },
     enableChat: { type: Boolean, default: true },
     enableEvents: { type: Boolean, default: true },
     enableLeaderboard: { type: Boolean, default: true }

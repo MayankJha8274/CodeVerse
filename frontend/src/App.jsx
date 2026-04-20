@@ -33,15 +33,8 @@ const ContestParticipationPage = lazy(() => import('./pages/ContestParticipation
 const ContestLeaderboardPage = lazy(() => import('./pages/ContestLeaderboardPage'));
 
 // Problem Set Pages (Coming Soon)
-const ComingSoonMod = lazy(() => import('./pages/ComingSoonPage'));
-
-// Wrappers for Coming Soon functions
-const ProblemSetComingSoon = (props) => {
-  return <Suspense fallback={<LoadingSpinner />}><ComingSoonMod.ProblemSetComingSoon {...props} /></Suspense>
-};
-const HostContestComingSoon = (props) => {
-  return <Suspense fallback={<LoadingSpinner />}><ComingSoonMod.HostContestComingSoon {...props} /></Suspense>
-};
+const ProblemSetComingSoon = lazy(() => import('./pages/ComingSoonPage').then(module => ({ default: module.ProblemSetComingSoon })));
+const HostContestComingSoon = lazy(() => import('./pages/ComingSoonPage').then(module => ({ default: module.HostContestComingSoon })));
 
 function App() {
   return (

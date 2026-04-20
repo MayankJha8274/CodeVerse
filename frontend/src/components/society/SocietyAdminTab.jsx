@@ -63,8 +63,6 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
         description: society.description || '',
         isPrivate: society.settings?.isPrivate ?? false,
         maxMembers: society.settings?.maxMembers ?? 500,
-        allowMemberInvite: society.settings?.allowMemberInvite ?? true,
-        requireApproval: society.settings?.requireApproval ?? false,
         enableChat: society.settings?.enableChat ?? true,
         enableEvents: society.settings?.enableEvents ?? true,
         enableLeaderboard: society.settings?.enableLeaderboard ?? true,
@@ -87,8 +85,6 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
         settings: {
           isPrivate: settings.isPrivate,
           maxMembers: settings.maxMembers,
-          allowMemberInvite: settings.allowMemberInvite,
-          requireApproval: settings.requireApproval,
           enableChat: settings.enableChat,
           enableEvents: settings.enableEvents,
           enableLeaderboard: settings.enableLeaderboard,
@@ -573,9 +569,7 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
             <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Permissions & Features</h4>
             <div className="space-y-3">
               {[
-                { key: 'isPrivate', label: 'Private Society', desc: 'Only invited members can join' },
-                { key: 'requireApproval', label: 'Require Approval', desc: 'New join requests need admin approval' },
-                { key: 'allowMemberInvite', label: 'Member Invites', desc: 'Allow members to share invite code' },
+                { key: 'isPrivate', label: 'Private Room/Society', desc: 'Only invited members can join' },
                 { key: 'enableChat', label: 'Enable Chat', desc: 'Turn on/off the chat feature' },
                 { key: 'enableEvents', label: 'Enable Events', desc: 'Turn on/off the events feature' },
                 { key: 'enableLeaderboard', label: 'Enable Leaderboard', desc: 'Turn on/off the leaderboard feature' },
