@@ -151,6 +151,12 @@ const addSyncJob = async (userId, options = {}) => {
   };
 
   try {
+    // SECURITY FALLBACK: If BullMQ's connection is sleeping/failing, throw a force error so direct sync is used.
+    const client = await queue.client;
+    if (client.status !== 'ready') {
+      throw new Error(`Redis client is not ready (status: ${client.status})`);
+    }
+
     const job = await queue.add('sync-user', jobData, jobOptions);
     console.log(`📋 Added sync job: ${job.id} (priority: ${priority})`);
     return job;

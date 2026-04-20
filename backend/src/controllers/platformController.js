@@ -216,7 +216,7 @@ const syncAllPlatforms = async (req, res, next) => {
     }
 
     // If queue is available, use it
-    if (queueAvailable && addSyncJob) {
+    if (false && queueAvailable && addSyncJob) {
       try {
         // Update user status
         await User.findByIdAndUpdate(req.user.id, {
@@ -275,19 +275,26 @@ const syncAllPlatforms = async (req, res, next) => {
         });
       }
       const result = await fetchPlatformData(platform, username);
-      if (result.success) {
-        await PlatformStats.findOneAndUpdate(
-          { userId: user._id, platform },
-          {
-            userId: user._id,
-            platform,
-            stats: result.stats,
-            lastFetched: new Date(),
-            fetchStatus: 'success'
-          },
-          { upsert: true }
-        );
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message || `Failed to sync ${platform}`,
+          error: result.error || 'Platform data fetch failed'
+        });
       }
+      
+      await PlatformStats.findOneAndUpdate(
+        { userId: user._id, platform },
+        {
+          userId: user._id,
+          platform,
+          stats: result.stats,
+          lastFetched: new Date(),
+          fetchStatus: 'success'
+        },
+        { upsert: true }
+      );
+      
       results = [result];
     } else {
       results = await fetchAllPlatformStats(user);
@@ -426,9 +433,44 @@ const getPlatformStats = async (req, res, next) => {
     });
 
     if (!stats) {
-      return res.status(404).json({
-        success: false,
-        message: `No stats found for ${platform}. Try syncing first.`
+      const username = user.platforms?.[platform];
+      if (!username) {
+        return res.status(404).json({
+          success: false,
+          message: `Platform ${platform} is not linked.`
+        });
+      }
+      
+      console.warn(`[getPlatformStats] Stats missing for ${platform}. Triggering inline sync...`);
+      const result = await fetchPlatformData(platform, username);
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.message || `No stats found for ${platform} and inline fetch failed.`
+        });
+      }
+
+      const newStats = await PlatformStats.findOneAndUpdate(
+        { userId: user._id, platform },
+        {
+          userId: user._id,
+          platform,
+          stats: result.stats,
+          lastFetched: new Date(),
+          fetchStatus: 'success'
+        },
+        { upsert: true, new: true }
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          platform: newStats.platform,
+          stats: newStats.stats,
+          lastFetched: newStats.lastFetched,
+          fetchStatus: newStats.fetchStatus,
+          isCached: false
+        }
       });
     }
 
