@@ -79,6 +79,10 @@ const platformStatsSchema = new mongoose.Schema({
 
 // Compound index for faster queries --> Compound index = fast search using multiple fields together
 platformStatsSchema.index({ userId: 1, platform: 1 }, { unique: true });
+platformStatsSchema.index({ "stats.rating": -1 }); // Codeforces, CodeChef ranking
+platformStatsSchema.index({ "stats.totalSolved": -1 }); // LeetCode primary ranking
+platformStatsSchema.index({ "stats.score": -1 }); // HackerRank, GeeksForGeeks ranking
+platformStatsSchema.index({ "stats.totalContributions": -1 }); // GitHub ranking
 platformStatsSchema.index({ lastFetched: 1 });
 
 module.exports = mongoose.model('PlatformStats', platformStatsSchema);

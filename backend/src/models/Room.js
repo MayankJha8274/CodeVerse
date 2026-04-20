@@ -105,4 +105,8 @@ roomSchema.methods.isUserMember = function(userId) {
   return this.members.some(m => getMemberUserId(m) === targetUserId);
 };
 
+// Add indexes for faster lookups
+roomSchema.index({ 'members.user': 1 });
+roomSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Room', roomSchema);

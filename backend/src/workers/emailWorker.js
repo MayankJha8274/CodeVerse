@@ -6,7 +6,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const { Worker } = require('bullmq');
 const mongoose = require('mongoose');
-const { getRedisClient } = require('../config/redisClient');
+const { createWorkerConnection } = require('../config/redis');
 const { sendEmail } = require('../services/emailService');
 
 let worker = null;
@@ -39,7 +39,7 @@ const startEmailWorker = async () => {
     }
   }
 
-  const connection = getRedisClient();
+  const connection = createWorkerConnection();
   if (!connection) {
     console.error('❌ Could not create Redis connection for email worker. Is Redis running?');
     return;

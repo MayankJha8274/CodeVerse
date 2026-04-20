@@ -1,11 +1,12 @@
-const { Queue } = require('bullmq');
-const { getRedisClient } = require('../config/redisClient');
+const { Queue, QueueEvents } = require('bullmq');
+const { getRedisConnection, isRedisAvailable } = require('../config/redis');
 
 let emailQueue = null;
+let queueEvents = null;
 
 const getEmailQueue = () => {
-  if (!emailQueue) {
-    const redisClient = getRedisClient();
+  if (!emailQueue && isRedisAvailable()) {
+    const redisClient = getRedisConnection();
     if (redisClient) {
       emailQueue = new Queue('email-queue', {
         connection: redisClient,
@@ -24,6 +25,17 @@ const getEmailQueue = () => {
             age: 3600 * 24 * 7,
           },
         },
+      });
+
+      // Add QueueEvents listener
+      queueEvents = new QueueEvents('email-queue', { connection: redisClient });
+
+      queueEvents.on('completed', ({ jobId }) => {
+        console.log(`[Email Queue] Job ${jobId} completed successfully`);
+      });
+
+      queueEvents.on('failed', ({ jobId, failedReason }) => {
+        console.error(`[Email Queue] Job ${jobId} failed with reason: ${failedReason}`);
       });
     }
   }

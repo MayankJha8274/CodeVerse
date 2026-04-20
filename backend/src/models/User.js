@@ -191,6 +191,8 @@ userSchema.methods.generateAuthToken = function() {
 };
 
 // Indexes for better query performance
+userSchema.index({ codingScore: -1 }); // Used heavily in getGlobalLeaderboard
+userSchema.index({ contestCount: -1 }); // Secondary leaderboard sort
 userSchema.index({ isActive: 1 });
 userSchema.index({ institution: 1 });
 userSchema.index({ createdAt: -1 });

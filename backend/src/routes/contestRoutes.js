@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { cacheResponse } = require('../middleware/redisCache');
 const {
   getContests,
   refreshContests,
@@ -11,8 +12,8 @@ const {
 const { protect } = require('../middleware/auth');
 
 // Public routes
-router.get('/', getContests);
-router.get('/calendar', getContestsCalendar);
+router.get('/', cacheResponse(300), getContests);
+router.get('/calendar', cacheResponse(300), getContestsCalendar);
 
 // Protected routes
 router.post('/refresh', protect, refreshContests);

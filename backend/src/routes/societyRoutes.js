@@ -72,10 +72,11 @@ router.post('/:societyId/announcements/:announcementId/comment', requireSocietyM
 router.post('/:societyId/announcements/:announcementId/react', requireSocietyMember, requirePermission('react_message'), announcement.reactToAnnouncement);
 
 // ============ LEADERBOARD & GAMIFICATION ============
-router.get('/:societyId/leaderboard', requireSocietyMember, requirePermission('view_leaderboard'), leaderboard.getLeaderboard);
-router.get('/:societyId/leaderboard/history', requireSocietyMember, requirePermission('view_leaderboard'), leaderboard.getLeaderboardHistory);
-router.get('/:societyId/badges', requireSocietyMember, leaderboard.getUserBadges);
-router.get('/:societyId/streak', requireSocietyMember, leaderboard.getUserStreak);
+const { cacheResponse } = require('../middleware/redisCache');
+router.get('/:societyId/leaderboard', requireSocietyMember, requirePermission('view_leaderboard'), cacheResponse(300), leaderboard.getLeaderboard);
+router.get('/:societyId/leaderboard/history', requireSocietyMember, requirePermission('view_leaderboard'), cacheResponse(300), leaderboard.getLeaderboardHistory);
+router.get('/:societyId/badges', requireSocietyMember, cacheResponse(300), leaderboard.getUserBadges);
+router.get('/:societyId/streak', requireSocietyMember, cacheResponse(300), leaderboard.getUserStreak);
 
 // ============ ANALYTICS & ADMIN ============
 router.get('/:societyId/analytics', requireSocietyMember, requirePermission('view_analytics'), analytics.getSocietyAnalytics);
