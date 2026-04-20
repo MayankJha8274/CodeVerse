@@ -439,8 +439,9 @@ const leaveSociety = async (req, res, next) => {
 const getMembers = async (req, res, next) => {
   const TIMEOUT = 4000;
   
+  let timeoutId;
   const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT)
+    timeoutId = setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT)
   );
 
   const mainLogic = async () => {
@@ -505,11 +506,13 @@ const getMembers = async (req, res, next) => {
 
   try {
     const members = await Promise.race([mainLogic(), timeoutPromise]);
+    clearTimeout(timeoutId);
     return res.status(200).json({
       success: true,
       data: members
     });
   } catch (error) {
+    clearTimeout(timeoutId);
     if (error.message === 'TIMEOUT') {
       return res.status(504).json({ success: false, message: '504 Gateway Timeout: Controller (getMembers)' });
     }
@@ -784,11 +787,14 @@ const addMemberManually = async (req, res, next) => {
     // Find user by ID, username or email
     let targetUser;
     if (userId) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, message: 'Invalid user ID' });
+      }
       targetUser = await User.findById(userId);
     } else if (username) {
-      targetUser = await User.findOne({ username: username.toLowerCase() });
+      targetUser = await User.findOne({ username: username.trim().toLowerCase() });
     } else if (email) {
-      targetUser = await User.findOne({ email: email.toLowerCase() });
+      targetUser = await User.findOne({ email: email.trim().toLowerCase() });
     } else {
       return res
         .status(400)
@@ -876,7 +882,7 @@ const searchUsers = async (req, res, next) => {
 
     console.log("Search request:", { societyId, query, limit });
 
-    if (!query || query.trim().length < 2) {
+    if (!query || typeof query !== 'string' || query.trim().length < 2) {
       return res.status(200).json({ success: true, count: 0, data: [] });
     }
 

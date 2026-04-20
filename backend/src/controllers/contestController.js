@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Contest = require('../models/Contest');
 const ContestReminder = require('../models/ContestReminder');
 const User = require('../models/User');
@@ -10,15 +11,19 @@ const { fetchAllContests, getUpcomingContests } = require('../services/contestSe
  */
 const getContests = async (req, res, next) => {
   try {
-    const { platform = 'all', limit = 50 } = req.query;
+    let { platform = 'all', limit = 50 } = req.query;
     
+    // Ensure limit is a reasonable number
+    let parsedLimit = parseInt(limit, 10);
+    parsedLimit = isNaN(parsedLimit) ? 50 : Math.min(Math.max(parsedLimit, 1), 100);
+
     // Try to get from database first
-    let contests = await getUpcomingContests(platform, parseInt(limit));
+    let contests = await getUpcomingContests(platform, parsedLimit);
     
     // If no contests in DB or it's been a while, fetch fresh data
     if (contests.length === 0) {
       await fetchAllContests();
-      contests = await getUpcomingContests(platform, parseInt(limit));
+      contests = await getUpcomingContests(platform, parsedLimit);
     }
 
     res.status(200).json({
@@ -67,6 +72,10 @@ const setReminder = async (req, res, next) => {
   try {
     const { contestId } = req.params;
     const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(contestId)) {
+      return res.status(400).json({ success: false, message: 'Invalid contest ID format' });
+    }
 
     // Get contest details
     const contest = await Contest.findById(contestId);
@@ -161,6 +170,10 @@ const removeReminder = async (req, res, next) => {
     const { contestId } = req.params;
     const userId = req.user.id;
 
+    if (!mongoose.Types.ObjectId.isValid(contestId)) {
+      return res.status(400).json({ success: false, message: 'Invalid contest ID format' });
+    }
+
     const reminder = await ContestReminder.findOneAndDelete({
       userId,
       contestId
@@ -215,8 +228,15 @@ const getUserReminders = async (req, res, next) => {
 const getContestsCalendar = async (req, res, next) => {
   try {
     const { month, year } = req.query;
-    const targetMonth = month !== undefined ? parseInt(month) : new Date().getMonth();
-    const targetYear = parseInt(year) || new Date().getFullYear();
+    let targetMonth = month !== undefined ? parseInt(month, 10) : new Date().getMonth();
+    let targetYear = parseInt(year, 10) || new Date().getFullYear();
+
+    if (isNaN(targetMonth) || targetMonth < 0 || targetMonth > 11) {
+      targetMonth = new Date().getMonth();
+    }
+    if (isNaN(targetYear) || targetYear < 2000 || targetYear > 3000) {
+      targetYear = new Date().getFullYear();
+    }
 
     // Get first and last day of month
     const startDate = new Date(targetYear, targetMonth, 1);

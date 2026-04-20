@@ -13,7 +13,8 @@ const createRoom = async (req, res, next) => {
     const userId = req.user.id;
 
     // Validation
-    if (!name) {
+    const trimmedName = name ? name.trim() : '';
+    if (!trimmedName || trimmedName.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Room name is required'
@@ -22,7 +23,7 @@ const createRoom = async (req, res, next) => {
 
     // Create room with owner as first member
     const room = await Room.create({
-      name,
+      name: trimmedName,
       description: description || '',
       owner: userId,
       members: [{
@@ -82,6 +83,10 @@ const getRoomById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid room ID' });
+    }
 
     const room = await Room.findById(id)
       .populate('owner', 'username email fullName avatar')
@@ -204,14 +209,14 @@ const joinRoom = async (req, res, next) => {
     const { inviteCode } = req.body;
     const userId = req.user.id;
 
-    if (!inviteCode) {
+    if (!inviteCode || typeof inviteCode !== 'string' || !inviteCode.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Invite code is required'
+        message: 'Valid invite code is required'
       });
     }
 
-    const room = await Room.findOne({ inviteCode: inviteCode.toUpperCase(), isActive: true });
+    const room = await Room.findOne({ inviteCode: inviteCode.trim().toUpperCase() });
 
     if (!room) {
       return res.status(404).json({
@@ -419,6 +424,7 @@ const getRoomLeaderboard = async (req, res, next) => {
     const baselineRecords = isAllTime ? [] : await DailyProgress.aggregate([
       { $match: { userId: { $in: [...memberIds.map(id => new mongoose.Types.ObjectId(id.toString())), ...memberIds.map(id => id.toString())] }, date: { $lt: startDate } } },
       { $sort: { date: -1 } },
+      { $limit: 1000 },
       { $group: { _id: "$userId", doc: { $first: "$$ROOT" } } }
     ]);
     
@@ -460,7 +466,8 @@ const getRoomLeaderboard = async (req, res, next) => {
 
     const leaderboardData = await Promise.all(
       memberIds.map(async (memberId) => {
-        const uidStr = memberId.toString();
+        try {
+          const uidStr = memberId.toString();
 
         // Get platform stats from map
         const platformStats = platformStatsMap[uidStr] || [];
@@ -537,21 +544,26 @@ const getRoomLeaderboard = async (req, res, next) => {
           },
           joinedAt: member.joinedAt
         };
+        } catch (mapError) {
+          console.error(`Leaderboard map error for member ${memberId}:`, mapError.message);
+          return null;
+        }
       })
     );
 
     // Sort by score
-    leaderboardData.sort((a, b) => b.score - a.score);
+    const validLeaderboardData = leaderboardData.filter(d => d !== null);
+    validLeaderboardData.sort((a, b) => b.score - a.score);
 
     // Add rank
-    leaderboardData.forEach((member, index) => {
+    validLeaderboardData.forEach((member, index) => {
       member.rank = index + 1;
     });
 
     res.status(200).json({
       success: true,
       period,
-      data: leaderboardData
+      data: validLeaderboardData
     });
   } catch (error) {
     next(error);
