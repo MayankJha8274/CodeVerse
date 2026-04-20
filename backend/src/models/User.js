@@ -191,8 +191,6 @@ userSchema.methods.generateAuthToken = function() {
 };
 
 // Indexes for better query performance
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ isActive: 1 });
 userSchema.index({ institution: 1 });
 userSchema.index({ createdAt: -1 });

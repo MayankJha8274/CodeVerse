@@ -124,6 +124,11 @@ exports.getCombinedDashboardData = async (req, res) => {
   try {
     const userId = req.query.userId || req.user.id;
 
+    // Validate userId
+    if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+    }
+
     // Execute all queries in parallel
     const [user, platformStats, recentProgress, todayProgress] = await Promise.all([
       User.findById(userId).select('-password'),
@@ -203,8 +208,9 @@ exports.getCombinedDashboardData = async (req, res) => {
     // Topic analysis - aggregate from cached topics
     const topicMap = {};
     platformStats.forEach(ps => {
-      if (ps.stats.topics && Array.isArray(ps.stats.topics)) {
-        ps.stats.topics.forEach(topic => {
+      const topics = ps.stats?.topics;
+      if (topics && Array.isArray(topics)) {
+        topics.forEach(topic => {
           const name = topic.name;
           if (!topicMap[name]) {
             topicMap[name] = { total: 0, platforms: {} };
@@ -227,8 +233,9 @@ exports.getCombinedDashboardData = async (req, res) => {
     // Badges - collect from cached badges
     const allBadges = [];
     platformStats.forEach(ps => {
-      if (ps.stats.badges && Array.isArray(ps.stats.badges)) {
-        ps.stats.badges.forEach(badge => {
+      const badges = ps.stats?.badges;
+      if (badges && Array.isArray(badges)) {
+        badges.forEach(badge => {
           allBadges.push({
             platform: ps.platform,
             name: badge.name,
@@ -240,7 +247,12 @@ exports.getCombinedDashboardData = async (req, res) => {
     });
 
     // Achievements - calculate from platform stats
-    const achievements = calculateAchievements(platformStats);
+    let achievements = [];
+    try {
+      achievements = calculateAchievements(platformStats) || [];
+    } catch (e) {
+      console.warn('Calculating achievements failed:', e.message);
+    }
 
     // Rating history for charts
     const ratingHistory = recentProgress

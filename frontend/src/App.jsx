@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import PrivateRoute from './components/PrivateRoute';
 import LoadingSpinner from './components/LoadingSpinner';
+import ErrorBoundary from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -38,6 +39,7 @@ const HostContestComingSoon = lazy(() => import('./pages/ComingSoonPage').then(m
 
 function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <SocketProvider>
       <Router>
@@ -101,6 +103,7 @@ function App() {
       </Router>
       </SocketProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

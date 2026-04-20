@@ -5,7 +5,7 @@ const User = require('../models/User');
 // @access  Public
 const register = async (req, res, next) => {
   try {
-    const { username, email, password, fullName } = req.body;
+    const { username, email, password, fullName } = req.body || {};
 
     // Validation
     if (!username || !email || !password || !fullName) {
@@ -61,7 +61,7 @@ const register = async (req, res, next) => {
 // @access  Public
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
     // Validation
     if (!email || !password) {
@@ -121,6 +121,9 @@ const login = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).populate('rooms', 'name description');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     res.status(200).json({
       success: true,
@@ -138,7 +141,7 @@ const getMe = async (req, res, next) => {
 // @access  Private
 const updateProfile = async (req, res, next) => {
   try {
-    const { fullName, bio, avatar, platforms } = req.body;
+    const { fullName, bio, avatar, platforms } = req.body || {};
 
     const updateData = {};
     if (fullName) updateData.fullName = fullName;
@@ -146,7 +149,13 @@ const updateProfile = async (req, res, next) => {
     if (avatar !== undefined) updateData.avatar = avatar;
     if (platforms) {
       const currentUser = await User.findById(req.user.id);
-      updateData.platforms = { ...(currentUser.platforms?.toObject ? currentUser.platforms.toObject() : currentUser.platforms), ...platforms };
+      if (!currentUser) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      const existingPlatforms = currentUser.platforms && typeof currentUser.platforms.toObject === 'function' 
+        ? currentUser.platforms.toObject() 
+        : (currentUser.platforms || {});
+      updateData.platforms = { ...existingPlatforms, ...platforms };
     }
 
     const user = await User.findByIdAndUpdate(
@@ -170,7 +179,7 @@ const updateProfile = async (req, res, next) => {
 // @access  Private
 const updatePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body || {};
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
@@ -180,6 +189,13 @@ const updatePassword = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ success: false, message: 'New password cannot be the same as the current password' });
+    }
 
     // Verify current password
     const isPasswordValid = await user.comparePassword(currentPassword);
@@ -242,14 +258,22 @@ const uploadAvatar = async (req, res, next) => {
 // @access  Private
 const updateSettings = async (req, res, next) => {
   try {
-    const { name, username, email, bio, location, country, institution, degree, branch, graduationYear, platforms, settings } = req.body;
+    const { name, username, email, bio, location, country, institution, degree, branch, graduationYear, platforms, settings } = req.body || {};
 
     const updateData = {};
     
     // Basic info
     if (name) updateData.fullName = name;
-    if (username) updateData.username = username;
-    if (email) updateData.email = email;
+    if (username) {
+      const existingUser = await User.findOne({ username, _id: { $ne: req.user.id } });
+      if (existingUser) return res.status(400).json({ success: false, message: 'Username is already taken' });
+      updateData.username = username;
+    }
+    if (email) {
+      const existingEmail = await User.findOne({ email, _id: { $ne: req.user.id } });
+      if (existingEmail) return res.status(400).json({ success: false, message: 'Email is already taken' });
+      updateData.email = email;
+    }
     if (bio !== undefined) updateData.bio = bio;
     if (location !== undefined) updateData.location = location;
     if (country !== undefined) updateData.country = country;
@@ -266,10 +290,15 @@ const updateSettings = async (req, res, next) => {
     // Handle platforms - merge with existing
     if (platforms) {
       const user = await User.findById(req.user.id);
-      const updatedPlatforms = { ...user.platforms };
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      const updatedPlatforms = { ...(user.platforms && typeof user.platforms.toObject === 'function' ? user.platforms.toObject() : (user.platforms || {})) };
       
       for (const [platform, platformUsername] of Object.entries(platforms)) {
-        if (platformUsername) {
+        if (platformUsername === '') {
+          delete updatedPlatforms[platform]; // clear if empty string provided
+        } else if (platformUsername) {
           updatedPlatforms[platform] = platformUsername;
         }
       }

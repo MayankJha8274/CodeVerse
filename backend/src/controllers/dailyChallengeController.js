@@ -130,10 +130,14 @@ const wasChallengeSolvedToday = (challenge, todayProblems) => {
 // Select a personalized problem that the user hasn't solved
 // Now smarter - prioritizes topics user has been practicing
 const selectDailyProblem = async (userId, solvedProblems, userTopics = []) => {
-  // Get previously assigned challenges to avoid repetition
+  // Get recently assigned challenges to avoid repetition
   const previousChallenges = await DailyChallenge.find({ 
     user: userId 
-  }).select('problemName topic').lean();
+  })
+  .select('problemName topic')
+  .sort({ date: -1 })
+  .limit(100) // limit to recent 100 to avoid full table scan
+  .lean();
   
   const previousNames = new Set(previousChallenges.map(c => c.problemName.toLowerCase()));
   
@@ -248,6 +252,8 @@ const updateStreak = async (userId, challenge) => {
 exports.getTodayChallenge = async (req, res) => {
   try {
     const userId = req.user._id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    
     const today = getTodayDate();
     
     // Check if challenge already exists for today
@@ -334,6 +340,8 @@ exports.getTodayChallenge = async (req, res) => {
 exports.verifyAndComplete = async (req, res) => {
   try {
     const userId = req.user._id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    
     const today = getTodayDate();
     
     const user = await User.findById(userId);
@@ -394,6 +402,8 @@ exports.verifyAndComplete = async (req, res) => {
 exports.completeChallenge = async (req, res) => {
   try {
     const userId = req.user._id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    
     const today = getTodayDate();
     
     const user = await User.findById(userId);
@@ -450,6 +460,8 @@ exports.completeChallenge = async (req, res) => {
 exports.skipChallenge = async (req, res) => {
   try {
     const userId = req.user._id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    
     const today = getTodayDate();
     
     const user = await User.findById(userId);
@@ -540,11 +552,16 @@ exports.getStreakHistory = async (req, res) => {
 exports.getChallengeHistory = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { limit = 30 } = req.query;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    
+    let { limit = 30 } = req.query;
+    
+    let parsedLimit = parseInt(limit, 10);
+    parsedLimit = isNaN(parsedLimit) ? 30 : Math.min(Math.max(parsedLimit, 1), 365);
     
     const challenges = await DailyChallenge.find({ user: userId })
       .sort({ date: -1 })
-      .limit(parseInt(limit));
+      .limit(parsedLimit);
     
     res.json({
       success: true,
@@ -578,7 +595,7 @@ exports.getTopicStats = async (req, res) => {
     const topicStats = {};
     Object.keys(dsaProblems).forEach(topic => {
       topicStats[topic] = {
-        total: dsaProblems[topic].length,
+        total: dsaProblems[topic] ? dsaProblems[topic].length : 0,
         completed: 0
       };
     });
