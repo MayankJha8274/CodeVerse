@@ -79,7 +79,7 @@ const societyMemberSchema = new mongoose.Schema({
 // Compound indexes
 societyMemberSchema.index({ society: 1, user: 1 }, { unique: true });
 societyMemberSchema.index({ society: 1, role: 1 });
-societyMemberSchema.index({ society: 1, isActive: 1 });
+societyMemberSchema.index({ society: 1, isBanned: 1, isActive: 1 });
 societyMemberSchema.index({ user: 1, isActive: 1 });
 societyMemberSchema.index({ society: 1, contributionScore: -1 });
 societyMemberSchema.index({ society: 1, lastActiveAt: -1 });

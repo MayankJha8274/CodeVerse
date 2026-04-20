@@ -53,6 +53,7 @@ const dailyChallengeSchema = new mongoose.Schema({
 
 // Compound index for efficient queries
 dailyChallengeSchema.index({ user: 1, date: 1 }, { unique: true });
+dailyChallengeSchema.index({ user: 1 });
 
 const streakSchema = new mongoose.Schema({
   user: {

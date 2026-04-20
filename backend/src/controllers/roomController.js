@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Room = require('../models/Room');
 const User = require('../models/User');
 const PlatformStats = require('../models/PlatformStats');
@@ -387,6 +388,8 @@ const getRoomLeaderboard = async (req, res, next) => {
 
     // Calculate date range based on period
     let startDate = new Date();
+    startDate.setHours(0, 0, 0, 0); // Normalize to local midnight to match DailyProgress timestamps
+
     switch (period) {
       case 'daily':
         startDate.setDate(startDate.getDate() - 1);
@@ -395,10 +398,10 @@ const getRoomLeaderboard = async (req, res, next) => {
         startDate.setDate(startDate.getDate() - 7);
         break;
       case 'monthly':
-        startDate.setMonth(startDate.getMonth() - 1);
+        startDate.setDate(startDate.getDate() - 30); // Precise 30-day offset
         break;
       case 'yearly':
-        startDate.setFullYear(startDate.getFullYear() - 1);
+        startDate.setDate(startDate.getDate() - 365); // Precise 365-day offset
         break;
       case 'alltime':
         startDate = new Date(0); // Beginning of time
@@ -410,19 +413,60 @@ const getRoomLeaderboard = async (req, res, next) => {
     // Get stats for all members
     const validMembers = room.members.filter(m => m.user != null);
     const memberIds = validMembers.map(m => m.user._id);
+
+    // Pre-fetch baseline records to avoid N+1 queries
+    const isAllTime = period === 'alltime' || !period;
+    const baselineRecords = isAllTime ? [] : await DailyProgress.aggregate([
+      { $match: { userId: { $in: [...memberIds.map(id => new mongoose.Types.ObjectId(id.toString())), ...memberIds.map(id => id.toString())] }, date: { $lt: startDate } } },
+      { $sort: { date: -1 } },
+      { $group: { _id: "$userId", doc: { $first: "$$ROOT" } } }
+    ]);
     
+    const baselineMap = {};
+    baselineRecords.forEach(b => {
+      baselineMap[b._id.toString()] = b.doc;
+    });
+    
+    // Batch fetch all platform stats for all members
+    const allPlatformStats = await PlatformStats.find({
+      userId: { $in: memberIds }
+    });
+
+    // Batch fetch all daily progress for all members in date range
+    const allDailyProgress = isAllTime ? [] : await DailyProgress.find({
+      userId: { $in: memberIds },
+      date: { $gte: startDate }
+    });
+
+    // Create maps for O(1) lookups
+    const platformStatsMap = {};
+    const dailyProgressMap = {};
+
+    allPlatformStats.forEach(stat => {
+      const key = stat.userId.toString();
+      if (!platformStatsMap[key]) {
+        platformStatsMap[key] = [];
+      }
+      platformStatsMap[key].push(stat);
+    });
+
+    allDailyProgress.forEach(progress => {
+      const key = progress.userId.toString();
+      if (!dailyProgressMap[key]) {
+        dailyProgressMap[key] = [];
+      }
+      dailyProgressMap[key].push(progress);
+    });
+
     const leaderboardData = await Promise.all(
       memberIds.map(async (memberId) => {
-        // Get platform stats
-        const platformStats = await PlatformStats.find({
-          userId: memberId
-        });
+        const uidStr = memberId.toString();
 
-        // Get daily progress in date range
-        const dailyProgress = await DailyProgress.find({
-          userId: memberId,
-          date: { $gte: startDate }
-        });
+        // Get platform stats from map
+        const platformStats = platformStatsMap[uidStr] || [];
+
+        // Get daily progress from map
+        const dailyProgress = dailyProgressMap[uidStr] || [];
 
         // Calculate total problems solved
         const totalProblems = platformStats.reduce((sum, stat) => {
@@ -445,16 +489,22 @@ const getRoomLeaderboard = async (req, res, next) => {
         let problemsDelta = 0;
         let commitsDelta = 0;
 
-        if (period === 'alltime') {
+        if (isAllTime) {
           problemsDelta = totalProblems;
           commitsDelta = totalCommits;
         } else {
-          problemsDelta = dailyProgress.reduce((sum, day) => {
-            return sum + (day.changes?.problemsDelta || 0);
-          }, 0);
-          commitsDelta = dailyProgress.reduce((sum, day) => {
-            return sum + (day.changes?.commitsDelta || 0);
-          }, 0);
+          // Sort daily progress by date ascending to find the oldest record in the period
+          const sortedProgress = dailyProgress.sort((a, b) => new Date(a.date) - new Date(b.date));
+          const firstDpInPeriod = sortedProgress.length > 0 ? sortedProgress[0] : null;
+
+          const startingDp = baselineMap[uidStr] || firstDpInPeriod;
+
+          problemsDelta = startingDp?.aggregatedStats
+            ? Math.max(0, totalProblems - (startingDp.aggregatedStats.totalProblemsSolved || 0))
+            : 0; // if NO baseline exists anywhere, they achieved 0 points
+          commitsDelta = startingDp?.aggregatedStats
+            ? Math.max(0, totalCommits - (startingDp.aggregatedStats.totalCommits || 0))
+            : 0;
         }
 
         const member = validMembers.find(m => m.user._id.toString() === memberId.toString());
@@ -481,8 +531,8 @@ const getRoomLeaderboard = async (req, res, next) => {
           codingScore: baseScore,
           score: baseScore, // Frontend expects codingScore or score
           codingProfile: {
-             totalSolved: period === 'alltime' ? totalProblems : problemsDelta,
-             totalCommits: period === 'alltime' ? totalCommits : commitsDelta,
+             totalSolved: isAllTime ? totalProblems : problemsDelta,
+             totalCommits: isAllTime ? totalCommits : commitsDelta,
              currentRating: Math.round(avgRating)
           },
           joinedAt: member.joinedAt

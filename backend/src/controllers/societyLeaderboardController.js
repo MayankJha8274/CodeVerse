@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const SocietyMember = require('../models/SocietyMember');
 const LeaderboardSnapshot = require('../models/LeaderboardSnapshot');
 const PlatformStats = require('../models/PlatformStats');
@@ -39,6 +40,8 @@ const getLeaderboard = async (req, res, next) => {
 
     // Calculate date range based on period
     let startDate = new Date();
+    startDate.setHours(0, 0, 0, 0); // Normalize to local midnight to match DailyProgress timestamps
+
     switch (period) {
       case 'daily':
         startDate.setDate(startDate.getDate() - 1);
@@ -47,10 +50,10 @@ const getLeaderboard = async (req, res, next) => {
         startDate.setDate(startDate.getDate() - 7);
         break;
       case 'monthly':
-        startDate.setMonth(startDate.getMonth() - 1);
+        startDate.setDate(startDate.getDate() - 30); // Precise 30-day offset
         break;
       case 'yearly':
-        startDate.setFullYear(startDate.getFullYear() - 1);
+        startDate.setDate(startDate.getDate() - 365); // Precise 365-day offset
         break;
       case 'alltime':
       default:
@@ -66,14 +69,24 @@ const getLeaderboard = async (req, res, next) => {
       date: { $gte: startDate }
     }).lean();
 
-    const progressMap = {};
+    // Find the baseline record strictly BEFORE the start date for each user
+    const baselineRecords = isAllTime ? [] : await DailyProgress.aggregate([
+      { $match: { userId: { $in: [...userIds.map(id => new mongoose.Types.ObjectId(id.toString())), ...userIds.map(id => id.toString())] }, date: { $lt: startDate } } },
+      { $sort: { date: -1 } },
+      { $group: { _id: "$userId", doc: { $first: "$$ROOT" } } }
+    ]);
+
+    const firstRecordsMap = {};
     dailyProgress.forEach(dp => {
       const uid = dp.userId.toString();
-      if (!progressMap[uid]) {
-        progressMap[uid] = { problemsDelta: 0, commitsDelta: 0 };
+      if (!firstRecordsMap[uid] || new Date(dp.date) < new Date(firstRecordsMap[uid].date)) {
+        firstRecordsMap[uid] = dp;
       }
-      progressMap[uid].problemsDelta += (dp.changes?.problemsDelta || 0);
-      progressMap[uid].commitsDelta += (dp.changes?.commitsDelta || 0);
+    });
+
+    const baselineMap = {};
+    baselineRecords.forEach(b => {
+      baselineMap[b._id.toString()] = b.doc;
     });
 
     const statsMap = {};
@@ -127,10 +140,16 @@ const getLeaderboard = async (req, res, next) => {
       const codeforces = platformStats.find(s => s.userId.toString() === uid && s.platform === 'codeforces') || { stats: {} };
       const codechef = platformStats.find(s => s.userId.toString() === uid && s.platform === 'codechef') || { stats: {} };
 
-      const prog = progressMap[uid] || { problemsDelta: 0, commitsDelta: 0 };
+      const startingDp = baselineMap[uid] || firstRecordsMap[uid];
+      const problemsDelta = startingDp?.aggregatedStats 
+        ? Math.max(0, ps.totalSolved - (startingDp.aggregatedStats.totalProblemsSolved || 0)) 
+        : (isAllTime ? ps.totalSolved : 0); // fallback to 0 if NO history exists
+      const commitsDelta = startingDp?.aggregatedStats 
+        ? Math.max(0, ps.totalCommits - (startingDp.aggregatedStats.totalCommits || 0)) 
+        : (isAllTime ? ps.totalCommits : 0);
       
       const statsForCodingScore = {
-        totalProblems: isAllTime ? ps.totalSolved : prog.problemsDelta,
+        totalProblems: isAllTime ? ps.totalSolved : problemsDelta,
         leetcode,
         codeforces,
         codechef,
@@ -138,10 +157,19 @@ const getLeaderboard = async (req, res, next) => {
           ...github,
           stats: {
              ...github.stats,
-             totalContributions: isAllTime ? (github.stats?.totalContributions || 0) : prog.commitsDelta
+             totalContributions: isAllTime ? (github.stats?.totalContributions || 0) : 
+                (commitsDelta + (github.stats?.totalContributions || 0) - (github.stats?.totalCommits || 0)) 
+                // We map commitsDelta correctly. To keep it simple: just pass commitsDelta
+                // Github scoring relies on totalContributions, so let's pass our commitsDelta 
+                // since they were previously passing commitsDelta directly into totalContributions
           }
         }
       };
+      
+      // Override totalContributions with commitsDelta for legacy compat with codingScore
+      if (!isAllTime && statsForCodingScore.github.stats) {
+          statsForCodingScore.github.stats.totalContributions = commitsDelta;
+      }
 
       const codingScore = calculateCodingScore(m.user, statsForCodingScore);
 
@@ -149,7 +177,7 @@ const getLeaderboard = async (req, res, next) => {
       const currentRating = ps.contestRating || 0;
 
       const breakdown = {
-        problemsSolved: isAllTime ? ps.totalSolved : prog.problemsDelta,
+        problemsSolved: isAllTime ? ps.totalSolved : problemsDelta,
         contestScore: Math.floor(ps.contestRating / 10),
         chatContribution: m.messagesCount || 0,
         eventParticipation: m.eventsAttended || 0,
@@ -166,15 +194,15 @@ const getLeaderboard = async (req, res, next) => {
         codingScore,
         breakdown,
         codingProfile: {
-          totalSolved: isAllTime ? ps.totalSolved : prog.problemsDelta,
+          totalSolved: isAllTime ? ps.totalSolved : problemsDelta,
           easySolved: ps.easySolved,
           mediumSolved: ps.mediumSolved,
           hardSolved: ps.hardSolved,
           contestRating: ps.contestRating,
           currentRating,
           maxRating: ps.maxRating,
-          totalCommits: isAllTime ? ps.totalCommits : prog.commitsDelta,
-          totalContributions: isAllTime ? ps.totalContributions : prog.commitsDelta,
+          totalCommits: isAllTime ? ps.totalCommits : commitsDelta,
+          totalContributions: isAllTime ? ps.totalContributions : commitsDelta,
           totalSubmissions: ps.totalSubmissions,
           contestsParticipated: ps.contestsParticipated,
           platforms: ps.platforms
@@ -212,6 +240,9 @@ const getLeaderboard = async (req, res, next) => {
         currentUser: currentUserRank ? {
           rank: currentUserRank.rank,
           score: currentUserRank.score,
+          codingScore: currentUserRank.codingScore,
+          codingProfile: currentUserRank.codingProfile,
+          totalProblems: currentUserRank.codingProfile?.totalSolved || 0,
           percentile: total > 1 ? Math.round(((total - currentUserRank.rank) / (total - 1)) * 100) : 100
         } : null,
         totalParticipants: total,
