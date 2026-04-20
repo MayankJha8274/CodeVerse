@@ -122,19 +122,33 @@ exports.getPublicProblems = async (req, res) => {
 exports.getMyProblems = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { page = 1, limit = 50 } = req.query;
     
-    const problems = await ProblemSet.find({
+    const query = {
       $or: [
         { owner: userId },
         { 'moderators.user': userId }
       ]
-    })
+    };
+
+    const problems = await ProblemSet.find(query)
       .select('title slug problemCode difficulty visibility tags stats maxScore createdAt updatedAt')
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 })
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await ProblemSet.countDocuments(query);
     
     res.json({
       success: true,
-      data: problems
+      data: problems,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     console.error('Get my problems error:', error);

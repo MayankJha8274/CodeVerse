@@ -41,7 +41,8 @@ const dailyProgressSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index for unique daily records per user
+// Indexes for query performance
 dailyProgressSchema.index({ userId: 1, date: 1 }, { unique: true });
+dailyProgressSchema.index({ userId: 1, date: -1 });
 
 module.exports = mongoose.model('DailyProgress', dailyProgressSchema);
