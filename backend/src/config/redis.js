@@ -20,19 +20,20 @@ const REDIS_ENABLED = process.env.REDIS_ENABLED === 'true';
 // Base options required by BullMQ
 const baseOptions = {
   maxRetriesPerRequest: null,
-  enableReadyCheck: false,
+  enableReadyCheck: true,
   retryStrategy: (times) => {
-    if (times > 2) return null;
-    return Math.min(times * 500, 2000);
+    if (times > 3) return null; // Fail fast after 3 retries
+    return Math.min(times * 50, 1000);
   }
 };
 
 // Create a connection instance securely 
 const createRedisInstance = () => {
   if (process.env.REDIS_URL) {
+    const isTls = process.env.REDIS_URL.startsWith('rediss://');
     return new Redis(process.env.REDIS_URL, {
       ...baseOptions,
-      tls: { rejectUnauthorized: false }
+      ...(isTls ? { tls: { rejectUnauthorized: false } } : {})
     });
   } else {
     return new Redis({

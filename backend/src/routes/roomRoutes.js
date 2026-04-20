@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const { cacheResponse } = require('../middleware/redisCache');
 const {
   createRoom,
   getUserRooms,
@@ -26,7 +27,7 @@ router.post('/', createRoom);
 // @route   GET /api/rooms
 // @desc    Get all rooms for current user
 // @access  Private
-router.get('/', getUserRooms);
+router.get('/', cacheResponse(60), getUserRooms);
 
 // @route   POST /api/rooms/join
 // @desc    Join room with invite code
@@ -66,11 +67,11 @@ router.patch('/:id/members/:userId/promote', promoteMember);
 // @route   GET /api/rooms/:id/leaderboard
 // @desc    Get room leaderboard
 // @access  Private (member only)
-router.get('/:id/leaderboard', getRoomLeaderboard);
+router.get('/:id/leaderboard', cacheResponse(60), getRoomLeaderboard);
 
 // @route   GET /api/rooms/:id/analytics
 // @desc    Get room analytics
 // @access  Private (owner/admin only)
-router.get('/:id/analytics', getRoomAnalytics);
+router.get('/:id/analytics', cacheResponse(60), getRoomAnalytics);
 
 module.exports = router;

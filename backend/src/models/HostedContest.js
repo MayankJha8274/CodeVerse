@@ -277,6 +277,7 @@ hostedContestSchema.methods.canEdit = function(userId) {
 
 // Indexes (slug already indexed via unique:true)
 hostedContestSchema.index({ owner: 1 });
+hostedContestSchema.index({ startTime: 1 });
 hostedContestSchema.index({ status: 1, startTime: 1 });
 hostedContestSchema.index({ 'signups.user': 1 });
 

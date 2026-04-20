@@ -35,6 +35,7 @@ const contestSchema = new mongoose.Schema({
 
 // Index for efficient querying
 contestSchema.index({ platform: 1, startTime: 1 });
+contestSchema.index({ startTime: 1 });
 contestSchema.index({ contestId: 1, platform: 1 }, { unique: true });
 
 module.exports = mongoose.model('Contest', contestSchema);
