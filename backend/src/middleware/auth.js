@@ -14,8 +14,13 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Get user from token (exclude password)
-      req.user = await User.findById(decoded.id).select('-password');
+      // Get user from token (exclude password) with a 3-second explicit timeout
+      const userPromise = User.findById(decoded.id).select('-password');
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('AUTH_TIMEOUT')), 3000)
+      );
+
+      req.user = await Promise.race([userPromise, timeoutPromise]);
 
       if (!req.user) {
         return res.status(401).json({
@@ -31,8 +36,15 @@ const protect = async (req, res, next) => {
         });
       }
 
-      next();
+      return next();
     } catch (error) {
+      if (error && error.message === 'AUTH_TIMEOUT') {
+        return res.status(504).json({
+          success: false,
+          message: '504 Gateway Timeout: Auth protect (User lookup stalled)'
+        });
+      }
+
       // Log non-expiration errors; expired tokens are expected and handled below
       if (!(error && error.name === 'TokenExpiredError')) {
         console.error('Auth middleware error:', error);

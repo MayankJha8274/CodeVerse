@@ -159,8 +159,8 @@ const SocietyLeaderboardTab = ({ societyId }) => {
   // Calculate current user's rank specifically from the newly sorted array
   const meRanking = sortedRankings.find(r => (r.user?._id || r.user)?.toString() === authUser?.id);
   const myRank = meRanking?.displayRank || data?.currentUser?.rank;
-  const myScore = meRanking ? getRankingValue(meRanking) : (data?.currentUser?.score || 0);
-  const myTotal = meRanking?.codingProfile?.totalSolved || meRanking?.totalProblems || data?.currentUser?.totalProblems || 0;
+  const myScore = meRanking ? getRankingValue(meRanking) : (data?.currentUser?.codingScore ?? data?.currentUser?.score ?? 0);
+  const myTotal = meRanking?.codingProfile?.totalSolved ?? data?.currentUser?.totalProblems ?? meRanking?.totalProblems ?? 0;
   const percentile = Math.round(((sortedRankings.length - (myRank || sortedRankings.length)) / (sortedRankings.length || 1)) * 100);
 
   const topThree = sortedRankings.slice(0, 3);
@@ -239,7 +239,7 @@ const SocietyLeaderboardTab = ({ societyId }) => {
             </div>
             <div className="flex flex-wrap items-center bg-white dark:bg-[#1a1a2e] p-1 rounded-lg border border-gray-200 dark:border-gray-700">
               {TIME_FILTERS.map(tf => (
-                <button key={tf.key} onClick={() => setTimeFilter(tf.key)}
+                <button key={tf.key} onClick={() => { setTimeFilter(tf.key); setCurrentPage(1); }}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                     timeFilter === tf.key
                       ? 'bg-amber-500/20 text-amber-600 dark:text-amber-500'

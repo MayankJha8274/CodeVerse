@@ -51,15 +51,21 @@ const PERMISSIONS = {
  * Expects :societyId in req.params or req.body.societyId.
  */
 const requireSocietyMember = async (req, res, next) => {
-  try {
+  const TIMEOUT = 4000;
+  
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT)
+  );
+
+  const mainLogic = async () => {
     const societyId = req.params.societyId || req.body.societyId;
     if (!societyId) {
-      return res.status(400).json({ success: false, message: 'Society ID is required' });
+      throw new Error('NO_SOCIETY_ID');
     }
 
     const society = await Society.findById(societyId);
     if (!society || !society.isActive) {
-      return res.status(404).json({ success: false, message: 'Society not found' });
+      throw new Error('SOCIETY_NOT_FOUND');
     }
 
     const membership = await SocietyMember.findOne({
@@ -70,12 +76,12 @@ const requireSocietyMember = async (req, res, next) => {
 
     if (!membership) {
       // Check if society is public - allow visitor access
-      if (!society.settings.isPrivate) {
+      if (!society.settings?.isPrivate) {
         req.society = society;
         req.membership = { role: 'visitor', isMuted: false };
-        return next();
+        return;
       }
-      return res.status(403).json({ success: false, message: 'You are not a member of this society' });
+      throw new Error('NOT_MEMBER');
     }
 
     if (membership.isMuted && membership.mutedUntil && membership.mutedUntil > new Date()) {
@@ -90,9 +96,25 @@ const requireSocietyMember = async (req, res, next) => {
 
     req.society = society;
     req.membership = membership;
-    next();
+  };
+
+  try {
+    await Promise.race([mainLogic(), timeoutPromise]);
+    return next();
   } catch (error) {
-    next(error);
+    if (error.message === 'TIMEOUT') {
+      return res.status(504).json({ success: false, message: '504 Gateway Timeout: Middleware (requireSocietyMember)' });
+    }
+    if (error.message === 'NO_SOCIETY_ID') {
+      return res.status(400).json({ success: false, message: 'Society ID is required' });
+    }
+    if (error.message === 'SOCIETY_NOT_FOUND') {
+      return res.status(404).json({ success: false, message: 'Society not found' });
+    }
+    if (error.message === 'NOT_MEMBER') {
+      return res.status(403).json({ success: false, message: 'You are not a member of this society' });
+    }
+    return next(error);
   }
 };
 

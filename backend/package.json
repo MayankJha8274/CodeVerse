@@ -27,6 +27,7 @@
     "bcrypt": "^6.0.0",
     "bullmq": "^5.71.0",
     "cheerio": "^1.1.2",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",

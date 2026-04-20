@@ -13,6 +13,7 @@ import {
   Volume2,
   VolumeX,
   ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
 import api from "../../services/api";
 import ProfileLink from "../ProfileLink";
@@ -30,14 +31,24 @@ const ROLE_CONFIG = {
     color: "text-blue-400 bg-blue-500/10",
     icon: ShieldAlert,
   },
+  moderator: {
+    label: "Moderator",
+    color: "text-purple-400 bg-purple-500/10",
+    icon: Shield,
+  },
   member: {
     label: "Member",
     color: "text-green-400 bg-green-500/10",
     icon: User,
   },
+  visitor: {
+    label: "Visitor",
+    color: "text-gray-400 bg-gray-500/10",
+    icon: User,
+  },
 };
 
-const ROLE_HIERARCHY = ["member", "society_admin", "super_admin"];
+const ROLE_HIERARCHY = ['visitor', 'member', 'moderator', 'society_admin', 'super_admin'];
 
 const SocietyMembersTab = ({ societyId, userRole }) => {
   const { user } = useAuth();
@@ -52,13 +63,19 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
   const myRoleIndex = ROLE_HIERARCHY.indexOf(myRole);
   const canManage = myRoleIndex >= ROLE_HIERARCHY.indexOf("moderator");
 
+  const [errorMsg, setErrorMsg] = useState(null);
+
   const loadMembers = useCallback(async () => {
     setLoading(true);
+    setErrorMsg(null);
+
     try {
       const res = await api.getSocietyMembers(societyId);
       setMembers(res.data || []);
     } catch (err) {
       console.error("Failed to load members:", err);
+      setErrorMsg(err.message || "Failed to load members");
+      setMembers([]);
     } finally {
       setLoading(false);
     }
@@ -78,6 +95,9 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
   const handleAction = async (action, member) => {
     setActionMenu(null);
     setConfirmAction(null);
+
+    if (!member?.user?._id) return;
+
     try {
       if (action === "kick") {
         await api.kickMember(societyId, member.user._id);
@@ -114,6 +134,24 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
     return (
       <div className="flex justify-center py-16">
         <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mb-4">
+          <AlertTriangle className="w-6 h-6 text-red-500" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to load members</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">{errorMsg}</p>
+        <button
+          onClick={loadMembers}
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -238,7 +276,7 @@ const SocietyMembersTab = ({ societyId, userRole }) => {
                     )}
                   </div>
                   <div className="text-[11px] text-gray-400">
-                    Joined {new Date(member.joinedAt).toLocaleDateString()} ·{" "}
+                    Joined {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : "Unknown"} ·{" "}
                     {member.messagesCount || 0} msgs ·{" "}
                     {member.eventsAttended || 0} events
                   </div>

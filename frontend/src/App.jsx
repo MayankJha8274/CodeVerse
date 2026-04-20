@@ -1,36 +1,47 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import PrivateRoute from './components/PrivateRoute';
+import LoadingSpinner from './components/LoadingSpinner';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import OAuthSuccess from './pages/OAuthSuccess';
-import Dashboard from './pages/Dashboard';
-import UserProfilePage from './pages/UserProfilePage';
-import PlatformDetailPage from './pages/PlatformDetailPage';
-import RoomsPage from './pages/RoomsPage';
-import ComparisonPage from './pages/ComparisonPage';
-import SettingsPage from './pages/SettingsPage';
-import SheetsPage from './pages/SheetsPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import DailyChallengePage from './pages/DailyChallengePage';
-import ContestsPage from './pages/ContestsPage';
 import DashboardLayout from './layouts/DashboardLayout';
+import { Analytics } from "@vercel/analytics/react";
+
+// Lazy loading all massive views
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage'));
+const PlatformDetailPage = lazy(() => import('./pages/PlatformDetailPage'));
+const RoomsPage = lazy(() => import('./pages/RoomsPage'));
+const ComparisonPage = lazy(() => import('./pages/ComparisonPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SheetsPage = lazy(() => import('./pages/SheetsPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const DailyChallengePage = lazy(() => import('./pages/DailyChallengePage'));
+const ContestsPage = lazy(() => import('./pages/ContestsPage'));
 
 // Society Pages
-import SocietiesPage from './pages/SocietiesPage';
-import SocietyDetailPage from './pages/SocietyDetailPage';
+const SocietiesPage = lazy(() => import('./pages/SocietiesPage'));
+const SocietyDetailPage = lazy(() => import('./pages/SocietyDetailPage'));
 
-// Contest Hosting Pages (admin routes show Coming Soon)
-import ContestLandingPage from './pages/ContestLandingPage';
-import ContestParticipationPage from './pages/ContestParticipationPage';
-import ContestLeaderboardPage from './pages/ContestLeaderboardPage';
+// Contest Hosting Pages
+const ContestLandingPage = lazy(() => import('./pages/ContestLandingPage'));
+const ContestParticipationPage = lazy(() => import('./pages/ContestParticipationPage'));
+const ContestLeaderboardPage = lazy(() => import('./pages/ContestLeaderboardPage'));
 
 // Problem Set Pages (Coming Soon)
-import { ProblemSetComingSoon, HostContestComingSoon } from './pages/ComingSoonPage';
-import { Analytics } from "@vercel/analytics/react";
+const ComingSoonMod = lazy(() => import('./pages/ComingSoonPage'));
+
+// Wrappers for Coming Soon functions
+const ProblemSetComingSoon = (props) => {
+  return <Suspense fallback={<LoadingSpinner />}><ComingSoonMod.ProblemSetComingSoon {...props} /></Suspense>
+};
+const HostContestComingSoon = (props) => {
+  return <Suspense fallback={<LoadingSpinner />}><ComingSoonMod.HostContestComingSoon {...props} /></Suspense>
+};
 
 function App() {
   return (
@@ -38,6 +49,7 @@ function App() {
       <SocketProvider>
       <Router>
         <Analytics />
+        <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -92,6 +104,7 @@ function App() {
           {/* Fallback Route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </Router>
       </SocketProvider>
     </AuthProvider>

@@ -190,4 +190,13 @@ userSchema.methods.generateAuthToken = function() {
   );
 };
 
+// Indexes for better query performance
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ username: 1 }, { unique: true });
+userSchema.index({ isActive: 1 });
+userSchema.index({ createdAt: -1 });
+userSchema.index({ lastActivityAt: -1 });
+userSchema.index({ lastSynced: 1 });
+userSchema.index({ syncStatus: 1 });
+
 module.exports = mongoose.model('User', userSchema);

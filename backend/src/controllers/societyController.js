@@ -437,9 +437,15 @@ const leaveSociety = async (req, res, next) => {
 // @route   GET /api/societies/:societyId/members
 // @access  Private (member)
 const getMembers = async (req, res, next) => {
-  try {
+  const TIMEOUT = 4000;
+  
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT)
+  );
+
+  const mainLogic = async () => {
     const { societyId } = req.params;
-    const { role, search, page = 1, limit = 50 } = req.query;
+    const { role, search, page = 1, limit = 500 } = req.query;
 
     const query = { society: societyId, isBanned: false, isActive: true };
     if (role) query.role = role;
@@ -463,10 +469,14 @@ const getMembers = async (req, res, next) => {
     const userIds = members.map((m) => m.user?._id).filter(Boolean);
     const platformStats = await PlatformStats.find({
       userId: { $in: userIds },
-    }).lean();
+    })
+      .select("userId stats.score")
+      .limit(500)
+      .lean();
 
     const statsMap = new Map();
     platformStats.forEach((stat) => {
+      if (!stat || !stat.userId) return; // Add safety null check
       const key = stat.userId.toString();
       if (!statsMap.has(key)) statsMap.set(key, []);
       statsMap.get(key).push(stat);
@@ -489,8 +499,21 @@ const getMembers = async (req, res, next) => {
         codingScore,
       };
     });
+
+    return members;
+  };
+
+  try {
+    const members = await Promise.race([mainLogic(), timeoutPromise]);
+    return res.status(200).json({
+      success: true,
+      data: members
+    });
   } catch (error) {
-    next(error);
+    if (error.message === 'TIMEOUT') {
+      return res.status(504).json({ success: false, message: '504 Gateway Timeout: Controller (getMembers)' });
+    }
+    return next(error);
   }
 };
 
