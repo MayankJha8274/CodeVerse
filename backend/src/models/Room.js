@@ -47,10 +47,6 @@ const roomSchema = new mongoose.Schema({
     maxMembers: {
       type: Number,
       default: 100
-    },
-    allowMemberInvite: {
-      type: Boolean,
-      default: false
     }
   },
   stats: {
