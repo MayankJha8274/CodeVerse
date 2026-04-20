@@ -11,9 +11,9 @@ const NotificationBell = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get('/notifications');
-      setNotifications(response.data.notifications);
-      setUnreadCount(response.data.unreadCount);
+      const response = await api.getNotifications();
+      setNotifications(response?.data?.notifications || response?.notifications || []);
+      setUnreadCount(response?.data?.unreadCount || response?.unreadCount || 0);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     }
@@ -30,7 +30,7 @@ const NotificationBell = () => {
     setIsOpen(!isOpen);
     if (!isOpen && unreadCount > 0) {
       try {
-        await api.post('/notifications/read');
+        await api.markNotificationsRead();
         setUnreadCount(0); // Optimistically update UI
       } catch (error) {
         console.error('Failed to mark notifications as read:', error);

@@ -298,7 +298,7 @@ const SocietyLeaderboardTab = ({ societyId }) => {
             Top Members Breakdown
           </h2>
           <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <BarChart 
                 data={sortedRankings.slice(0, 7).map(item => ({
                   ...item,

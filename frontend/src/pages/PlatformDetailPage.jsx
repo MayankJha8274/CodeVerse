@@ -81,7 +81,9 @@ const PlatformDetailPage = () => {
         const data = await api.getPlatformStats(activeTab);
         setPlatformData(data);
       } catch (error) {
-        console.error('Failed to fetch platform data:', error);
+        if (error.response?.status !== 404 && !error.message?.includes('No stats')) {
+          console.error('Failed to fetch platform data:', error);
+        }
         // Set empty platform data so we don't show blank page
         setPlatformData(null);
       } finally {
@@ -134,15 +136,12 @@ const PlatformDetailPage = () => {
       updateUserData(user);
       setNotification({ type: 'success', message: `Successfully linked ${platformId}! Fetching data...` });
       
-      // Sync platform data in background
-      setTimeout(async () => {
+      // Sync platform data synchronously
+      (async () => {
         try {
           await api.syncPlatform(platformId);
           
-          // Wait a bit for DB to update
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Refresh data after sync
+          // Refresh data after synchronous sync finishes
           if (activeTab === platformId) {
             setLoading(true);
             const data = await api.getPlatformStats(platformId);
@@ -157,7 +156,7 @@ const PlatformDetailPage = () => {
           setNotification({ type: 'error', message: 'Linked but data fetch failed. Click Refresh.' });
           setTimeout(() => setNotification(null), 5000);
         }
-      }, 500);
+      })();
       
     } catch (error) {
       console.error('Link error:', error);
@@ -253,7 +252,7 @@ const PlatformDetailPage = () => {
       {platformData?.submissions?.length > 0 && (
       <div className="grid grid-cols-1 gap-6">
         <ChartCard title="Submission Activity" subtitle="Last 6 days">
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={250} minWidth={1} minHeight={1}>
             <AreaChart data={platformData.submissions}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
               <XAxis dataKey="date" stroke="#9CA3AF" />
@@ -304,7 +303,7 @@ const PlatformDetailPage = () => {
       {platformData?.ratingHistory?.length > 0 && (
       <div className="grid grid-cols-1 gap-6">
         <ChartCard title="Rating History" subtitle="Contest performance">
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={250} minWidth={1} minHeight={1}>
             <LineChart data={platformData.ratingHistory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
               <XAxis dataKey="contest" stroke="#9CA3AF" angle={-45} textAnchor="end" height={80} />
@@ -355,7 +354,7 @@ const PlatformDetailPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {platformData?.contributions?.length > 0 && (
         <ChartCard title="Contribution Activity" subtitle="Last 6 days">
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={250} minWidth={1} minHeight={1}>
             <AreaChart data={platformData.contributions}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
               <XAxis dataKey="date" stroke="#9CA3AF" />
@@ -590,7 +589,6 @@ const PlatformDetailPage = () => {
                   setLoading(true);
                   try {
                     await api.syncPlatform(activeTab);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
                     const data = await api.getPlatformStats(activeTab);
                     setPlatformData(data);
                     setNotification({ type: 'success', message: 'Data refreshed successfully!' });

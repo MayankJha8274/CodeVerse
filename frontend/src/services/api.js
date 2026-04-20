@@ -955,6 +955,18 @@ async getRatingGrowth(userId = null) {
   async getSocietyActivityLog(societyId, params = {}) {
     const q = new URLSearchParams(params).toString();
     return authFetch(`/societies/${societyId}/activity-log${q ? `?${q}` : ''}`);
+  },
+
+  // ==========================================
+  // NOTIFICATIONS
+  // ==========================================
+  async getNotifications() {
+    return authFetch('/notifications');
+  },
+  async markNotificationsRead() {
+    return authFetch('/notifications/read', {
+      method: 'POST'
+    });
   }
 };
 
