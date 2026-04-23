@@ -43,45 +43,8 @@ let redisEnabled = process.env.REDIS_ENABLED === 'true';
 // Initialize BullMQ queue and Bull Board (lazy loading, only if Redis is enabled)
 const initializeBullBoard = () => {
   if (bullBoardInitialized) return;
-  if (!redisEnabled) {
-    console.log('ℹ️ Bull Board disabled (set REDIS_ENABLED=true to enable)');
-    return;
-  }
-
-  try {
-    const { isQueueAvailable, getSyncQueue } = require('./queues/syncQueue');
-
-    if (!isQueueAvailable()) {
-      console.log('ℹ️ Bull Board disabled (queue not available)');
-      return;
-    }
-
-    const { createBullBoard } = require('@bull-board/api');
-    const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
-    const { ExpressAdapter } = require('@bull-board/express');
-
-    const syncQueue = getSyncQueue();
-    if (!syncQueue) {
-      console.log('ℹ️ Bull Board disabled (queue not initialized)');
-      return;
-    }
-
-    const serverAdapter = new ExpressAdapter();
-    serverAdapter.setBasePath('/admin/queues');
-
-    createBullBoard({
-      queues: [new BullMQAdapter(syncQueue)],
-      serverAdapter
-    });
-
-    // Mount Bull Board at /admin/queues
-    app.use('/admin/queues', serverAdapter.getRouter());
-
-    bullBoardInitialized = true;
-    console.log('✅ Bull Board initialized at /admin/queues');
-  } catch (error) {
-    console.warn('⚠️ Bull Board initialization skipped:', error.message);
-  }
+  bullBoardInitialized = true;
+  console.log('ℹ️ Bull Board disabled (BullMQ requires Redis >= 5.0)');
 };
 
 // Health check route

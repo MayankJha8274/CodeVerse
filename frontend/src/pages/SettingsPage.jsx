@@ -23,7 +23,11 @@ const SettingsPage = () => {
     branch: '',
     graduationYear: '',
     country: 'IN',
-    avatar: ''
+    avatar: '',
+    settings: {
+      emailNotifications: true,
+      notifyContests: true
+    }
   });
 
   const [firstName, setFirstName] = useState('');
@@ -51,7 +55,11 @@ const SettingsPage = () => {
         branch: authUser.branch || '',
         graduationYear: authUser.graduationYear || '',
         country: authUser.country || 'IN',
-        avatar: authUser.avatar || authUser.avatarUrl || ''
+        avatar: authUser.avatar || authUser.avatarUrl || '',
+        settings: {
+          emailNotifications: authUser.settings?.emailNotifications ?? true,
+          notifyContests: authUser.settings?.notifyContests ?? true
+        }
       }));
     }
   }, [authUser]);
@@ -106,7 +114,11 @@ const SettingsPage = () => {
         branch: updated.branch ?? prev.branch ?? '',
         graduationYear: updated.graduationYear ?? prev.graduationYear ?? '',
         country: updated.country ?? prev.country ?? 'IN',
-        avatar: updated.avatar ?? ''
+        avatar: updated.avatar ?? '',
+        settings: {
+          emailNotifications: updated.settings?.emailNotifications ?? prev.settings?.emailNotifications ?? true,
+          notifyContests: updated.settings?.notifyContests ?? prev.settings?.notifyContests ?? true
+        }
       }));
       updateUserData(updated);
       setSaved(true);
@@ -120,6 +132,15 @@ const SettingsPage = () => {
   };
 
   const handleUserChange = (e) => setUser({ ...user, [e.target.name]: e.target.value });
+  const handleSettingChange = (name) => {
+    setUser(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        [name]: !prev.settings[name]
+      }
+    }));
+  };
   const handleFirstNameChange = (e) => setFirstName(e.target.value);
   const handleLastNameChange = (e) => setLastName(e.target.value);
 
@@ -141,7 +162,8 @@ const SettingsPage = () => {
         graduationYear: user.graduationYear,
         country: user.country,
         // include avatar explicitly so server persists removals/changes
-        avatar: user.avatar
+        avatar: user.avatar,
+        settings: user.settings
       };
       
       const updatedUser = await api.updateUser(payload);
@@ -169,7 +191,11 @@ const SettingsPage = () => {
           branch: fresh.branch ?? prev.branch ?? '',
           graduationYear: fresh.graduationYear ?? prev.graduationYear ?? '',
           country: fresh.country ?? prev.country ?? 'IN',
-          avatar: fresh.avatar ?? prev.avatar ?? ''
+          avatar: fresh.avatar ?? prev.avatar ?? '',
+          settings: {
+            emailNotifications: fresh.settings?.emailNotifications ?? prev.settings?.emailNotifications ?? true,
+            notifyContests: fresh.settings?.notifyContests ?? prev.settings?.notifyContests ?? true
+          }
         }));
       }
       
@@ -202,7 +228,11 @@ const SettingsPage = () => {
         branch: authUser.branch || '',
         graduationYear: authUser.graduationYear || '',
         country: authUser.country || 'IN',
-        avatar: authUser.avatar || authUser.avatarUrl || ''
+        avatar: authUser.avatar || authUser.avatarUrl || '',
+        settings: {
+          emailNotifications: authUser.settings?.emailNotifications ?? true,
+          notifyContests: authUser.settings?.notifyContests ?? true
+        }
       });
     }
     setError(null);
@@ -454,6 +484,40 @@ const SettingsPage = () => {
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Notification Settings</h2>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-gray-900 dark:text-white font-medium">Email Notifications</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Receive general platform updates and alerts via email.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSettingChange('emailNotifications')}
+              className={`${user.settings?.emailNotifications ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
+            >
+              <span className={`${user.settings?.emailNotifications ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-gray-900 dark:text-white font-medium">Contest Reminders</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Receive emails for upcoming contests you've set reminders for.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSettingChange('notifyContests')}
+              className={`${user.settings?.notifyContests ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
+            >
+              <span className={`${user.settings?.notifyContests ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+            </button>
           </div>
         </div>
       </div>

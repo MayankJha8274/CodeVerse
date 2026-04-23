@@ -66,45 +66,9 @@ const initSyncQueue = () => {
 
   queueInitialized = true;
 
-  if (!isRedisAvailable()) {
-    console.log('ℹ️ Queue disabled (Redis not configured). Using direct sync mode.');
-    queueAvailable = false;
-    return null;
-  }
-
-  try {
-    const { Queue, QueueEvents } = require('bullmq');
-    const connection = getRedisConnection();
-
-    if (!connection) {
-      queueAvailable = false;
-      return null;
-    }
-
-    syncQueue = new Queue('platform-sync', {
-      connection,
-      defaultJobOptions
-    });
-
-    // Queue events for monitoring
-    queueEvents = new QueueEvents('platform-sync', { connection });
-
-    queueEvents.on('completed', ({ jobId }) => {
-      console.log(`✅ Job ${jobId} completed`);
-    });
-
-    queueEvents.on('failed', ({ jobId, failedReason }) => {
-      console.error(`❌ Job ${jobId} failed: ${failedReason}`);
-    });
-
-    queueAvailable = true;
-    console.log('✅ Sync queue initialized');
-    return syncQueue;
-  } catch (err) {
-    console.warn('⚠️ Queue initialization failed:', err.message);
-    queueAvailable = false;
-    return null;
-  }
+  console.log('ℹ️ Queue disabled (BullMQ requires Redis >= 5.0). Using direct sync mode.');
+  queueAvailable = false;
+  return null;
 };
 
 /**
