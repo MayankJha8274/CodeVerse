@@ -284,8 +284,12 @@ const updateSettings = async (req, res, next) => {
     if (branch !== undefined) updateData.branch = branch;
     if (graduationYear !== undefined) updateData.graduationYear = graduationYear;
     
-    // User preferences/settings
-    if (settings) updateData.settings = settings;
+    // User preferences/settings (merge with existing)
+    if (settings) {
+      for (const [key, value] of Object.entries(settings)) {
+        updateData[`settings.${key}`] = value;
+      }
+    }
     
     // Handle platforms - merge with existing
     if (platforms) {

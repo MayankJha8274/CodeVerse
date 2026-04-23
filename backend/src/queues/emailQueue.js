@@ -1,50 +1,37 @@
-const { Queue, QueueEvents } = require('bullmq');
-const { getRedisConnection, isRedisAvailable } = require('../config/redis');
+// IN-MEMORY EMAIL QUEUE REPLACEMENT
+// Replaces BullMQ due to strict Redis >= 5.0.0 requirements crashing on older variants.
 
-let emailQueue = null;
-let queueEvents = null;
+const emailService = require('../services/emailService');
 
-const getEmailQueue = () => {
-  if (!emailQueue && isRedisAvailable()) {
-    const redisClient = getRedisConnection();
-    if (redisClient) {
-      emailQueue = new Queue('email-queue', {
-        connection: redisClient,
-        defaultJobOptions: {
-          attempts: 5,
-          backoff: {
-            type: 'exponential',
-            delay: 60000, // 1 minute
-          },
-          removeOnComplete: {
-            count: 1000,
-            age: 3600 * 24,
-          },
-          removeOnFail: {
-            count: 5000,
-            age: 3600 * 24 * 7,
-          },
-        },
-      });
+const internalQueue = [];
 
-      // Add QueueEvents listener
-      queueEvents = new QueueEvents('email-queue', { connection: redisClient });
-
-      queueEvents.on('completed', ({ jobId }) => {
-        console.log(`[Email Queue] Job ${jobId} completed successfully`);
-      });
-
-      queueEvents.on('failed', ({ jobId, failedReason }) => {
-        console.error(`[Email Queue] Job ${jobId} failed with reason: ${failedReason}`);
-      });
+// Simple Background array processor mimicking Queue behavior loosely
+setInterval(async () => {
+    if (internalQueue.length > 0) {
+        const job = internalQueue.shift();
+        try {
+            console.log(`📨 [MemoryQueue] Processing email to: ${job.data.to}`);
+            await emailService.sendEmail({
+                to: job.data.to,
+                subject: job.data.subject,
+                html: job.data.html
+            });
+            console.log(`✅ [MemoryQueue] Email successfully sent to ${job.data.to}`);
+        } catch (err) {
+            console.error(`❌ [MemoryQueue] Email delivery failed for ${job.data.to}:`, err.message);
+        }
     }
-  }
-  return emailQueue;
-};
+}, 1000); // Check the queue every 1 second
 
-// Initialize the queue when this module is loaded
-getEmailQueue();
+const emailQueue = {
+    add: async (jobName, data) => {
+        internalQueue.push({ name: jobName, data });
+        console.log(`📥 [MemoryQueue] Job '${jobName}' added to internal queue (Size: ${internalQueue.length})`);
+        return true;
+    }
+};
 
 module.exports = {
-  emailQueue: getEmailQueue(),
+  emailQueue
 };
+

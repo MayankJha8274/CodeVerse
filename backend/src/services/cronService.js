@@ -24,71 +24,53 @@ async function processContestReminders() {
 
   try {
     const now = new Date();
-    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-    const sixtyOneMinutesFromNow = new Date(now.getTime() + 61 * 60 * 1000);
 
-    // Find contests starting in the next 60-61 minutes to ensure we only run once.
-    const upcomingContests = await Contest.find({
-      startTime: {
-        $gte: oneHourFromNow,
-        $lt: sixtyOneMinutesFromNow,
-      },
-    });
+    // Find unsent reminders where the scheduled reminderTime has passed
+    const pendingReminders = await ContestReminder.find({
+      reminderSent: false,
+      reminderTime: { $lte: now }
+    }).populate('userId contestId');
 
-    if (upcomingContests.length === 0) {
-      console.log('ℹ️ No contests starting in the next hour.');
+    if (pendingReminders.length === 0) {
+      console.log('ℹ️ No reminders to process right now.');
       return;
     }
 
-    console.log(`🔥 Found ${upcomingContests.length} upcoming contests. Preparing notifications...`);
-
-    // --- Smart Targeting Logic ---
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Find users who are active, have participated in contests, and haven't been notified today.
-    const eligibleUsers = await User.find({
-      'settings.emailNotifications': true,
-      'settings.notifyContests': true,
-      lastActivityAt: { $gte: twoDaysAgo },
-      contestCount: { $gt: 0 },
-      $or: [
-        { lastNotifiedAt: { $lt: today } },
-        { lastNotifiedAt: null }
-      ],
-    }).limit(100); // Limit to 100 users per day.
-
-    if (eligibleUsers.length === 0) {
-      console.log('ℹ️ No eligible users to notify at this time.');
-      return;
-    }
-
-    console.log(`🎯 Found ${eligibleUsers.length} users to notify.`);
+    console.log(`🔥 Found ${pendingReminders.length} pending reminders. Preparing notifications...`);
 
     // --- Loop and Dispatch ---
-    for (const contest of upcomingContests) {
-      for (const user of eligibleUsers) {
-        // 1. Create In-App Notification
-        await createInAppNotification(user, contest);
+    for (const reminder of pendingReminders) {
+      const user = reminder.userId;
+      const contest = reminder.contestId;
 
-        // 2. Add Email to Queue
+      if (!user || !contest) {
+        // If underlying user or contest was deleted, mark as sent to avoid infinite retries
+        reminder.reminderSent = true;
+        await reminder.save();
+        continue;
+      }
+
+      // 1. Create In-App Notification
+      if (typeof createInAppNotification === 'function') {
+        await createInAppNotification(user, contest).catch(err => console.error(err));
+      }
+
+      // 2. Add Email to Queue
+      if (typeof generateContestReminderTemplate === 'function') {
         const emailHtml = generateContestReminderTemplate(user, contest);
         await emailQueue.add('contest-reminder', {
           to: user.email,
           subject: `🔥 Contest Starting Soon: ${contest.name}`,
           html: emailHtml,
-        });
-
-        // 3. Update User's Last Notified Timestamp
-        user.lastNotifiedAt = new Date();
-        await user.save();
+        }).catch(err => console.error(err));
       }
+
+      // 3. Update Reminder state
+      reminder.reminderSent = true;
+      await reminder.save();
     }
 
-    console.log(`✅ Successfully queued ${eligibleUsers.length * upcomingContests.length} notifications.`);
+    console.log(`✅ Successfully processed ${pendingReminders.length} reminders.`);
 
   } catch (error) {
     console.error('❌ Error processing contest reminders:', error);
