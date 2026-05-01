@@ -48,7 +48,7 @@ When a user visits the dashboard or views leaderboards, the system prioritizes s
 
 ---
 
-## 2. Background Sync Flow (Automated Data Fetching)
+## 2. Background Sync Flow ( Automated Data Fetching )
 
 To prevent the website from freezing while waiting for Github or LeetCode to respond, CodeVerse uses a background queue system:
 
