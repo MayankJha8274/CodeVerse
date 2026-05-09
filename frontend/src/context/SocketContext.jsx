@@ -9,15 +9,16 @@ const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://
 export const SocketProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
-  const listenersRef = useRef(new Map());
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
+        setSocket(null);
         setIsConnected(false);
       }
       return;
@@ -51,10 +52,12 @@ export const SocketProvider = ({ children }) => {
     });
 
     socketRef.current = socket;
+    setSocket(socket);
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      setSocket(null);
       setIsConnected(false);
     };
   }, [isAuthenticated, user]);
@@ -97,7 +100,7 @@ export const SocketProvider = ({ children }) => {
 
   return (
     <SocketContext.Provider value={{
-      socket: socketRef.current,
+      socket,
       isConnected,
       onlineUsers,
       joinSociety,

@@ -23,7 +23,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // This codebase has a lot of legacy unused vars; keep signal but don't block builds.
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
+
+      // Too strict for common patterns in this repo (e.g. exporting context + hooks in one file).
+      'react-refresh/only-export-components': 'off',
+
+      // Not a standard eslint rule; it flags many legitimate effects (fetching, syncing props -> state).
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
 ])

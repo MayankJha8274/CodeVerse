@@ -16,6 +16,7 @@ export const useSyncStatus = (userId) => {
     timestamp: null
   });
   const socketRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -29,6 +30,7 @@ export const useSyncStatus = (userId) => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      setIsConnected(true);
       // Subscribe to user's sync updates
       socket.emit('sync:subscribe', userId);
     });
@@ -47,6 +49,7 @@ export const useSyncStatus = (userId) => {
     });
 
     socket.on('disconnect', () => {
+      setIsConnected(false);
       console.log('Sync socket disconnected');
     });
 
@@ -55,6 +58,7 @@ export const useSyncStatus = (userId) => {
         socketRef.current.emit('sync:unsubscribe', userId);
         socketRef.current.disconnect();
       }
+      setIsConnected(false);
     };
   }, [userId]);
 
@@ -73,7 +77,7 @@ export const useSyncStatus = (userId) => {
   return {
     syncStatus,
     resetStatus,
-    isConnected: socketRef.current?.connected || false
+    isConnected
   };
 };
 
@@ -82,21 +86,28 @@ export const useSyncStatus = (userId) => {
  */
 export const useSyncWithRefresh = (userId, onComplete) => {
   const { syncStatus, resetStatus, isConnected } = useSyncStatus(userId);
-  const [hasCompleted, setHasCompleted] = useState(false);
+  const completedOnceRef = useRef(false);
 
   useEffect(() => {
-    if (syncStatus.status === 'completed' && !hasCompleted) {
-      setHasCompleted(true);
-      if (onComplete) {
-        onComplete(syncStatus.results, syncStatus.aggregated);
-      }
-      // Reset after a delay
-      setTimeout(() => {
-        resetStatus();
-        setHasCompleted(false);
-      }, 2000);
+    if (syncStatus.status !== 'completed') {
+      completedOnceRef.current = false;
+      return;
     }
-  }, [syncStatus.status, hasCompleted, onComplete, resetStatus, syncStatus.results, syncStatus.aggregated]);
+
+    if (completedOnceRef.current) return;
+    completedOnceRef.current = true;
+
+    if (onComplete) {
+      onComplete(syncStatus.results, syncStatus.aggregated);
+    }
+
+    const t = setTimeout(() => {
+      resetStatus();
+      completedOnceRef.current = false;
+    }, 2000);
+
+    return () => clearTimeout(t);
+  }, [syncStatus.status, onComplete, resetStatus, syncStatus.results, syncStatus.aggregated]);
 
   return {
     syncStatus,

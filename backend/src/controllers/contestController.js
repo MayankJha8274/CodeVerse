@@ -103,10 +103,10 @@ const setReminder = async (req, res, next) => {
       });
     }
 
-    // Calculate reminder time (16 hours before contest)
-    const reminderTime = new Date(contest.startTime.getTime() - 16 * 60 * 60 * 1000);
+    // Calculate reminder time (1 hour before contest)
+    const reminderTime = new Date(contest.startTime.getTime() - 1 * 60 * 60 * 1000);
     
-    // If reminder time is in the past, send immediately when possible
+    // If reminder time is in the past, schedule soon (minimum 5 minutes)
     const effectiveReminderTime = reminderTime < new Date() 
       ? new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
       : reminderTime;
@@ -130,6 +130,7 @@ const setReminder = async (req, res, next) => {
       contestId: contest._id,
       email: user.email,
       reminderTime: effectiveReminderTime,
+      status: 'pending',
       contestDetails: {
         name: contest.name,
         platform: contest.platform,
@@ -174,10 +175,7 @@ const removeReminder = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid contest ID format' });
     }
 
-    const reminder = await ContestReminder.findOneAndDelete({
-      userId,
-      contestId
-    });
+    const reminder = await ContestReminder.findOne({ userId, contestId });
 
     if (!reminder) {
       return res.status(404).json({
@@ -185,6 +183,23 @@ const removeReminder = async (req, res, next) => {
         message: 'Reminder not found'
       });
     }
+
+    // Prevent users from "cancelling" a reminder that is already queued/sending/sent.
+    // This avoids incorrect expectations where a reminder is removed but the email still sends.
+    const status = reminder.status;
+    if (
+      reminder.reminderSent ||
+      status === 'done' ||
+      status === 'queued' ||
+      status === 'processing'
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: 'Reminder is already queued/sending or has been sent and cannot be cancelled.'
+      });
+    }
+
+    await ContestReminder.deleteOne({ _id: reminder._id });
 
     res.status(200).json({
       success: true,
@@ -204,11 +219,22 @@ const getUserReminders = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const reminders = await ContestReminder.find({
-      userId,
-      reminderSent: false,
-      reminderTime: { $gt: new Date() }
-    }).populate('contestId');
+    const now = new Date();
+
+    // Return reminders for upcoming contests, even if the reminder email was already sent.
+    // This enables the UI to show Scheduled vs Sent states per contest.
+    const remindersRaw = await ContestReminder.find({ userId }).populate('contestId');
+
+    const reminders = remindersRaw
+      .filter(r => {
+        const start = r?.contestDetails?.startTime || r?.contestId?.startTime;
+        return start && new Date(start) > now;
+      })
+      .sort((a, b) => {
+        const aStart = a?.contestDetails?.startTime || a?.contestId?.startTime;
+        const bStart = b?.contestDetails?.startTime || b?.contestId?.startTime;
+        return new Date(aStart).getTime() - new Date(bStart).getTime();
+      });
 
     res.status(200).json({
       success: true,

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -12,48 +12,39 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    // Check if user is already logged in
+  const [user, setUser] = useState(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
+    if (!token || !savedUser) return null;
+
+    try {
+      return JSON.parse(savedUser);
+    } catch (error) {
+      console.error('Error parsing saved user:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return null;
     }
-    setLoading(false);
-  }, []);
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    return Boolean(token && savedUser);
+  });
+  const [loading] = useState(false);
 
   const login = async (credentials) => {
-    try {
-      const response = await api.login(credentials);
-      setUser(response.user);
-      setIsAuthenticated(true);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.login(credentials);
+    setUser(response.user);
+    setIsAuthenticated(true);
+    return response;
   };
 
   const register = async (userData) => {
-    try {
-      const response = await api.register(userData);
-      setUser(response.user);
-      setIsAuthenticated(true);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.register(userData);
+    setUser(response.user);
+    setIsAuthenticated(true);
+    return response;
   };
 
   const logout = () => {

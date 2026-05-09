@@ -12,25 +12,14 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // ── empty state ──
-  if (!calendarData?.calendar?.length) {
-    return (
-      <div style={{ width: '100%' }}>
-        <p className="text-gray-900 dark:text-white text-base font-semibold mb-3">
-          Contribution Activity
-        </p>
-        <div className="flex items-center justify-center h-30 text-gray-500 dark:text-gray-400 text-sm">
-          No contribution data yet. Link your platforms and sync!
-        </div>
-      </div>
-    );
-  }
-
-  const { calendar, stats } = calendarData;
+  const calendar = calendarData?.calendar || [];
+  const stats = calendarData?.stats || {};
+  const hasData = calendar.length > 0;
   const GAP = 3;
 
   // ── build week columns (Sun-Sat) ──
   const weeks = useMemo(() => {
+    if (!hasData) return [];
     const out = [];
     let week = [];
     const dow = new Date(calendar[0].date + 'T00:00:00').getDay();
@@ -41,10 +30,11 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
     }
     if (week.length) { while (week.length < 7) week.push(null); out.push(week); }
     return out;
-  }, [calendar]);
+  }, [calendar, hasData]);
 
   // ── auto-size cells to fit container ──
   useEffect(() => {
+    if (!hasData) return;
     const calc = () => {
       if (!containerRef.current) return;
       const w = containerRef.current.offsetWidth;
@@ -55,7 +45,7 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
     calc();
     window.addEventListener('resize', calc);
     return () => window.removeEventListener('resize', calc);
-  }, [weeks.length]);
+  }, [weeks.length, hasData]);
 
   // ── Theme-aware color palette ──
   const COLOR = isDark 
@@ -75,6 +65,7 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
 
   // ── month boundaries (for labels below the grid) ──
   const months = useMemo(() => {
+    if (!hasData) return [];
     const labels = [];
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     let prev = -1;
@@ -89,10 +80,11 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
       }
     });
     return labels;
-  }, [weeks]);
+  }, [weeks, hasData]);
 
   // ── fire badges: months where user was active every day ──
   const fireSet = useMemo(() => {
+    if (!hasData) return new Set();
     const map = {};
     calendar.forEach(d => {
       const dt = new Date(d.date + 'T00:00:00');
@@ -104,9 +96,23 @@ const ContributionCalendar = ({ calendarData, connectedPlatforms = [] }) => {
     const s = new Set();
     Object.entries(map).forEach(([k, v]) => { if (v.act === v.tot && v.tot > 0) s.add(k); });
     return s;
-  }, [calendar]);
+  }, [calendar, hasData]);
 
   const gridW = weeks.length * (cellPx + GAP) - GAP;
+
+  // ── empty state ──
+  if (!hasData) {
+    return (
+      <div style={{ width: '100%' }}>
+        <p className="text-gray-900 dark:text-white text-base font-semibold mb-3">
+          Contribution Activity
+        </p>
+        <div className="flex items-center justify-center h-30 text-gray-500 dark:text-gray-400 text-sm">
+          No contribution data yet. Link your platforms and sync!
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
