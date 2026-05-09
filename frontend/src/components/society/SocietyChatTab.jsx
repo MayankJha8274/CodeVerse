@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Send, Hash, Smile, Pin, MoreVertical, Reply, Trash2,
   Code, AlertTriangle, CheckCircle, Loader2, Users, ChevronDown

@@ -61,7 +61,7 @@ const formatTimeRemaining = (startTime) => {
 };
 
 // Contest Card Component
-const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, isSettingReminder }) => {
+const ContestCard = ({ contest, onSetReminder, onRemoveReminder, reminderStatus, isSettingReminder }) => {
   const platform = platformConfigLocal[contest.platform] || platformConfigLocal.codeforces;
   const startTime = new Date(contest.startTime);
   const formattedDate = startTime.toLocaleDateString('en-US', {
@@ -111,23 +111,45 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, hasReminder, is
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => hasReminder ? onRemoveReminder(contest._id) : onSetReminder(contest._id)}
-            disabled={isSettingReminder}
+            onClick={() => {
+              if (reminderStatus === 'sent' || reminderStatus === 'queued') return;
+              return reminderStatus === 'scheduled' || reminderStatus === 'failed'
+                ? onRemoveReminder(contest._id)
+                : onSetReminder(contest._id);
+            }}
+            disabled={isSettingReminder || reminderStatus === 'sent' || reminderStatus === 'queued'}
             className={`p-2 rounded-lg transition-all ${
-              hasReminder 
-                ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
+              reminderStatus === 'scheduled' || reminderStatus === 'failed' || reminderStatus === 'queued' || reminderStatus === 'sent'
+                ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
                 : 'bg-gray-200 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
             }`}
-            title={hasReminder ? 'Remove reminder' : 'Set reminder (16h before)'}
+            title={
+              reminderStatus === 'sent'
+                ? 'Reminder sent'
+                : reminderStatus === 'queued'
+                  ? 'Reminder queued for sending'
+                  : reminderStatus === 'scheduled'
+                  ? 'Remove reminder'
+                  : reminderStatus === 'failed'
+                    ? 'Reminder failed (remove and set again)'
+                  : 'Set reminder (1h before)'
+            }
           >
             {isSettingReminder ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : hasReminder ? (
+            ) : reminderStatus === 'scheduled' || reminderStatus === 'failed' || reminderStatus === 'queued' || reminderStatus === 'sent' ? (
               <Bell className="w-4 h-4" />
             ) : (
               <BellOff className="w-4 h-4" />
             )}
           </button>
+          {reminderStatus === 'sent' ? (
+            <span className="text-[10px] text-amber-400 text-center leading-none">Sent</span>
+          ) : reminderStatus === 'queued' ? (
+            <span className="text-[10px] text-amber-400 text-center leading-none">Queued</span>
+          ) : reminderStatus === 'failed' ? (
+            <span className="text-[10px] text-red-400 text-center leading-none">Failed</span>
+          ) : null}
           <a
             href={contest.url}
             target="_blank"
@@ -378,8 +400,17 @@ const ContestsPage = () => {
     setCurrentYear(newYear);
   };
 
-  const hasReminder = (contestId) => {
-    return userReminders.some(r => r.contestId?._id === contestId || r.contestId === contestId);
+  const getReminderForContest = (contestId) => {
+    return userReminders.find(r => (r.contestId?._id === contestId) || (r.contestId === contestId));
+  };
+
+  const getReminderStatus = (contestId) => {
+    const reminder = getReminderForContest(contestId);
+    if (!reminder) return 'none';
+    if (reminder.reminderSent || reminder.status === 'done') return 'sent';
+    if (reminder.status === 'queued' || reminder.status === 'processing') return 'queued';
+    if (reminder.status === 'failed') return 'failed';
+    return 'scheduled';
   };
 
   // Filter contests
@@ -414,7 +445,7 @@ const ContestsPage = () => {
               Contest Tracker
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-              Don't miss scheduled events • Set reminders 16 hours before
+              Don't miss scheduled events • Set reminders 1 hour before
             </p>
           </div>
           
@@ -503,7 +534,7 @@ const ContestsPage = () => {
                             contest={contest}
                             onSetReminder={handleSetReminder}
                             onRemoveReminder={handleRemoveReminder}
-                            hasReminder={hasReminder(contest._id)}
+                            reminderStatus={getReminderStatus(contest._id)}
                             isSettingReminder={settingReminder === contest._id}
                           />
                         ))}
@@ -534,10 +565,32 @@ const ContestsPage = () => {
                         <p className="text-xs text-gray-500">
                           Reminder: {new Date(reminder.reminderTime).toLocaleString()}
                         </p>
+                        <p className="text-xs text-gray-500">
+                          Status: {reminder.reminderSent || reminder.status === 'done'
+                            ? 'Sent'
+                            : (reminder.status === 'queued' || reminder.status === 'processing')
+                              ? 'Queued'
+                              : reminder.status === 'failed'
+                                ? 'Failed'
+                                : 'Scheduled'}
+                        </p>
                       </div>
                       <button
                         onClick={() => handleRemoveReminder(reminder.contestId?._id || reminder.contestId)}
+                        disabled={
+                          !!reminder.reminderSent ||
+                          reminder.status === 'done' ||
+                          reminder.status === 'queued' ||
+                          reminder.status === 'processing'
+                        }
                         className="text-gray-400 hover:text-red-400 transition-colors"
+                        title={
+                          (reminder.reminderSent || reminder.status === 'done')
+                            ? 'Reminder already sent'
+                            : (reminder.status === 'queued' || reminder.status === 'processing')
+                              ? 'Reminder queued for sending'
+                              : 'Remove reminder'
+                        }
                       >
                         <BellOff className="w-4 h-4" />
                       </button>

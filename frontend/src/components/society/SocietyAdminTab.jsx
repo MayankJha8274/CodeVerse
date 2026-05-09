@@ -200,7 +200,7 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
     <div className="bg-white dark:bg-[#111118] border border-gray-200 dark:border-gray-800/50 rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-        <Icon className={`w-4 h-4 ${color}`} />
+        {React.createElement(Icon, { className: `w-4 h-4 ${color}` })}
       </div>
       <div className="text-xl font-bold text-gray-900 dark:text-white">{value}</div>
     </div>
@@ -224,7 +224,7 @@ const SocietyAdminTab = ({ societyId, society, onUpdate }) => {
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              {React.createElement(Icon, { className: 'w-3.5 h-3.5' })}
               {s.label}
             </button>
           );

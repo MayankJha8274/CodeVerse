@@ -1,13 +1,35 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter - configure with your email service
+let sendgridClient = null;
+
+function getSendgridClient() {
+  if (!process.env.SENDGRID_API_KEY) return null;
+  if (sendgridClient) return sendgridClient;
+
+  try {
+    // Lazy require so environments without SendGrid don't crash
+    const sg = require('@sendgrid/mail');
+    sg.setApiKey(process.env.SENDGRID_API_KEY);
+    sendgridClient = sg;
+    return sendgridClient;
+  } catch (err) {
+    console.warn('⚠️ SendGrid SDK not installed; falling back to SMTP if configured');
+    return null;
+  }
+}
+
 const createTransporter = async () => {
+  // If SendGrid API key present and SDK loaded, prefer SendGrid (uses HTTP API, avoids SMTP login rate limits)
+  if (process.env.SENDGRID_API_KEY && getSendgridClient()) {
+    return { type: 'sendgrid' };
+  }
+
   if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    // Standard SMTP connection for ESPs (Resend, SendGrid, Mailgun)
+    // Standard SMTP connection for ESPs
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT, 10) || 587,
-      secure: parseInt(process.env.EMAIL_PORT, 10) === 465, 
+      secure: parseInt(process.env.EMAIL_PORT, 10) === 465,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
@@ -29,7 +51,7 @@ const createTransporter = async () => {
     return nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
-      secure: false, 
+      secure: false,
       auth: {
         user: testAccount.user,
         pass: testAccount.pass,
@@ -84,6 +106,21 @@ function generateContestReminderTemplate(user, contest) {
  */
 async function sendEmail(options) {
   try {
+    // Prefer SendGrid HTTP API if configured
+    const sg = getSendgridClient();
+    if (process.env.SENDGRID_API_KEY && sg) {
+      const senderEmail = process.env.EMAIL_FROM || `CodeVerse <${process.env.EMAIL_USER || 'noreply@example.com'}>`;
+      const msg = {
+        to: options.to,
+        from: senderEmail,
+        subject: options.subject,
+        html: options.html,
+        text: options.html.replace(/<[^>]*>?/gm, ''),
+      };
+      const res = await sg.send(msg);
+      return res;
+    }
+
     const transporter = await createTransporter();
     const senderEmail = process.env.EMAIL_FROM || `"CodeVerse" <${process.env.EMAIL_USER}>`;
 
@@ -115,6 +152,14 @@ async function sendEmail(options) {
  */
 const verifyEmailConfig = async () => {
   try {
+    // SendGrid has no SMTP verify; we only validate that the SDK can initialize.
+    if (process.env.SENDGRID_API_KEY) {
+      const sg = getSendgridClient();
+      const ok = !!sg;
+      if (ok) console.log('✅ SendGrid configuration detected');
+      return ok;
+    }
+
     const transporter = await createTransporter();
     await transporter.verify();
     console.log('✅ Email configuration verified');

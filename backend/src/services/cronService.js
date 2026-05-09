@@ -25,52 +25,107 @@ async function processContestReminders() {
   try {
     const now = new Date();
 
-    // Find unsent reminders where the scheduled reminderTime has passed
-    const pendingReminders = await ContestReminder.find({
-      reminderSent: false,
-      reminderTime: { $lte: now }
-    }).populate('userId contestId');
+    // Claim reminders atomically to avoid duplicate processing in multi-instance deployments.
+    // This loop processes reminders one-by-one (fast enough at 1-minute cadence).
+    let processedCount = 0;
+    const lockMs = 5 * 60 * 1000; // 5 minutes lock
 
-    if (pendingReminders.length === 0) {
+    while (true) {
+      const lockUntil = new Date(Date.now() + lockMs);
+      const reminder = await ContestReminder.findOneAndUpdate(
+        {
+          reminderSent: false,
+          reminderTime: { $lte: now },
+          $and: [
+            { $or: [{ status: 'pending' }, { status: 'queued' }, { status: { $exists: false } }, { status: null }] },
+            { $or: [{ lockedUntil: null }, { lockedUntil: { $exists: false } }, { lockedUntil: { $lte: now } }] }
+          ]
+        },
+        { $set: { status: 'processing', lockedUntil: lockUntil, lastError: null } },
+        { sort: { reminderTime: 1 }, returnDocument: 'after' }
+      ).populate('userId contestId');
+
+      if (!reminder) break;
+      processedCount += 1;
+
+      try {
+        const user = reminder.userId;
+        const contest = reminder.contestId;
+
+        if (!user || !contest) {
+          // If underlying user or contest was deleted, mark done to avoid infinite retries
+          reminder.reminderSent = true;
+          reminder.status = 'done';
+          reminder.lockedUntil = null;
+          await reminder.save();
+          continue;
+        }
+
+        // 1. Create In-App Notification
+        if (typeof createInAppNotification === 'function') {
+          await createInAppNotification(user, contest).catch(err => console.error(err));
+        }
+
+        // 2. Add Email to Queue
+        let emailQueued = false;
+        if (typeof generateContestReminderTemplate === 'function') {
+          const emailHtml = generateContestReminderTemplate(user, contest);
+          try {
+            await emailQueue.add('contest-reminder', {
+              reminderId: reminder._id,
+              to: reminder.email || user.email,
+              subject: `🔥 Contest Starting Soon: ${contest.name}`,
+              html: emailHtml,
+            }, {
+              jobId: `contest-reminder:${reminder._id}`,
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 }
+            });
+            emailQueued = true;
+          } catch (err) {
+            console.error('❌ Failed to enqueue email job for', (reminder.email || user.email), err.message || err);
+            reminder.lastError = err?.message || String(err);
+          }
+        }
+
+        // 3. Update reminder state
+        if (emailQueued) {
+          // IMPORTANT: Don't mark as sent/done until the email worker reports success.
+          // Use a lease to allow re-enqueue if the job is lost (e.g., Redis flush / worker down).
+          reminder.reminderSent = false;
+          reminder.status = 'queued';
+          reminder.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes lease
+        } else {
+          // Allow retry on next run; keep a short cooldown to avoid tight loops
+          reminder.status = 'pending';
+          reminder.lockedUntil = new Date(Date.now() + 60 * 1000);
+        }
+        await reminder.save();
+      } catch (err) {
+        console.error('❌ Reminder processing error:', err.message || err);
+        try {
+          await ContestReminder.updateOne(
+            { _id: reminder._id },
+            {
+              $set: {
+                status: 'pending',
+                lockedUntil: new Date(Date.now() + 60 * 1000),
+                lastError: err?.message || String(err)
+              }
+            }
+          );
+        } catch (_) {
+          // ignore
+        }
+      }
+    }
+
+    if (processedCount === 0) {
       console.log('ℹ️ No reminders to process right now.');
       return;
     }
 
-    console.log(`🔥 Found ${pendingReminders.length} pending reminders. Preparing notifications...`);
-
-    // --- Loop and Dispatch ---
-    for (const reminder of pendingReminders) {
-      const user = reminder.userId;
-      const contest = reminder.contestId;
-
-      if (!user || !contest) {
-        // If underlying user or contest was deleted, mark as sent to avoid infinite retries
-        reminder.reminderSent = true;
-        await reminder.save();
-        continue;
-      }
-
-      // 1. Create In-App Notification
-      if (typeof createInAppNotification === 'function') {
-        await createInAppNotification(user, contest).catch(err => console.error(err));
-      }
-
-      // 2. Add Email to Queue
-      if (typeof generateContestReminderTemplate === 'function') {
-        const emailHtml = generateContestReminderTemplate(user, contest);
-        await emailQueue.add('contest-reminder', {
-          to: user.email,
-          subject: `🔥 Contest Starting Soon: ${contest.name}`,
-          html: emailHtml,
-        }).catch(err => console.error(err));
-      }
-
-      // 3. Update Reminder state
-      reminder.reminderSent = true;
-      await reminder.save();
-    }
-
-    console.log(`✅ Successfully processed ${pendingReminders.length} reminders.`);
+    console.log(`✅ Successfully processed ${processedCount} reminders.`);
 
   } catch (error) {
     console.error('❌ Error processing contest reminders:', error);
