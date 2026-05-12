@@ -52,7 +52,7 @@ const startEmailWorker = async () => {
   const connection = createWorkerConnection();
   if (!connection) {
     console.error('❌ Could not create Redis connection for email worker. Is Redis running?');
-    return;
+    return false;
   }
 
   workerConnection = connection;
@@ -88,6 +88,7 @@ const startEmailWorker = async () => {
   });
 
   console.log('✅ Email worker started & listening to the email-queue...');
+  return true;
 };
 
 const stopEmailWorker = async () => {

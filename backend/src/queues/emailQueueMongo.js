@@ -169,6 +169,9 @@ const emailQueueMongo = {
   },
   startWorker,
   stopWorker,
+  // Test helper: process at most one job deterministically.
+  // Not used in production code paths.
+  _processOneJob: processOneJob,
 };
 
 module.exports = emailQueueMongo;

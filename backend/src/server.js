@@ -5,6 +5,8 @@ const app = require('./app');
 const connectDB = require('./config/database');
 const { startAllCronJobs } = require('./services/cronService');
 const { setupSocketIO } = require('./services/socketHandler');
+const { verifyEmailConfig } = require('./services/emailService');
+const { REDIS_ENABLED } = require('./config/redis');
 const { exec } = require('child_process');
 const net = require('net');
 
@@ -29,6 +31,13 @@ try {
   startEmailWorker = emailWorker.startEmailWorker;
 } catch (err) {
   startEmailWorker = null;
+}
+
+let mongoEmailQueue;
+try {
+  mongoEmailQueue = require('./queues/emailQueueMongo');
+} catch (err) {
+  mongoEmailQueue = null;
 }
 
 try {
@@ -109,6 +118,48 @@ const startServer = async () => {
     // Connect to database first
     await connectDB();
 
+    // Verify email configuration and start the appropriate email worker.
+    // Without a running worker, reminders will be queued but never delivered.
+    const emailOk = await verifyEmailConfig();
+    if (!emailOk) {
+      console.warn('⚠️ Email configuration is not valid. Contest reminder emails may not be delivered.');
+      if ((process.env.NODE_ENV || 'development') === 'production') {
+        throw new Error('Email configuration invalid in production; refusing to start');
+      }
+    }
+
+    if (process.env.EMAIL_WORKER_AUTOSTART !== 'false') {
+      let started = false;
+
+      if (REDIS_ENABLED && startEmailWorker) {
+        console.log('📧 Email worker mode: bullmq');
+        try {
+          // startEmailWorker returns true/false (patched)
+          started = await startEmailWorker();
+        } catch (err) {
+          console.warn('⚠️ Failed to start BullMQ email worker:', err?.message || err);
+          started = false;
+        }
+      }
+
+      if (!started && mongoEmailQueue?.startWorker) {
+        console.log('📧 Email worker mode: mongo');
+        try {
+          await mongoEmailQueue.startWorker();
+          started = true;
+        } catch (err) {
+          console.warn('⚠️ Failed to start Mongo email worker:', err?.message || err);
+          started = false;
+        }
+      }
+
+      if (!started) {
+        console.warn('⚠️ No email worker started. Contest reminders will remain queued and no emails will be sent.');
+      }
+    } else {
+      console.log('ℹ️ EMAIL_WORKER_AUTOSTART=false; not starting email worker in this process');
+    }
+
     // Initialize Bull Board (after routes are loaded)
     if (app.initializeBullBoard) {
       try {
@@ -122,11 +173,6 @@ const startServer = async () => {
     // if (startWorker && process.env.REDIS_ENABLED === 'true') {
     //   console.log('🚀 Starting background Queue Sync Worker...');
     //   startWorker().catch(err => console.error('Worker failed to start:', err.message));
-    // }
-    // Start background email worker
-    // if (startEmailWorker && process.env.REDIS_ENABLED === 'true') {
-    //   console.log('???? Starting background Email Worker...');
-    //   startEmailWorker().catch(err => console.error('Email Worker failed to start:', err.message));
     // }
     // Start cron jobs for auto-sync and weekly reports
     startAllCronJobs();
