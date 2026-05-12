@@ -8,9 +8,7 @@
     "worker": "node src/workers/syncWorker.js",
     "worker:dev": "nodemon src/workers/syncWorker.js",
     "worker:email:bull": "node src/workers/emailBullWorkerRunner.js",
-    "worker:email:mongo": "node src/workers/emailMongoWorker.js",
-    "test": "cross-env MONGODB_URI_TEST=mongodb://127.0.0.1:27017/codeverse_test jest --runInBand --openHandlesTimeout=5000",
-    "test:room:e2e": "node scripts/room-e2e.js"
+    "worker:email:mongo": "node src/workers/emailMongoWorker.js"
   },
   "keywords": [
     "coding",

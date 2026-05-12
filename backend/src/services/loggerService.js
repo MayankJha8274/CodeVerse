@@ -5,6 +5,7 @@
 
 const winston = require('winston');
 const path = require('path');
+const fs = require('fs');
 
 // Custom format for console output
 const consoleFormat = winston.format.combine(
@@ -25,6 +26,13 @@ const fileFormat = winston.format.combine(
 
 // Create logs directory path
 const logsDir = path.join(__dirname, '../../logs');
+
+// Ensure logs directory exists (avoid runtime crash in fresh deploys)
+try {
+  fs.mkdirSync(logsDir, { recursive: true });
+} catch (_) {
+  // If we cannot create it, Winston file transports may fail; keep process alive.
+}
 
 // Create logger instance
 const logger = winston.createLogger({
