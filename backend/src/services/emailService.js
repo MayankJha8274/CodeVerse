@@ -2,6 +2,10 @@ const nodemailer = require('nodemailer');
 
 let sendgridClient = null;
 
+let cachedMailer = null;
+let cachedMailerKey = null;
+let cachedMailerIsEthereal = false;
+
 function getSendgridClient() {
   if (!process.env.SENDGRID_API_KEY) return null;
   if (sendgridClient) return sendgridClient;
@@ -18,42 +22,78 @@ function getSendgridClient() {
   }
 }
 
-const createTransporter = async () => {
-  // If SendGrid API key present and SDK loaded, prefer SendGrid (uses HTTP API, avoids SMTP login rate limits)
-  if (process.env.SENDGRID_API_KEY && getSendgridClient()) {
-    return { type: 'sendgrid' };
+function buildMailerCacheKey() {
+  const env = process.env;
+  const parts = [
+    env.EMAIL_HOST || '',
+    env.EMAIL_PORT || '',
+    env.EMAIL_SERVICE || '',
+    env.EMAIL_USER || '',
+    // Don't include passwords in memory keys. We only want to detect config changes,
+    // not store secrets. Length is sufficient for change detection.
+    String((env.EMAIL_PASSWORD || '').length),
+    env.NODE_ENV || '',
+    env.EMAIL_POOL_ENABLED || '',
+    env.EMAIL_POOL_MAX_CONNECTIONS || '',
+    env.EMAIL_POOL_MAX_MESSAGES || ''
+  ];
+  return parts.join('|');
+}
+
+function getPoolConfig() {
+  const enabled = (process.env.EMAIL_POOL_ENABLED || 'true') !== 'false';
+  if (!enabled) return {};
+
+  const maxConnections = parseInt(process.env.EMAIL_POOL_MAX_CONNECTIONS || '2', 10);
+  const maxMessages = parseInt(process.env.EMAIL_POOL_MAX_MESSAGES || '50', 10);
+  return {
+    pool: true,
+    maxConnections: Number.isFinite(maxConnections) ? maxConnections : 2,
+    maxMessages: Number.isFinite(maxMessages) ? maxMessages : 50,
+  };
+}
+
+async function createNodemailerTransporter() {
+  if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    return {
+      transporter: nodemailer.createTransport({
+        ...getPoolConfig(),
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT, 10) || 587,
+        secure: parseInt(process.env.EMAIL_PORT, 10) === 465,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      }),
+      isEthereal: false,
+    };
   }
 
-  if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    // Standard SMTP connection for ESPs
-    return nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT, 10) || 587,
-      secure: parseInt(process.env.EMAIL_PORT, 10) === 465,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
-  } else if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    // Fallback to basic service (e.g. gmail App passwords)
-    return nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
-  } else {
-    const env = process.env.NODE_ENV || 'development';
-    if (env === 'production') {
-      throw new Error('Email configuration missing (set SENDGRID_API_KEY or SMTP credentials)');
-    }
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    return {
+      transporter: nodemailer.createTransport({
+        ...getPoolConfig(),
+        service: process.env.EMAIL_SERVICE || 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      }),
+      isEthereal: false,
+    };
+  }
 
-    // Generate a testing account if no real credentials are set (dev only)
-    console.log('⚠️ No email credentials found in .env, generating test Ethereal account (dev only)...');
-    const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
+  const env = process.env.NODE_ENV || 'development';
+  if (env === 'production') {
+    throw new Error('Email configuration missing (set SENDGRID_API_KEY or SMTP credentials)');
+  }
+
+  console.log('⚠️ No email credentials found in .env, generating test Ethereal account (dev only)...');
+  const testAccount = await nodemailer.createTestAccount();
+  return {
+    transporter: nodemailer.createTransport({
+      ...getPoolConfig(),
       host: 'smtp.ethereal.email',
       port: 587,
       secure: false,
@@ -61,8 +101,32 @@ const createTransporter = async () => {
         user: testAccount.user,
         pass: testAccount.pass,
       },
-    });
+    }),
+    isEthereal: true,
+  };
+}
+
+async function getCachedNodemailerTransporter() {
+  const key = buildMailerCacheKey();
+  if (cachedMailer && cachedMailerKey === key) {
+    return { transporter: cachedMailer, isEthereal: cachedMailerIsEthereal };
   }
+
+  const created = await createNodemailerTransporter();
+  cachedMailer = created.transporter;
+  cachedMailerKey = key;
+  cachedMailerIsEthereal = created.isEthereal;
+  return created;
+}
+
+const createTransporter = async () => {
+  // If SendGrid API key present and SDK loaded, prefer SendGrid (uses HTTP API, avoids SMTP login rate limits)
+  if (process.env.SENDGRID_API_KEY && getSendgridClient()) {
+    return { type: 'sendgrid' };
+  }
+
+  const created = await createNodemailerTransporter();
+  return created.transporter;
 };
 
 /**
@@ -122,11 +186,16 @@ async function sendEmail(options) {
         html: options.html,
         text: options.html.replace(/<[^>]*>?/gm, ''),
       };
+
+      // Safe bulk testing: SendGrid sandbox mode accepts the request but does not deliver.
+      if ((process.env.SENDGRID_SANDBOX_MODE || 'false') === 'true') {
+        msg.mailSettings = { sandboxMode: { enable: true } };
+      }
       const res = await sg.send(msg);
       return res;
     }
 
-    const transporter = await createTransporter();
+    const { transporter, isEthereal } = await getCachedNodemailerTransporter();
     const senderEmail = process.env.EMAIL_FROM || `"CodeVerse" <${process.env.EMAIL_USER}>`;
 
     const mailOptions = {
@@ -141,7 +210,7 @@ async function sendEmail(options) {
     let info = await transporter.sendMail(mailOptions);
 
     // Log URL for Ethereal test emails
-    if (process.env.NODE_ENV !== 'production' && !process.env.EMAIL_HOST) {
+    if (process.env.NODE_ENV !== 'production' && isEthereal) {
       console.log(`📧 Email preview URL: ${nodemailer.getTestMessageUrl(info)}`);
     }
 
