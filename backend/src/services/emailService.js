@@ -45,11 +45,16 @@ const createTransporter = async () => {
       }
     });
   } else {
-    // Generate a testing account if no real credentials are set
-    console.log('⚠️ No EMAIL_USER found in .env, generating test Ethereal account...');
-    let testAccount = await nodemailer.createTestAccount();
+    const env = process.env.NODE_ENV || 'development';
+    if (env === 'production') {
+      throw new Error('Email configuration missing (set SENDGRID_API_KEY or SMTP credentials)');
+    }
+
+    // Generate a testing account if no real credentials are set (dev only)
+    console.log('⚠️ No email credentials found in .env, generating test Ethereal account (dev only)...');
+    const testAccount = await nodemailer.createTestAccount();
     return nodemailer.createTransport({
-      host: "smtp.ethereal.email",
+      host: 'smtp.ethereal.email',
       port: 587,
       secure: false,
       auth: {
