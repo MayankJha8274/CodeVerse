@@ -37,7 +37,7 @@ async function processContestReminders() {
           reminderSent: false,
           reminderTime: { $lte: now },
           $and: [
-            { $or: [{ status: 'pending' }, { status: 'queued' }, { status: { $exists: false } }, { status: null }] },
+            { $or: [{ status: 'pending' }, { status: { $exists: false } }, { status: null }] },
             { $or: [{ lockedUntil: null }, { lockedUntil: { $exists: false } }, { lockedUntil: { $lte: now } }] }
           ]
         },
@@ -68,10 +68,11 @@ async function processContestReminders() {
 
         // 2. Add Email to Queue
         let emailQueued = false;
+        let emailDurable = false;
         if (typeof generateContestReminderTemplate === 'function') {
           const emailHtml = generateContestReminderTemplate(user, contest);
           try {
-            await emailQueue.add('contest-reminder', {
+            const result = await emailQueue.add('contest-reminder', {
               reminderId: reminder._id,
               to: reminder.email || user.email,
               subject: `🔥 Contest Starting Soon: ${contest.name}`,
@@ -82,6 +83,7 @@ async function processContestReminders() {
               backoff: { type: 'exponential', delay: 5000 }
             });
             emailQueued = true;
+            emailDurable = !!(result && result.durable);
           } catch (err) {
             console.error('❌ Failed to enqueue email job for', (reminder.email || user.email), err.message || err);
             reminder.lastError = err?.message || String(err);
@@ -89,12 +91,18 @@ async function processContestReminders() {
         }
 
         // 3. Update reminder state
-        if (emailQueued) {
-          // IMPORTANT: Don't mark as sent/done until the email worker reports success.
-          // Use a lease to allow re-enqueue if the job is lost (e.g., Redis flush / worker down).
+        if (emailQueued && emailDurable) {
+          // Job is durably persisted (BullMQ or Mongo). Mark as queued with a lease.
+          // Don't mark as sent/done until the email worker reports success.
           reminder.reminderSent = false;
           reminder.status = 'queued';
           reminder.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes lease
+        } else if (emailQueued && !emailDurable) {
+          // Job went to volatile in-memory queue. Keep as pending so cron retries
+          // on next run in case the server restarts before delivery.
+          reminder.status = 'pending';
+          reminder.lockedUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 min cooldown
+          console.warn('⚠️ Email job for', (reminder.email || user.email), 'is in volatile memory queue. Will retry on next cron cycle if not delivered.');
         } else {
           // Allow retry on next run; keep a short cooldown to avoid tight loops
           reminder.status = 'pending';
