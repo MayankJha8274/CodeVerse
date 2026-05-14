@@ -118,45 +118,35 @@ const PlatformDetailPage = () => {
       // Update linked platforms state immediately
       setLinkedPlatforms(prev => ({ ...prev, [platformId]: username }));
       
-      // Update localStorage - backend returns platforms as object { leetcode: 'user', ... }
+      // Update localStorage
       const user = JSON.parse(localStorage.getItem('user')) || {};
-      if (!user.platforms || typeof user.platforms !== 'object') {
-        user.platforms = {};
-      }
-      // If it was an array, convert to object
-      if (Array.isArray(user.platforms)) {
-        const platformsObj = {};
-        user.platforms.forEach(p => {
-          platformsObj[p.platform] = p.username;
-        });
-        user.platforms = platformsObj;
-      }
+      user.platforms = user.platforms || {};
       user.platforms[platformId] = username;
       localStorage.setItem('user', JSON.stringify(user));
       updateUserData(user);
+
+      // If the response contains stats, use them immediately
+      if (response.data?.stats) {
+        setPlatformData(response.data.stats);
+        setNotification({ type: 'success', message: `${platformId} connected and data fetched!` });
+        setTimeout(() => setNotification(null), 3000);
+        return;
+      }
+
       setNotification({ type: 'success', message: `Successfully linked ${platformId}! Fetching data...` });
       
-      // Sync platform data synchronously
-      (async () => {
-        try {
-          await api.syncPlatform(platformId);
-          
-          // Refresh data after synchronous sync finishes
-          if (activeTab === platformId) {
-            setLoading(true);
-            const data = await api.getPlatformStats(platformId);
-            setPlatformData(data);
-            setLoading(false);
-          }
-          
-          setNotification({ type: 'success', message: `${platformId} data fetched successfully!` });
-          setTimeout(() => setNotification(null), 3000);
-        } catch (syncError) {
-          console.error('Sync error:', syncError);
-          setNotification({ type: 'error', message: 'Linked but data fetch failed. Click Refresh.' });
-          setTimeout(() => setNotification(null), 5000);
-        }
-      })();
+      // Only sync if data wasn't already returned
+      try {
+        await api.syncPlatform(platformId);
+        const data = await api.getPlatformStats(platformId);
+        setPlatformData(data);
+        setNotification({ type: 'success', message: `${platformId} data fetched successfully!` });
+      } catch (syncError) {
+        console.error('Sync error:', syncError);
+        const errorMsg = syncError.response?.data?.message || syncError.message || 'Linked but data fetch failed. Click Refresh.';
+        setNotification({ type: 'error', message: errorMsg });
+      }
+      setTimeout(() => setNotification(null), 5000);
       
     } catch (error) {
       console.error('Link error:', error);
@@ -252,7 +242,7 @@ const PlatformDetailPage = () => {
       {platformData?.submissions?.length > 0 && (
       <div className="grid grid-cols-1 gap-6">
         <ChartCard title="Submission Activity" subtitle="Last 6 days">
-          <ResponsiveContainer width="100%" height={250} minWidth={1} minHeight={1}>
+          <ResponsiveContainer width="100%" height={250} minHeight={250}>
             <AreaChart data={platformData.submissions}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
               <XAxis dataKey="date" stroke="#9CA3AF" />
@@ -303,7 +293,7 @@ const PlatformDetailPage = () => {
       {platformData?.ratingHistory?.length > 0 && (
       <div className="grid grid-cols-1 gap-6">
         <ChartCard title="Rating History" subtitle="Contest performance">
-          <ResponsiveContainer width="100%" height={250} minWidth={1} minHeight={1}>
+          <ResponsiveContainer width="100%" height={250} minHeight={250} debounce={100}>
             <LineChart data={platformData.ratingHistory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
               <XAxis dataKey="contest" stroke="#9CA3AF" angle={-45} textAnchor="end" height={80} />
@@ -354,7 +344,7 @@ const PlatformDetailPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {platformData?.contributions?.length > 0 && (
         <ChartCard title="Contribution Activity" subtitle="Last 6 days">
-          <ResponsiveContainer width="100%" height={250} minWidth={1} minHeight={1}>
+          <ResponsiveContainer width="100%" height={250} minHeight={250} debounce={100}>
             <AreaChart data={platformData.contributions}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
               <XAxis dataKey="date" stroke="#9CA3AF" />
@@ -406,7 +396,51 @@ const PlatformDetailPage = () => {
   );
   };
 
+  // GeeksforGeeks specialized content
+  const renderGeeksforGeeksContent = () => {
+    if (!platformData) return null;
+    
+    const stats = platformData;
+    const cards = [
+      { title: 'Coding Score', value: stats.codingScore || stats.rating || 0, icon: <Trophy className="w-5 h-5 text-yellow-500" />, color: 'bg-yellow-500/10' },
+      { title: 'Institute Rank', value: stats.instituteRank || stats.rank || 'N/A', icon: <Target className="w-5 h-5 text-blue-500" />, color: 'bg-blue-500/10' },
+      { title: 'Problems Solved', value: stats.problemsSolved || 0, icon: <CheckCircle className="w-5 h-5 text-green-500" />, color: 'bg-green-500/10' }
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {cards.map((card, idx) => (
+            <div key={idx} className={`${card.color} p-4 rounded-xl border border-white/10 flex items-center gap-4`}>
+              <div className="p-3 bg-white/10 rounded-lg">{card.icon}</div>
+              <div>
+                <p className="text-sm text-gray-400">{card.title}</p>
+                <p className="text-xl font-bold text-white">{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Placeholder for GFG Topics if available */}
+        {stats.topics && stats.topics.length > 0 && (
+          <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Topic Breakdown</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {stats.topics.slice(0, 8).map((topic, idx) => (
+                <div key={idx} className="bg-white/5 p-3 rounded-xl flex justify-between items-center">
+                  <span className="text-sm text-gray-300">{topic.name}</span>
+                  <span className="text-sm font-bold text-white">{topic.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderOtherPlatformContent = () => {
+    if (activeTab === 'geeksforgeeks') return renderGeeksforGeeksContent();
     if (!platformData) return null;
     
     return (
@@ -427,7 +461,13 @@ const PlatformDetailPage = () => {
         {platformData?.rank && (
           <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Rank</div>
-            <div className="text-3xl font-bold text-purple-500">{platformData?.rank || '-'}</div>
+            <div className="text-3xl font-bold text-purple-500">{platformData?.rank || platformData?.instituteRank || '-'}</div>
+          </div>
+        )}
+        {activeTab === 'geeksforgeeks' && platformData?.codingScore > 0 && (
+          <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Coding Score</div>
+            <div className="text-3xl font-bold text-amber-500">{platformData.codingScore}</div>
           </div>
         )}
       </div>

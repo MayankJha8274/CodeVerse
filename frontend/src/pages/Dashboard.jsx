@@ -230,7 +230,7 @@ const Dashboard = () => {
       const response = await api.syncPlatforms();
       
       // 2. Poll backend until sync is complete or cached
-      if (response && response.status !== 200 && !response.cached) {
+      if (response && !response.cached) {
         let isSyncingBackend = true;
         let attempts = 0;
         while (isSyncingBackend && attempts < 60) {
@@ -252,6 +252,7 @@ const Dashboard = () => {
       setCooldownRemaining(Math.ceil(SYNC_COOLDOWN_MS / 1000));
     } catch (error) {
       console.error('Sync failed:', error);
+      alert(`Sync failed: ${error.message || 'Unknown error. Please try again.'}`);
     } finally {
       setSyncing(false);
     }
@@ -556,13 +557,14 @@ const Dashboard = () => {
                 {openDevStats && (
                   <div className="space-y-2">
                     {connectedPlatforms.filter(p => p.key === 'github').map(platform => {
-  return (
-                        <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
-                          <div className="flex items-center gap-2">
-                            <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
-                            <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
+                      const stats = platformStats.github;
+                      return (
+                        <div key={platform.key} className="flex flex-col p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">{platform.name}</span>
+                            </div>
                             <a
                               href={getPlatformUrl(platform.key, platform.username)}
                               target="_blank"
@@ -572,6 +574,27 @@ const Dashboard = () => {
                               <ExternalLink className="w-4 h-4" />
                             </a>
                           </div>
+                          
+                          {stats && (
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
+                              <div className="text-[11px] text-gray-500 flex justify-between">
+                                <span>Commits:</span>
+                                <span className="text-gray-900 dark:text-gray-300 font-medium">{stats.totalCommits || 0}</span>
+                              </div>
+                              <div className="text-[11px] text-gray-500 flex justify-between">
+                                <span>Repos:</span>
+                                <span className="text-gray-900 dark:text-gray-300 font-medium">{stats.totalRepos || 0}</span>
+                              </div>
+                              <div className="text-[11px] text-gray-500 flex justify-between">
+                                <span>Stars:</span>
+                                <span className="text-gray-900 dark:text-gray-300 font-medium">{stats.totalStars || 0}</span>
+                              </div>
+                              <div className="text-[11px] text-gray-500 flex justify-between">
+                                <span>Streak:</span>
+                                <span className="text-gray-900 dark:text-gray-300 font-medium">{stats.contributionStreak || 0}d</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

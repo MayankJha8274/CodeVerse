@@ -48,13 +48,25 @@ const fetchPlatformData = async (platform, username, token = null) => {
     return { success: false, error: 'Unsupported platform' };
   }
 
-  // Use GitHub token from environment if not provided
-  if (platform === 'github') {
-    const githubToken = token || process.env.GITHUB_TOKEN;
-    return await fetcher(username, githubToken);
+  // Add a 30-second timeout to prevent individual platform hangs
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Platform API request timed out (30s)')), 30000);
+  });
+
+  try {
+    // Use GitHub token from environment if not provided
+    if (platform === 'github') {
+      const githubToken = token || process.env.GITHUB_TOKEN;
+      // Increase timeout for GitHub as it can be slow with GraphQL and multiple years
+      return await Promise.race([
+        fetcher(username, githubToken),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('GitHub fetch timeout after 60s')), 60000))
+      ]);
+    }
+    return await Promise.race([fetcher(username), timeoutPromise]);
+  } catch (error) {
+    return { success: false, error: error.message || 'Fetch failed' };
   }
-  
-  return await fetcher(username);
 };
 
 /**
@@ -207,6 +219,9 @@ const calculateAggregatedStats = async (userId) => {
     // GitHub
     if (ps.platform === 'github') {
       breakdown.commits = ps.stats.totalCommits || 0;
+      breakdown.totalContributions = ps.stats.totalContributions || ps.stats.allTimeContributions || 0;
+      breakdown.repositories = ps.stats.totalRepos || 0;
+      breakdown.stars = ps.stats.totalStars || 0;
     }
 
     // Codeforces

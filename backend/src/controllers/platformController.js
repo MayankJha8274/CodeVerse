@@ -28,9 +28,9 @@ try {
     codeforces: 10 * 60 * 1000,
     leetcode: 15 * 60 * 1000,
     codechef: 15 * 60 * 1000,
-    geeksforgeeks: 20 * 60 * 1000,
-    hackerrank: 10 * 60 * 1000,
-    codingninjas: 20 * 60 * 1000
+    geeksforgeeks: 5 * 60 * 1000,
+    hackerrank: 5 * 60 * 1000,
+    codingninjas: 10 * 60 * 1000
   };
 }
 
@@ -104,36 +104,77 @@ const connectPlatform = async (req, res, next) => {
       }
     }
 
-    // Update user's platforms
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      {
-        [`platforms.${platform}`]: username,
-        lastActivityAt: new Date()
-      },
-      { new: true }
-    );
+    // Reset sync status to prevent "Sync in progress" lock
+    await User.findByIdAndUpdate(req.user.id, { syncStatus: 'idle' });
 
-    // Queue a sync job if queue is available
-    if (queueAvailable && addSyncJob) {
+    // Sanitize username (remove leading @ if present)
+    const sanitizedUsername = username.startsWith('@') ? username.substring(1) : username;
+
+    // Clear user cache if Redis is enabled
+    if (REDIS_ENABLED) {
       try {
-        await addSyncJob(req.user.id, {
-          platform,
-          priority: PRIORITY.HIGH,
-          triggeredBy: 'platform_connect'
-        });
+        const redis = require('../config/redis').client;
+        if (redis) {
+          const keys = await redis.keys(`user:${req.user.id}:*`);
+          if (keys.length > 0) {
+            await redis.del(keys);
+          }
+        }
       } catch (err) {
-        console.warn('Queue not available, sync manually');
+        console.warn('Failed to clear user cache:', err.message);
       }
     }
 
-    res.status(200).json({
-      success: true,
-      message: `${platform} connected successfully.`,
-      data: {
-        platforms: user.platforms
+    // Always perform an inline fetch to verify and populate initial data first
+    console.log(`[connectPlatform] Verifying ${platform} username: ${sanitizedUsername}...`);
+    try {
+      const result = await fetchPlatformData(platform, sanitizedUsername);
+      
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: `Could not verify ${platform} username. ${result.error || 'Please check and try again.'}`
+        });
       }
-    });
+
+      // Update user's platforms ONLY if verification succeeded
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        {
+          [`platforms.${platform}`]: sanitizedUsername,
+          lastActivityAt: new Date()
+        },
+        { new: true }
+      );
+
+      // Save initial stats
+      await PlatformStats.findOneAndUpdate(
+        { userId: req.user.id, platform },
+        {
+          userId: req.user.id,
+          platform,
+          stats: result.stats,
+          lastFetched: new Date(),
+          fetchStatus: 'success'
+        },
+        { upsert: true }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `${platform} connected and data fetched successfully.`,
+        data: {
+          platforms: user.platforms,
+          stats: result.stats
+        }
+      });
+    } catch (err) {
+      console.error(`[connectPlatform] Error connecting ${platform}:`, err.message);
+      return res.status(500).json({
+        success: false,
+        message: `Failed to connect ${platform}: ${err.message}`
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -201,14 +242,23 @@ const syncAllPlatforms = async (req, res, next) => {
 
     // Check if already syncing
     if (user.syncStatus === 'syncing' && !forceSync) {
-      return res.status(429).json({
-        success: false,
-        message: 'Sync already in progress. Please wait.',
-        data: {
-          syncStatus: user.syncStatus,
-          lastSyncedAt: user.lastSyncedAt
-        }
-      });
+      // Add stale lock protection (2 minutes for manual sync)
+      const STALE_LOCK_TIME = 2 * 60 * 1000;
+      const lastActivity = user.lastActivityAt || user.updatedAt;
+      
+      if (lastActivity && (Date.now() - new Date(lastActivity).getTime() > STALE_LOCK_TIME)) {
+        console.log(`⚠️ Breaking stale sync lock for user ${user._id} (${user.username})`);
+        // We don't return here, we proceed and it will set status to syncing again
+      } else {
+        return res.status(429).json({
+          success: false,
+          message: 'Sync in progress. Please wait a moment.',
+          data: {
+            syncStatus: user.syncStatus,
+            lastSyncedAt: user.lastSyncedAt
+          }
+        });
+      }
     }
 
     // Check cache (if not force sync and not hard reset)
@@ -233,8 +283,13 @@ const syncAllPlatforms = async (req, res, next) => {
       if (lastPlatformSync) {
         const cooldown = PLATFORM_COOLDOWNS[platform] || 10 * 60 * 1000;
         const elapsed = Date.now() - new Date(lastPlatformSync).getTime();
+        
+        // Allow bypass if platform was linked/updated in the last 5 minutes
+        // OR if there is NO data in PlatformStats for this platform (initial sync)
+        const hasStats = await PlatformStats.exists({ userId: req.user.id, platform });
+        const connectedRecently = user.lastActivityAt && (Date.now() - new Date(user.lastActivityAt).getTime() < 5 * 60 * 1000);
 
-        if (elapsed < cooldown) {
+        if (elapsed < cooldown && !connectedRecently && hasStats) {
           const remaining = Math.ceil((cooldown - elapsed) / 1000);
           return res.status(429).json({
             success: false,
@@ -302,6 +357,7 @@ const syncAllPlatforms = async (req, res, next) => {
     if (platform) {
       const username = user.platforms?.[platform];
       if (!username) {
+        await User.findByIdAndUpdate(req.user.id, { syncStatus: 'idle' });
         return res.status(400).json({
           success: false,
           message: `Platform ${platform} is not linked`
@@ -309,6 +365,7 @@ const syncAllPlatforms = async (req, res, next) => {
       }
       const result = await fetchPlatformData(platform, username);
       if (!result.success) {
+        await User.findByIdAndUpdate(req.user.id, { syncStatus: 'idle' });
         return res.status(400).json({
           success: false,
           message: result.message || `Failed to sync ${platform}`,
@@ -335,10 +392,10 @@ const syncAllPlatforms = async (req, res, next) => {
 
     const aggregated = await calculateAggregatedStats(user._id);
 
+    // Direct sync results update user status
     await User.findByIdAndUpdate(req.user.id, {
-      lastSynced: new Date(),
-      lastSyncedAt: new Date(),
-      syncStatus: 'completed'
+      syncStatus: results.some(r => !r.success) ? 'failed' : 'idle',
+      lastSyncedAt: new Date()
     });
 
     res.status(200).json({
@@ -466,20 +523,22 @@ const getPlatformStats = async (req, res, next) => {
     });
 
     if (!stats) {
-      const username = user.platforms?.[platform];
-      if (!username) {
+      const rawUsername = user.platforms?.[platform];
+      if (!rawUsername) {
         return res.status(404).json({
           success: false,
           message: `Platform ${platform} is not linked.`
         });
       }
       
+      const username = rawUsername.startsWith('@') ? rawUsername.substring(1) : rawUsername;
+      
       console.warn(`[getPlatformStats] Stats missing for ${platform}. Triggering inline sync...`);
       const result = await fetchPlatformData(platform, username);
       if (!result.success) {
         return res.status(400).json({
           success: false,
-          message: result.message || `No stats found for ${platform} and inline fetch failed.`
+          message: result.error || result.message || `No stats found for ${platform} and inline fetch failed.`
         });
       }
 

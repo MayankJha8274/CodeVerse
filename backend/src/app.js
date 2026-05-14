@@ -61,6 +61,10 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/api/test-version', (req, res) => {
+  res.json({ version: 'v2-bulletproof-gfg', timestamp: new Date() });
+});
+
 // API Routes
 try {
   app.use('/api/auth', require('./routes/authRoutes'));
