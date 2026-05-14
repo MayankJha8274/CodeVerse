@@ -145,10 +145,13 @@ function generateContestReminderTemplate(user, contest) {
       </div>
       <div style="padding: 25px;">
         <h2 style="color: #FFFFFF; font-size: 24px; margin-top: 0;">🔥 Contest Reminder: ${contest.name}</h2>
-        <p style="font-size: 16px;">Hey ${user.username},</p>
+        <p style="font-size: 16px;">Hey ${user.username || user.fullName || 'there'},</p>
         <p style="font-size: 16px;">Get ready to code! The contest, <strong>${contest.name}</strong>, is scheduled to start in approximately one hour.</p>
         <p style="font-size: 16px;">
-          <strong>Starts at:</strong> ${new Date(contest.startTime).toLocaleString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+          <strong>Platform:</strong> ${(contest.platform || '').charAt(0).toUpperCase() + (contest.platform || '').slice(1)}
+        </p>
+        <p style="font-size: 16px;">
+          <strong>Starts at:</strong> ${new Date(contest.startTime).toUTCString()}
         </p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${contest.url}" style="background-color: #4A90E2; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">

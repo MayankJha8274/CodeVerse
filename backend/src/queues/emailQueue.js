@@ -93,6 +93,7 @@ const emailQueue = {
             try {
                 const job = await bullQueue.add(jobName, data, jobOptions);
                 console.log(`📥 [BullMQ] Enqueued job ${job.id} for ${data.to}`);
+                job.durable = true;
                 return job;
             } catch (err) {
                 const msg = err?.message || '';
@@ -104,7 +105,7 @@ const emailQueue = {
                             if (state === 'failed') {
                                 console.warn(`↩️ [BullMQ] Job exists but failed; retrying (jobId=${jobOptions.jobId})`);
                                 await existing.retry();
-                                return { id: jobOptions.jobId, retried: true };
+                                return { id: jobOptions.jobId, retried: true, durable: true };
                             }
                         }
                     } catch (_) {
@@ -112,7 +113,7 @@ const emailQueue = {
                     }
 
                     console.log(`ℹ️ [BullMQ] Job already exists (jobId=${jobOptions.jobId}) for ${data.to}`);
-                    return { id: jobOptions.jobId, alreadyExists: true };
+                    return { id: jobOptions.jobId, alreadyExists: true, durable: true };
                 }
                 throw err;
             }
@@ -122,18 +123,19 @@ const emailQueue = {
         if (emailQueueMongo) {
             try {
                 const job = await emailQueueMongo.add(jobName, data, opts);
+                if (job && typeof job === 'object') job.durable = true;
                 return job;
             } catch (err) {
                 console.warn('⚠️ EmailQueue: Mongo enqueue failed; falling back to in-memory:', err.message);
             }
         }
 
-        // 3) Last resort: in-memory queue
+        // 3) Last resort: in-memory queue (volatile — lost on restart)
         const maxAttempts = opts.attempts || 3;
         startMemoryProcessorOnce();
         internalQueue.push({ name: jobName, data, attempts: 0, maxAttempts });
-        console.log(`📥 [MemoryQueue] Job '${jobName}' added to internal queue (Size: ${internalQueue.length})`);
-        return true;
+        console.log(`📥 [MemoryQueue] Job '${jobName}' added to internal queue (Size: ${internalQueue.length}). ⚠️ NOT durable — will be lost on restart.`);
+        return { durable: false, _memoryQueue: true };
     },
     _getQueueSize: () => internalQueue.length,
 };

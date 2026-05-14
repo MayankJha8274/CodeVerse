@@ -111,6 +111,15 @@ const setReminder = async (req, res, next) => {
       ? new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
       : reminderTime;
 
+    // Enforce max 100 reminders per contest
+    const reminderCount = await ContestReminder.countDocuments({ contestId: contest._id });
+    if (reminderCount >= 100) {
+      return res.status(429).json({
+        success: false,
+        message: 'Maximum reminder limit (100) reached for this contest. Please try again later.'
+      });
+    }
+
     // Check if reminder already exists
     const existingReminder = await ContestReminder.findOne({
       userId,

@@ -314,7 +314,8 @@ const ContestsPage = () => {
   const fetchContests = async () => {
     try {
       setLoading(true);
-      const data = await api.getContests(selectedPlatform);
+      // Always fetch all contests from server; client-side filtering handles platform selection.
+      const data = await api.getContests('all');
       setContests(data || []);
     } catch (error) {
       console.error('Error fetching contests:', error);
@@ -478,7 +479,6 @@ const ContestsPage = () => {
               value={selectedPlatform}
               onChange={(e) => {
                 setSelectedPlatform(e.target.value);
-                setTimeout(fetchContests, 0);
               }}
               className="pl-10 pr-8 py-2.5 bg-gray-50 dark:bg-[#16161f] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 min-w-[180px]"
             >
