@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const PlatformStats = require('../models/PlatformStats');
-const { getRedisConnection } = require('../config/redis');
+const { getRedisConnection, REDIS_ENABLED } = require('../config/redis');
 const {
   fetchAllPlatformStats,
   calculateAggregatedStats,
