@@ -51,10 +51,16 @@ const SyncStatusBadge = ({ onSyncComplete, showButton = true, compact = false })
         // Data was cached, show message
         setError(`Data is fresh. Next sync available in ${result.data?.nextSyncIn || 0}s`);
         setTimeout(() => setError(null), 3000);
-      } else {
+      } else if (result.data?.status === 'queued') {
         setIsSyncing(true);
         // Poll for completion
         pollSyncStatus();
+      } else {
+        // Direct sync path (completed synchronously)
+        await fetchSyncStatus();
+        if (onSyncComplete) {
+          onSyncComplete();
+        }
       }
     } catch (err) {
       const message = err.response?.data?.message || err.message || 'Sync failed';

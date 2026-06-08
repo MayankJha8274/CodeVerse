@@ -229,8 +229,8 @@ const Dashboard = () => {
       // 1. Put the sync job in the queue
       const response = await api.syncPlatforms();
       
-      // 2. Poll backend until sync is complete or cached
-      if (response && response.status !== 200 && !response.cached) {
+      // 2. Poll backend until sync is complete or cached (only for queued background jobs)
+      if (response && response.data?.status === 'queued') {
         let isSyncingBackend = true;
         let attempts = 0;
         while (isSyncingBackend && attempts < 60) {

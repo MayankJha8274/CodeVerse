@@ -11,7 +11,7 @@ const { fetchLeetCodeSkillStats, fetchLeetCodeBadges, getLeetCodeRankTitle } = r
 const { fetchCodeforcesTopicStats, getCodeforcesRankInfo } = require('../services/platforms/codeforcesService');
 
 // Try to load queue (optional - requires Redis)
-let addSyncJob, getQueueStats, PRIORITY, PLATFORM_COOLDOWNS;
+let addSyncJob, getQueueStats, PRIORITY, PLATFORM_COOLDOWNS, isQueueAvailableFn;
 let queueAvailable = false;
 try {
   const syncQueue = require('../queues/syncQueue');
@@ -19,6 +19,7 @@ try {
   getQueueStats = syncQueue.getQueueStats;
   PRIORITY = syncQueue.PRIORITY;
   PLATFORM_COOLDOWNS = syncQueue.PLATFORM_COOLDOWNS;
+  isQueueAvailableFn = syncQueue.isQueueAvailable;
   queueAvailable = true;
 } catch (err) {
   console.warn('⚠️ Queue not available, using direct sync');
@@ -33,6 +34,10 @@ try {
     codingninjas: 20 * 60 * 1000
   };
 }
+
+const isQueueActive = () => {
+  return queueAvailable && typeof isQueueAvailableFn === 'function' && isQueueAvailableFn();
+};
 
 // Try to load logger (optional)
 let syncLogger;
@@ -115,7 +120,7 @@ const connectPlatform = async (req, res, next) => {
     );
 
     // Queue a sync job if queue is available
-    if (queueAvailable && addSyncJob) {
+    if (isQueueActive() && addSyncJob) {
       try {
         await addSyncJob(req.user.id, {
           platform,
@@ -199,16 +204,26 @@ const syncAllPlatforms = async (req, res, next) => {
     const user = await User.findById(req.user.id);
     const { platform, hardReset, forceSync } = req.body;
 
-    // Check if already syncing
+    // Check if already syncing, with 5-minute self-healing timeout
+    const SYNC_TIMEOUT_MS = 5 * 60 * 1000;
     if (user.syncStatus === 'syncing' && !forceSync) {
-      return res.status(429).json({
-        success: false,
-        message: 'Sync already in progress. Please wait.',
-        data: {
-          syncStatus: user.syncStatus,
-          lastSyncedAt: user.lastSyncedAt
-        }
-      });
+      const elapsed = Date.now() - new Date(user.updatedAt).getTime();
+      if (elapsed > SYNC_TIMEOUT_MS) {
+        console.warn(`⚠️ Sync lock stuck for user ${user._id} for ${Math.round(elapsed / 1000)}s. Resetting state.`);
+        await User.findByIdAndUpdate(user._id, {
+          syncStatus: 'failed',
+          lastSyncError: 'Sync timed out (stuck state auto-reset)'
+        });
+      } else {
+        return res.status(429).json({
+          success: false,
+          message: 'Sync already in progress. Please wait.',
+          data: {
+            syncStatus: user.syncStatus,
+            lastSyncedAt: user.lastSyncedAt
+          }
+        });
+      }
     }
 
     // Check cache (if not force sync and not hard reset)
@@ -249,7 +264,7 @@ const syncAllPlatforms = async (req, res, next) => {
     }
 
     // If queue is available, use it
-    if (queueAvailable && addSyncJob) {
+    if (isQueueActive() && addSyncJob) {
       try {
         // Update user status
         await User.findByIdAndUpdate(req.user.id, {
@@ -264,6 +279,10 @@ const syncAllPlatforms = async (req, res, next) => {
           priority: PRIORITY.HIGH,
           triggeredBy: 'manual'
         });
+
+        if (!job) {
+          throw new Error('Queue is not active or job creation failed');
+        }
 
         syncLogger.info('Manual sync requested', {
           userId: req.user.id,
@@ -291,65 +310,76 @@ const syncAllPlatforms = async (req, res, next) => {
       syncStatus: 'syncing'
     });
 
-    // Hard reset if requested
-    if (hardReset) {
-      await PlatformStats.deleteMany({ userId: user._id });
-      const DailyProgress = require('../models/DailyProgress');
-      await DailyProgress.deleteMany({ userId: user._id });
+    try {
+      // Hard reset if requested
+      if (hardReset) {
+        await PlatformStats.deleteMany({ userId: user._id });
+        const DailyProgress = require('../models/DailyProgress');
+        await DailyProgress.deleteMany({ userId: user._id });
+      }
+
+      let results;
+      if (platform) {
+        const username = user.platforms?.[platform];
+        if (!username) {
+          await User.findByIdAndUpdate(req.user.id, { syncStatus: 'failed', lastSyncError: `Platform ${platform} is not linked` });
+          return res.status(400).json({
+            success: false,
+            message: `Platform ${platform} is not linked`
+          });
+        }
+        const result = await fetchPlatformData(platform, username);
+        if (!result.success) {
+          await User.findByIdAndUpdate(req.user.id, { syncStatus: 'failed', lastSyncError: result.message || result.error || `Failed to sync ${platform}` });
+          return res.status(400).json({
+            success: false,
+            message: result.message || `Failed to sync ${platform}`,
+            error: result.error || 'Platform data fetch failed'
+          });
+        }
+        
+        await PlatformStats.findOneAndUpdate(
+          { userId: user._id, platform },
+          {
+            userId: user._id,
+            platform,
+            stats: result.stats,
+            lastFetched: new Date(),
+            fetchStatus: 'success'
+          },
+          { upsert: true }
+        );
+        
+        results = [result];
+      } else {
+        results = await fetchAllPlatformStats(user);
+      }
+
+      const aggregated = await calculateAggregatedStats(user._id);
+
+      await User.findByIdAndUpdate(req.user.id, {
+        lastSynced: new Date(),
+        lastSyncedAt: new Date(),
+        syncStatus: 'completed'
+      });
+
+      res.status(200).json({
+        success: true,
+        message: platform ? `${platform} synced successfully` : 'Platforms synced successfully',
+        data: {
+          results,
+          aggregated,
+          lastSynced: new Date()
+        }
+      });
+    } catch (syncError) {
+      await User.findByIdAndUpdate(req.user.id, {
+        syncStatus: 'failed',
+        lastSyncError: syncError.message
+      });
+      syncLogger.error('Direct sync failed', { error: syncError.message });
+      throw syncError;
     }
-
-    let results;
-    if (platform) {
-      const username = user.platforms?.[platform];
-      if (!username) {
-        return res.status(400).json({
-          success: false,
-          message: `Platform ${platform} is not linked`
-        });
-      }
-      const result = await fetchPlatformData(platform, username);
-      if (!result.success) {
-        return res.status(400).json({
-          success: false,
-          message: result.message || `Failed to sync ${platform}`,
-          error: result.error || 'Platform data fetch failed'
-        });
-      }
-      
-      await PlatformStats.findOneAndUpdate(
-        { userId: user._id, platform },
-        {
-          userId: user._id,
-          platform,
-          stats: result.stats,
-          lastFetched: new Date(),
-          fetchStatus: 'success'
-        },
-        { upsert: true }
-      );
-      
-      results = [result];
-    } else {
-      results = await fetchAllPlatformStats(user);
-    }
-
-    const aggregated = await calculateAggregatedStats(user._id);
-
-    await User.findByIdAndUpdate(req.user.id, {
-      lastSynced: new Date(),
-      lastSyncedAt: new Date(),
-      syncStatus: 'completed'
-    });
-
-    res.status(200).json({
-      success: true,
-      message: platform ? `${platform} synced successfully` : 'Platforms synced successfully',
-      data: {
-        results,
-        aggregated,
-        lastSynced: new Date()
-      }
-    });
   } catch (error) {
     await User.findByIdAndUpdate(req.user.id, {
       syncStatus: 'failed',
@@ -367,12 +397,28 @@ const syncAllPlatforms = async (req, res, next) => {
  */
 const getSyncStatus = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id)
-      .select('syncStatus lastSyncedAt lastSyncError platformSyncTimes');
+    let user = await User.findById(req.user.id);
+
+    // Self-healing stuck status: if stuck syncing for > 5 minutes, auto-reset
+    const SYNC_TIMEOUT_MS = 5 * 60 * 1000;
+    if (user.syncStatus === 'syncing') {
+      const elapsed = Date.now() - new Date(user.updatedAt).getTime();
+      if (elapsed > SYNC_TIMEOUT_MS) {
+        console.warn(`⚠️ Sync lock stuck for user ${user._id} in status check. Resetting state.`);
+        user = await User.findByIdAndUpdate(
+          req.user.id,
+          {
+            syncStatus: 'failed',
+            lastSyncError: 'Sync timed out (stuck state auto-reset)'
+          },
+          { new: true }
+        );
+      }
+    }
 
     let queueStats = { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 };
 
-    if (queueAvailable && getQueueStats) {
+    if (isQueueActive() && getQueueStats) {
       try {
         queueStats = await getQueueStats();
       } catch (err) {
@@ -943,7 +989,7 @@ const getQueueStatistics = async (req, res, next) => {
   try {
     let stats = { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0, total: 0 };
 
-    if (queueAvailable && getQueueStats) {
+    if (isQueueActive() && getQueueStats) {
       try {
         stats = await getQueueStats();
       } catch (err) {

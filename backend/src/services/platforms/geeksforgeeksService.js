@@ -110,7 +110,14 @@ const generateEstimatedCalendar = (totalProblems) => {
 
 let _gfgBrowser = null;
 const getGfgBrowser = async () => {
-  if (!_gfgBrowser) {
+  if (!_gfgBrowser || !_gfgBrowser.connected) {
+    if (_gfgBrowser) {
+      try {
+        await _gfgBrowser.close();
+      } catch (e) {
+        // ignore
+      }
+    }
     _gfgBrowser = await puppeteer.launch({ 
       headless: true, 
       args: [
@@ -118,6 +125,9 @@ const getGfgBrowser = async () => {
         '--disable-setuid-sandbox',
         '--disable-blink-features=AutomationControlled'
       ] 
+    });
+    _gfgBrowser.once('disconnected', () => {
+      _gfgBrowser = null;
     });
   }
   return _gfgBrowser;
@@ -173,16 +183,47 @@ const fetchGeeksforGeeksStats = async (username) => {
     
     try {
       await page.goto(url, { 
-        waitUntil: 'networkidle0', 
-        timeout: 30000 
+        waitUntil: 'networkidle2', 
+        timeout: 15000 
       });
     } catch (e) {
-      console.log(`   ❌ Error loading profile: ${e.message}`);
-      throw e;
+      console.log(`   ⚠️ networkidle2 timed out or failed: ${e.message}. Attempting to verify page content...`);
+      try {
+        const title = await page.title();
+        if (!title) throw e;
+      } catch (innerErr) {
+        throw e;
+      }
     }
     
-    // Wait for dynamic content to load (GFG loads data via JavaScript/API)
-    await new Promise(resolve => setTimeout(resolve, 6000));
+    // Detect rate limit or Cloudflare page early
+    const checkBlocking = async () => {
+      const pageInfo = await page.evaluate(() => {
+        const text = document.body ? document.body.innerText : '';
+        const title = document.title || '';
+        return { text, title };
+      });
+      
+      if (pageInfo.text.includes("Too Many Requests") || pageInfo.text.includes("429") || pageInfo.title.includes("429")) {
+        throw new Error("GFG_RATE_LIMIT: Too Many Requests (429) encountered on GeeksforGeeks.");
+      }
+      if (pageInfo.text.includes("Cloudflare") || pageInfo.title.includes("Cloudflare") || pageInfo.title.includes("Just a moment...")) {
+        throw new Error("GFG_CLOUDFLARE: Cloudflare challenge page encountered.");
+      }
+    };
+    
+    await checkBlocking();
+
+    // Wait for dynamic stats selectors to load instead of hard coding a 6s wait
+    try {
+      await page.waitForSelector('.profile_layout, [class*="profile"], [class*="stat"]', { timeout: 5000 });
+      console.log('   ✅ Profile selectors loaded successfully');
+    } catch (e) {
+      console.log('   ⚠️ Selectors did not load within 5s, checking blockings again or waiting for fallback...');
+      await checkBlocking();
+      // Fallback: wait a short time just to let any remaining requests finish
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
     
     // Take screenshot for debugging (optional, can be removed in production)
     // try {
@@ -484,7 +525,7 @@ const fetchGeeksforGeeksStats = async (username) => {
       success: false,
       platform: 'geeksforgeeks',
       username,
-      error: 'Unable to fetch GFG stats. Profile may be private or username incorrect.',
+      error: error.message || 'Unable to fetch GFG stats. Profile may be private or username incorrect.',
       stats: null
     };
   }

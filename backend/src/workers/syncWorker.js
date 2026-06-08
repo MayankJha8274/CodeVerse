@@ -306,10 +306,12 @@ const startWorker = async () => {
 
   const worker = new Worker('platform-sync', processSyncJob, {
     connection,
-      concurrency: parseInt(process.env.WORKER_CONCURRENCY) || 5, // Increased default concurrency for faster processing
-      limiter: {
-        max: parseInt(process.env.WORKER_RATE_LIMIT) || 100, // Increased max limit
-        duration: 60000 // Max 10 jobs per minute limit raised
+    concurrency: parseInt(process.env.WORKER_CONCURRENCY) || 5, // Increased default concurrency for faster processing
+    limiter: {
+      max: parseInt(process.env.WORKER_RATE_LIMIT) || 100, // Increased max limit
+      duration: 60000 // Max 10 jobs per minute limit raised
+    }
+  });
 
   worker.on('completed', (job, result) => {
     syncLogger.queueEvent('completed', job.id, {
