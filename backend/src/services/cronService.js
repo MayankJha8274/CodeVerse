@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const https = require('https');
 const User = require('../models/User');
 const Contest = require('../models/Contest');
 const ContestReminder = require('../models/ContestReminder');
@@ -8,6 +9,21 @@ const { fetchAllContests } = require('./contestService');
 const { emailQueue } = require('../queues/emailQueue');
 const { createInAppNotification } = require('./notificationService');
 const { generateContestReminderTemplate } = require('./emailService');
+
+function startKeepAlive() {
+  const selfUrl = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL;
+  if (!selfUrl) {
+    console.log('ℹ️ Keep-alive: no RENDER_EXTERNAL_URL or SELF_URL set, skipping');
+    return;
+  }
+  const pingUrl = `${selfUrl.replace(/\/+$/, '')}/health`;
+  cron.schedule('*/10 * * * *', () => {
+    https.get(pingUrl, (res) => {
+      res.resume();
+    }).on('error', () => {});
+  }, { scheduled: true, timezone: 'UTC' });
+  console.log(`⏰ Keep-alive ping every 10 min → ${pingUrl}`);
+}
 
 /**
  * Cron Job Service
@@ -185,6 +201,8 @@ const startAllCronJobs = () => {
     scheduled: true,
     timezone: 'UTC'
   });
+
+  startKeepAlive();
 
   console.log('⏰ All cron jobs started:');
   console.log('   - Platform sync: Every 15 minutes');
