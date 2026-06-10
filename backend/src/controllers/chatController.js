@@ -78,7 +78,7 @@ const updateChannel = async (req, res, next) => {
       { _id: req.params.channelId, society: req.params.societyId },
       { $set: update },
       { new: true }
-    );
+    ).lean();
 
     if (!channel) {
       return res.status(404).json({ success: false, message: 'Channel not found' });

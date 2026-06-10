@@ -131,7 +131,7 @@ exports.getCombinedDashboardData = async (req, res) => {
 
     // Execute all queries in parallel
     const [user, platformStats, recentProgress, todayProgress] = await Promise.all([
-      User.findById(userId).select('-password'),
+      User.findById(userId).select('-password').lean(),
       PlatformStats.find({
         userId,
         stats: { $exists: true, $ne: null }

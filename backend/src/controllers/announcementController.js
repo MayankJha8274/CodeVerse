@@ -103,7 +103,7 @@ const updateAnnouncement = async (req, res, next) => {
       { _id: req.params.announcementId, society: req.params.societyId },
       { $set: update },
       { new: true, runValidators: true }
-    ).populate('author', 'username fullName avatar');
+    ).populate('author', 'username fullName avatar').lean();
 
     if (!announcement) {
       return res.status(404).json({ success: false, message: 'Announcement not found' });
@@ -123,7 +123,7 @@ const deleteAnnouncement = async (req, res, next) => {
     const result = await Announcement.findOneAndDelete({
       _id: req.params.announcementId,
       society: req.params.societyId
-    });
+    }).lean();
 
     if (!result) {
       return res.status(404).json({ success: false, message: 'Announcement not found' });

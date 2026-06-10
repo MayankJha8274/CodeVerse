@@ -58,12 +58,8 @@ const LoginPage = () => {
     try {
       setOauthLoading(provider);
       const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-      // Ping health endpoint to wake up Render instance
-      await fetch(`${API_URL}/health`);
-      // Redirect to backend OAuth route
       window.location.href = `${API_URL}/api/auth/${provider}`;
     } catch (err) {
-      console.error('Failed to wake up server:', err);
       setError('Cannot connect to authentication server. Please try again.');
       setOauthLoading(null);
     }

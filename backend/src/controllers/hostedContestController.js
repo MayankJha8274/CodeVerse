@@ -110,7 +110,7 @@ exports.getContest = async (req, res) => {
       .populate({
         path: 'problems',
         select: 'title slug difficulty maxScore problemCode order'
-      });
+      }).lean();
 
     if (!contest) {
       return res.status(404).json({
@@ -154,7 +154,7 @@ exports.getContest = async (req, res) => {
 // @access  Private (owner/admin only)
 exports.updateContest = async (req, res) => {
   try {
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -207,7 +207,7 @@ exports.updateContest = async (req, res) => {
 // @access  Private (owner only)
 exports.deleteContest = async (req, res) => {
   try {
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -250,7 +250,7 @@ exports.addModerator = async (req, res) => {
   try {
     const { userIdentifier, role } = req.body; // email or username
     
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -313,7 +313,7 @@ exports.addModerator = async (req, res) => {
 // @access  Private (owner only)
 exports.removeModerator = async (req, res) => {
   try {
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -357,7 +357,7 @@ exports.sendNotification = async (req, res) => {
   try {
     const { message, type } = req.body;
     
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -403,7 +403,7 @@ exports.getNotifications = async (req, res) => {
   try {
     const contest = await HostedContest.findOne({ slug: req.params.slug })
       .select('notifications')
-      .populate('notifications.sentBy', 'name username');
+      .populate('notifications.sentBy', 'name username').lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -432,7 +432,7 @@ exports.getNotifications = async (req, res) => {
 // @access  Private
 exports.signUp = async (req, res) => {
   try {
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -520,7 +520,7 @@ exports.getSignups = async (req, res) => {
 // @access  Private (owner/moderator)
 exports.getStatistics = async (req, res) => {
   try {
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({

@@ -18,7 +18,7 @@ exports.getAnalyticsTrend = async (req, res, next) => {
     if (userIds) {
       targetUserIds = userIds.split(',').map(id => mongoose.Types.ObjectId.createFromHexString(id));
     } else {
-      const members = await SocietyMember.find({ society: entityId }).populate('user', 'username').limit(5);
+      const members = await SocietyMember.find({ society: entityId }).populate('user', 'username').limit(5).lean();
       targetUserIds = members.map(m => m.user?._id).filter(Boolean);
     }
 
@@ -71,7 +71,7 @@ exports.getAnalyticsComparison = async (req, res, next) => {
     if (userIds) {
       targetUserIds = userIds.split(',').map(id => mongoose.Types.ObjectId.createFromHexString(id));
     } else {
-      const members = await SocietyMember.find({ society: entityId }).populate('user', 'username').limit(5);
+      const members = await SocietyMember.find({ society: entityId }).populate('user', 'username').limit(5).lean();
       targetUserIds = members.map(m => m.user?._id).filter(Boolean);
     }
 
@@ -107,7 +107,7 @@ exports.getAnalyticsComparison = async (req, res, next) => {
 exports.getAnalyticsWeekly = async (req, res, next) => {
   try {
     const { entityId } = req.params;
-    const members = await SocietyMember.find({ society: entityId });
+    const members = await SocietyMember.find({ society: entityId }).lean();
     const userIds = members.map(m => m.user).filter(Boolean);
 
     let startDate = new Date();

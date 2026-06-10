@@ -37,5 +37,7 @@ const contestSchema = new mongoose.Schema({
 contestSchema.index({ platform: 1, startTime: 1 });
 contestSchema.index({ startTime: 1 });
 contestSchema.index({ contestId: 1, platform: 1 }, { unique: true });
+contestSchema.index({ status: 1, startTime: -1 });
+contestSchema.index({ platform: 1, status: 1 });
 
 module.exports = mongoose.model('Contest', contestSchema);

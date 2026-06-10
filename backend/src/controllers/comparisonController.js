@@ -28,7 +28,8 @@ exports.searchUsers = async (req, res) => {
       _id: { $ne: req.user.id }
     })
     .select('username fullName avatar')
-    .limit(10);
+    .limit(10)
+    .lean();
 
     res.json({ success: true, data: users });
   } catch (error) {
@@ -103,8 +104,8 @@ exports.compareUsers = async (req, res) => {
 
     // Fetch both users
     const [user1, user2] = await Promise.all([
-      User.findById(u1).select('-password'),
-      User.findById(u2).select('-password')
+      User.findById(u1).select('-password').lean(),
+      User.findById(u2).select('-password').lean()
     ]);
 
     if (!user1 || !user2) {
@@ -116,8 +117,8 @@ exports.compareUsers = async (req, res) => {
 
     // Fetch platform stats for both users
     const [stats1, stats2] = await Promise.all([
-      PlatformStats.find({ userId: u1, fetchStatus: 'success' }),
-      PlatformStats.find({ userId: u2, fetchStatus: 'success' })
+      PlatformStats.find({ userId: u1, fetchStatus: 'success' }).lean(),
+      PlatformStats.find({ userId: u2, fetchStatus: 'success' }).lean()
     ]);
 
     const totals1 = calculateTotals(stats1);
@@ -174,7 +175,7 @@ exports.compareWithRoom = async (req, res) => {
     const userId = req.user.id;
 
     // Check if room exists and user is a member
-    const room = await Room.findById(roomId);
+    const room = await Room.findById(roomId).lean();
     if (!room) {
       return res.status(404).json({
         success: false,
@@ -194,7 +195,7 @@ exports.compareWithRoom = async (req, res) => {
     const userStats = await PlatformStats.find({
       userId,
       fetchStatus: 'success'
-    });
+    }).lean();
     const userTotals = calculateTotals(userStats);
 
     // Get all members' stats
@@ -283,7 +284,7 @@ exports.getTopPerformers = async (req, res) => {
 
     if (roomId) {
       // Room-specific leaderboard
-      const room = await Room.findById(roomId);
+      const room = await Room.findById(roomId).lean();
       if (!room) {
         return res.status(404).json({
           success: false,
@@ -293,7 +294,7 @@ exports.getTopPerformers = async (req, res) => {
       userIds = room.members.map(m => m.user);
     } else {
       // Global leaderboard
-      const allUsers = await User.find({ isActive: true }).limit(100);
+      const allUsers = await User.find({ isActive: true }).limit(100).lean();
       userIds = allUsers.map(u => u._id);
     }
 

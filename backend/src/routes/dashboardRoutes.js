@@ -14,19 +14,19 @@ const combinedDashboardController = require('../controllers/combinedDashboardCon
 router.get('/combined', protect, cacheResponse(1800), combinedDashboardController.getCombinedDashboardData);
 
 // Get specific user's profile (public within app)
-router.get('/profile/:userId', protect, dashboardController.getUserProfile);
+router.get('/profile/:userId', protect, cacheResponse(60), dashboardController.getUserProfile);
 
 // Get current user's summary
-router.get('/summary', protect, dashboardController.getUserSummary);
+router.get('/summary', protect, cacheResponse(60), dashboardController.getUserSummary);
 
 // Get user's timeline/activity history
-router.get('/timeline', protect, dashboardController.getUserTimeline);
+router.get('/timeline', protect, cacheResponse(60), dashboardController.getUserTimeline);
 
 // Get user's rooms
-router.get('/rooms', protect, dashboardController.getUserRooms);
+router.get('/rooms', protect, cacheResponse(60), dashboardController.getUserRooms);
 
 // Get contribution calendar (last 365 days)
-router.get('/calendar', protect, dashboardController.getContributionCalendar);
+router.get('/calendar', protect, cacheResponse(300), dashboardController.getContributionCalendar);
 
 // Debug: Show last 10 days of calendar data for verification
 router.get('/calendar-debug', protect, async (req, res) => {

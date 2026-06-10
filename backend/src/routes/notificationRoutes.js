@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth'); // Import the protect middleware
 const NotificationLog = require('../models/NotificationLog');
+const { cacheResponse } = require('../middleware/redisCache');
 
 /**
  * @route   GET /api/notifications
  * @desc    Get all notifications for the current user
  * @access  Private
  */
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, cacheResponse(30), async (req, res) => {
   try {
-    const notifications = await NotificationLog.find({ userId: req.user.id })
+    const notifications = await NotificationLog.find({ userId: req.user.id }).lean()
       .sort({ createdAt: -1 })
       .limit(20); // Limit to the 20 most recent notifications
 

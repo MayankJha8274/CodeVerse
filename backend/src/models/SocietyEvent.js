@@ -119,6 +119,7 @@ eventSchema.index({ society: 1, startTime: -1 });
 eventSchema.index({ society: 1, status: 1 });
 eventSchema.index({ startTime: 1, endTime: 1 });
 eventSchema.index({ eventType: 1 });
+eventSchema.index({ startTime: -1 });
 
 // Auto-generate slug
 eventSchema.pre('save', function() {

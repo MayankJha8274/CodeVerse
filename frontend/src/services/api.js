@@ -4,7 +4,17 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 // Helper to get auth token
 const getAuthToken = () => localStorage.getItem('token');
 
-// Helper to make authenticated requests
+// In-flight request deduplication cache
+const inflightRequests = new Map();
+const abortControllers = new Map();
+
+const getCacheKey = (url, options = {}) => {
+  const method = options.method || 'GET';
+  const body = typeof options.body === 'string' ? options.body : '';
+  return `${method}:${url}:${body}`;
+};
+
+// Helper to make authenticated requests with deduplication and abort support
 const authFetch = async (url, options = {}) => {
   const token = getAuthToken();
   const headers = {
@@ -17,43 +27,94 @@ const authFetch = async (url, options = {}) => {
   }
 
   const fullUrl = `${API_BASE_URL}${url}`;
+  const isGet = !options.method || options.method === 'GET';
+  const cacheKey = getCacheKey(url, options);
 
-  try {
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers
-    });
-
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      data = { message: 'Invalid server response' };
+  // Deduplicate identical GET requests currently in-flight
+  if (isGet && inflightRequests.has(cacheKey)) {
+    const existing = inflightRequests.get(cacheKey);
+    if (options.signal) {
+      options.signal.addEventListener('abort', () => existing.abort(), { once: true });
     }
-
-    if (!response.ok) {
-      // Handle token expiration - auto redirect to login
-      if (response.status === 401 && data.message && data.message.includes('token expired')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setTimeout(() => {
-          window.location.href = '/login?error=session_expired';
-        }, 500);
-      }
-      
-      const error = new Error(data.message || `API request failed with status ${response.status}`);
-      error.response = { data, status: response.status };
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    // Re-throw with response data if available
-    if (!error.response) {
-      error.response = { data: { message: error.message }, status: 0 };
-    }
-    throw error;
+    return existing.promise;
   }
+
+  // If a previous request with same key is in-flight, abort it
+  if (isGet && abortControllers.has(cacheKey)) {
+    abortControllers.get(cacheKey).abort();
+  }
+
+  const controller = new AbortController();
+  const signal = options.signal
+    ? anySignal([options.signal, controller.signal])
+    : controller.signal;
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers,
+        signal
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = { message: 'Invalid server response' };
+      }
+
+      if (!response.ok) {
+        if (response.status === 401 && data.message && data.message.includes('token expired')) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setTimeout(() => {
+            window.location.href = '/login?error=session_expired';
+          }, 500);
+        }
+        
+        const error = new Error(data.message || `API request failed with status ${response.status}`);
+        error.response = { data, status: response.status };
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+      if (!error.response) {
+        error.response = { data: { message: error.message }, status: 0 };
+      }
+      throw error;
+    } finally {
+      if (isGet) {
+        inflightRequests.delete(cacheKey);
+        abortControllers.delete(cacheKey);
+      }
+    }
+  })();
+
+  if (isGet) {
+    inflightRequests.set(cacheKey, { promise: fetchPromise, abort: () => controller.abort() });
+    abortControllers.set(cacheKey, controller);
+  }
+
+  return fetchPromise;
+};
+
+// Utility to combine multiple AbortSignals
+const anySignal = (signals) => {
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort();
+      break;
+    }
+    signal.addEventListener('abort', onAbort, { once: true });
+  }
+  return controller.signal;
 };
 
 // API Service

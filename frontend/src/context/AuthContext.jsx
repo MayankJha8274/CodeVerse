@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -20,7 +20,6 @@ export const AuthProvider = ({ children }) => {
     try {
       return JSON.parse(savedUser);
     } catch (error) {
-      console.error('Error parsing saved user:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       return null;
@@ -33,36 +32,36 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading] = useState(false);
 
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     const response = await api.login(credentials);
     setUser(response.user);
     setIsAuthenticated(true);
     return response;
-  };
+  }, []);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     const response = await api.register(userData);
     setUser(response.user);
     setIsAuthenticated(true);
     return response;
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     api.logout();
     setUser(null);
     setIsAuthenticated(false);
-  };
+  }, []);
 
   const updateUserData = useCallback((newUserData) => {
     setUser(prev => {
+      if (!prev) return prev;
       const updatedUser = { ...prev, ...newUserData };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       return updatedUser;
     });
-    setIsAuthenticated(true);
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     isAuthenticated,
@@ -70,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUserData
-  };
+  }), [user, loading, isAuthenticated, login, register, logout, updateUserData]);
 
   return (
     <AuthContext.Provider value={value}>

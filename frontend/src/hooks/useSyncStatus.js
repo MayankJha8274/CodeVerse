@@ -23,7 +23,6 @@ export const useSyncStatus = (userId) => {
 
     // Connect to socket
     const socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
       withCredentials: true
     });
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, optionalAuth } = require('../middleware/auth');
 const { cacheResponse } = require('../middleware/redisCache');
+const { cacheMiddleware } = require('../middleware/cache');
 const {
   createProblem,
   getPublicProblems,
@@ -17,11 +18,11 @@ const {
 } = require('../controllers/problemSetController');
 
 // Public routes
-router.get('/public', cacheResponse(300), getPublicProblems);
+router.get('/public', cacheMiddleware(300), cacheResponse(300), getPublicProblems);
 
 // Protected routes - order matters! Specific routes before :slug
 router.get('/my-problems', protect, cacheResponse(60), getMyProblems);
-router.get('/search', protect, searchProblems);
+router.get('/search', protect, cacheResponse(30), searchProblems);
 router.post('/', protect, createProblem);
 
 // Single problem routes (with optional auth for public access)

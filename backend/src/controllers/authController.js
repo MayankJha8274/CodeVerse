@@ -120,15 +120,12 @@ const login = async (req, res, next) => {
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('rooms', 'name description');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
+    await req.user.populate('rooms', 'name description');
 
     res.status(200).json({
       success: true,
       data: {
-        user
+        user: req.user
       }
     });
   } catch (error) {

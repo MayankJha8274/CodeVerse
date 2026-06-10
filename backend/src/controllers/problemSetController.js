@@ -93,8 +93,9 @@ exports.getPublicProblems = async (req, res) => {
       .populate('owner', 'username name avatar')
       .sort({ createdAt: -1 })
       .skip((parseInt(page) - 1) * parseInt(limit))
-      .limit(parseInt(limit));
-    
+      .limit(parseInt(limit))
+      .lean();
+
     const total = await ProblemSet.countDocuments(query);
     
     res.json({
@@ -168,15 +169,16 @@ exports.getProblem = async (req, res) => {
     
     const problem = await ProblemSet.findOne({ slug })
       .populate('owner', 'username name avatar')
-      .populate('moderators.user', 'username name avatar');
-    
+      .populate('moderators.user', 'username name avatar')
+      .lean();
+
     if (!problem) {
       return res.status(404).json({
         success: false,
         error: 'Problem not found'
       });
     }
-    
+
     // Check access
     if (problem.visibility === 'private') {
       if (!req.user) {
@@ -541,7 +543,8 @@ exports.searchProblems = async (req, res) => {
     const problems = await ProblemSet.find(query)
       .select('title slug problemCode difficulty maxScore owner visibility')
       .populate('owner', 'username')
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
     
     res.json({
       success: true,

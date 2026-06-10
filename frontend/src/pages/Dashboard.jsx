@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import PLATFORM_CONFIG, { PlatformIcon, getPlatformName, getPlatformColor } from '../utils/platformConfig';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import PLATFORM_CONFIG, { PlatformIcon, getPlatformColor } from '../utils/platformConfig';
 import { 
   Code, 
   ExternalLink,
@@ -12,8 +12,7 @@ import {
   BookOpen,
   ChevronDown,
   Users,
-  Zap,
-  TrendingUp
+  Zap
 } from 'lucide-react';
 const RatingChart = lazy(() => import('../components/dashboard/RatingChart'));
 import api from '../services/api';
@@ -402,6 +401,9 @@ const Dashboard = () => {
   const connectedPlatforms = getConnectedPlatforms();
   const dsaProblems = getDSAProblems();
   const cpProblems = getCPProblems();
+  const totalProblems = getTotalProblems();
+  const totalContests = getTotalContests();
+  const contestsByPlatform = getContestsByPlatform();
 
   // Helper to generate demo rating data
   const generateDemoRatingData = () => {
@@ -456,151 +458,22 @@ const Dashboard = () => {
         <div className="grid grid-cols-12 gap-4 sm:gap-6">
           
           {/* Left Column - Profile Section */}
-          <div className="col-span-12 lg:col-span-3">
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-              {/* Avatar */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
-                  <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#1a1a2e] flex items-center justify-center overflow-hidden transition-colors">
-                    {displayUser?.avatar ? (
-                      <img src={displayUser.avatar} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-4xl">{displayUser?.fullName?.[0] || displayUser?.username?.[0] || '👤'}</span>
-                    )}
-                  </div>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{displayUser?.fullName || 'User'}</h2>
-                <p className="text-amber-500 text-sm flex items-center gap-1">
-                  <span>@{displayUser?.username}</span> <Check className="w-4 h-4 text-green-500" />
-                </p>
-              </div>
-              {/* Edit Profile Button */}
-              {isOwnProfile && (
-                <button
-                  onClick={() => navigate('/settings')}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all"
-                >
-                  Edit Profile
-                </button>
-              )}
-              <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
-
-              {/* Location Info */}
-              <div className="space-y-3 mb-4 text-sm">
-                {displayUser?.location && (
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <MapPin className="w-4 h-4" />
-                    <span>{displayUser.location}</span>
-                  </div>
-                )}
-                {displayUser?.institution && (
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <Building className="w-4 h-4" />
-                    <span className="truncate">{displayUser.institution}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-gray-700 my-4"></div>
-
-              {/* About Section */}
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{displayUser?.bio || 'Passionate about competitive programming and software development.'}</p>
-              </div>
-
-              {/* Problem Solving Stats (non-GitHub) */}
-              <div className="mb-4">
-                <button
-                  onClick={() => setOpenProblemStats(prev => !prev)}
-                  className="w-full flex items-center justify-between mb-2"
-                >
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Problem Solving Stats</h3>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openProblemStats ? 'rotate-180' : ''}`} />
-                </button>
-                {openProblemStats && (
-                  <div className="space-y-2">
-                    {connectedPlatforms.filter(p => p.key !== 'github').map(platform => {
-  return (
-                        <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
-                          <div className="flex items-center gap-2">
-                            <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
-                            <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <a
-                              href={getPlatformUrl(platform.key, platform.username)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Development Stats (GitHub) */}
-              <div className="mb-4">
-                <button
-                  onClick={() => setOpenDevStats(prev => !prev)}
-                  className="w-full flex items-center justify-between mb-2"
-                >
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Development Stats</h3>
-                  <ChevronDown className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${openDevStats ? 'rotate-180' : ''}`} />
-                </button>
-                {openDevStats && (
-                  <div className="space-y-2">
-                    {connectedPlatforms.filter(p => p.key === 'github').map(platform => {
-  return (
-                        <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
-                          <div className="flex items-center gap-2">
-                            <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
-                            <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <a
-                              href={getPlatformUrl(platform.key, platform.username)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={() => navigate('/settings')}
-                className="w-full text-center text-amber-500 text-sm py-2 hover:text-amber-400 transition-colors"
-              >
-                + Add Platform
-              </button>
-            </div>
-          </div>
+          <ProfileSection
+            displayUser={displayUser}
+            connectedPlatforms={connectedPlatforms}
+            isOwnProfile={isOwnProfile}
+            openProblemStats={openProblemStats}
+            setOpenProblemStats={setOpenProblemStats}
+            openDevStats={openDevStats}
+            setOpenDevStats={setOpenDevStats}
+            navigate={navigate}
+            getPlatformUrl={getPlatformUrl}
+          />
 
           {/* Middle Column - Stats & Charts */}
           <div className="col-span-12 lg:col-span-6 space-y-6">
             {/* Stats Cards Row */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Questions</p>
-                <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">{getTotalProblems()}</p>
-              </div>
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Active Days</p>
-                <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">{contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0}</p>
-              </div>
-            </div>
+            <StatsRow totalProblems={totalProblems} activeDays={contributionCalendar?.stats?.activeDays || userData?.totals?.activeDays || 0} />
 
             {/* Contribution Calendar */}
             <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
@@ -608,29 +481,7 @@ const Dashboard = () => {
             </div>
 
             {/* Total Contests */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Total Contests</p>
-                  <p className="text-3xl sm:text-5xl font-bold text-gray-900 dark:text-white">{getTotalContests()}</p>
-                </div>
-                <div className="space-y-3">
-                  {getContestsByPlatform().length > 0 ? (
-                    getContestsByPlatform().map(item => (
-                      <div key={item.platform} className="flex items-center justify-between gap-8">
-                        <div className="flex items-center gap-2">
-                          <PlatformIcon platform={item.platform} className="w-4 h-4" color={getPlatformColor(item.platform)} />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{item.count}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-400">Participate in contests to see breakdown</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <ContestsSection totalContests={totalContests} contestsByPlatform={contestsByPlatform} PlatformIcon={PlatformIcon} getPlatformColor={getPlatformColor} />
 
             {/* Rating Chart - Multi-Platform (Codolio Style) */}
             <Suspense fallback={<div className="bg-white dark:bg-[#16161f] border border-gray-200 dark:border-gray-800 rounded-xl p-4 h-64 flex items-center justify-center text-gray-500">Loading chart...</div>}>
@@ -662,228 +513,341 @@ const Dashboard = () => {
             </div>
 
             {/* DSA Topic Analysis */}
-            {topicAnalysis.length > 0 ? (
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Code className="w-5 h-5 text-amber-500" /> DSA Topic Analysis
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{topicAnalysis.length} topics</span>
-                  </div>
-                </div>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar-thin">
-                  {topicAnalysis.slice(0, 15).map((topic, idx) => {
-                    const maxCount = topicAnalysis[0]?.total || 1;
-                    const percentage = (topic.total / maxCount) * 100;
-                    // Different colors based on ranking
-                    const barColors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
-                    const barColor = barColors[idx % barColors.length];
-  return (
-                      <div key={idx} className="group">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                            {idx < 3 && <span className="mr-1">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>}
-                            {topic.name}
-                          </span>
-                          <span className="text-sm font-semibold" style={{ color: barColor }}>{topic.total}</span>
-                        </div>
-                        <div className="h-2.5 bg-gray-200 dark:bg-[#1a1a2e] rounded-full overflow-hidden transition-colors">
-                          <div 
-                            className="h-full rounded-full transition-all duration-700 ease-out"
-                            style={{ 
-                              width: `${percentage}%`,
-                              backgroundColor: barColor,
-                              boxShadow: `0 0 8px ${barColor}40`
-                            }}
-                          />
-                        </div>
-                        {Object.keys(topic.platforms || {}).length > 0 && (
-                          <div className="flex gap-3 mt-1 items-center">
-                            {Object.entries(topic.platforms || {}).map(([p, v]) => (
-                              <span key={p} className="text-xs flex items-center gap-1" style={{ color: PLATFORM_CONFIG[p]?.color || '#999' }}>
-                                <PlatformIcon platform={p} className="w-3 h-3" color={PLATFORM_CONFIG[p]?.color} /> {v}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                  <Code className="w-5 h-5 text-amber-500" /> DSA Topic Analysis
-                </h3>
-                <div className="text-center py-6">
-                  <div className="flex justify-center mb-3"><BookOpen className="w-10 h-10 text-gray-400 dark:text-gray-600" /></div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">No topic data available</p>
-                  <p className="text-gray-500 text-xs">Connect LeetCode or Codeforces and sync to see your topic-wise progress</p>
-                </div>
-              </div>
-            )}
+            <TopicAnalysisSection topicAnalysis={topicAnalysis} navigate={navigate} PLATFORM_CONFIG={PLATFORM_CONFIG} PlatformIcon={PlatformIcon} />
 
           </div>
 
           {/* Right Column - Problem Breakdown */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
-            {/* Problems Solved */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 transition-colors">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Problems Solved</h3>
-              
-              {/* Fundamentals */}
-              <div className="mb-6">
-                <p className="text-sm text-gray-400 mb-3">Fundamentals</p>
-                <div className="flex items-center gap-4">
-                  <CircularProgress 
-                    value={platformStats.hackerrank?.problemsSolved || 0} 
-                    max={100} 
-                    size={80} 
-                    strokeWidth={8}
-                    color="#00EA64"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <PlatformIcon platform="hackerrank" className="w-5 h-5 text-green-500" color={PLATFORM_CONFIG['hackerrank']?.color} />
-                      <span className="text-sm text-gray-300">HackerRank</span>
-                      <span className="text-sm font-semibold text-white">{platformStats.hackerrank?.problemsSolved || 0}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* DSA */}
-              <div className="mb-6">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">DSA</p>
-                <div className="flex items-center gap-4">
-                  <CircularProgress 
-                    value={dsaProblems.total} 
-                    max={Math.max(dsaProblems.total + 50, 500)} 
-                    size={80} 
-                    strokeWidth={8}
-                    color="#f59e0b"
-                  />
-                  <div className="flex-1 space-y-2">
-                    {/* Easy */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-green-500">Easy</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.easy}</span>
-                    </div>
-                    {/* Medium */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-amber-500">Medium</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.medium}</span>
-                    </div>
-                    {/* Hard */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-red-500">Hard</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.hard}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Competitive Programming */}
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Competitive Programming</p>
-                <div className="flex items-center gap-4">
-                  <CircularProgress 
-                    value={cpProblems.total} 
-                    max={500} 
-                    size={80} 
-                    strokeWidth={8}
-                    color="#f59e0b"
-                  />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <PlatformIcon platform="codechef" className="w-5 h-5" color={PLATFORM_CONFIG['codechef']?.color} />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">Codechef</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{cpProblems.codechef}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <PlatformIcon platform="codeforces" className="w-5 h-5" color={PLATFORM_CONFIG['codeforces']?.color} />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">Codeforces</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{cpProblems.codeforces}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sync Button with Cooldown Timer */}
-            {isOwnProfile && (
-              <div className="space-y-2">
-                <button
-                  onClick={handleSync}
-                  disabled={syncing || cooldownRemaining > 0}
-                  className={`w-full font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors ${
-                    cooldownRemaining > 0
-                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                      : 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black'
-                  }`}
-                >
-                <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing 
-                  ? 'Syncing all platforms...' 
-                  : cooldownRemaining > 0 
-                    ? `Sync available in ${formatCooldown(cooldownRemaining)}` 
-                    : 'Sync All Platforms'}
-              </button>
-              {cooldownRemaining > 0 && (
-                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div 
-                    className="h-full bg-amber-500/60 rounded-full transition-all duration-1000"
-                    style={{ width: `${((SYNC_COOLDOWN_MS / 1000 - cooldownRemaining) / (SYNC_COOLDOWN_MS / 1000)) * 100}%` }}
-                  />
-                </div>
-              )}
-              {/* Last synced info */}
-              {(() => {
-                const stored = localStorage.getItem(getSyncKey());
-                if (!stored) return <p className="text-xs text-gray-500 text-center">Never synced — syncing automatically...</p>;
-                const mins = Math.floor((Date.now() - Number(stored)) / 60000);
-                const label = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
-                return <p className="text-xs text-gray-500 text-center">Last synced: {label}</p>;
-              })()}
-              <p className="text-[10px] text-gray-600 text-center">Refreshes problem counts, ratings, and contest data from all platforms</p>
-            </div>
-            )}
-
-            {/* Quick Links */}
-            <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => navigate('/platforms')}
-                  className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
-                >
-                  <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Code className="w-4 h-4" /> Platforms</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-                <button 
-                  onClick={() => navigate('/societies')}
-                  className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
-                >
-                  <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Users className="w-4 h-4" /> Societies</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-                <button 
-                  onClick={() => navigate('/daily-challenge')}
-                  className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between"
-                >
-                  <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Zap className="w-4 h-4" /> Daily Challenge</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
-            </div>
+            <ProblemsBreakdown platformStats={platformStats} dsaProblems={dsaProblems} cpProblems={cpProblems} PLATFORM_CONFIG={PLATFORM_CONFIG} PlatformIcon={PlatformIcon} />
+            <SyncButtonSection isOwnProfile={isOwnProfile} syncing={syncing} cooldownRemaining={cooldownRemaining} handleSync={handleSync} formatCooldown={formatCooldown} SYNC_COOLDOWN_MS={SYNC_COOLDOWN_MS} getSyncKey={getSyncKey} />
+            <QuickLinksSection navigate={navigate} />
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+// ============== Extracted Dashboard Sub-Components ==============
+
+const ProfileSection = React.memo(({ displayUser, connectedPlatforms, isOwnProfile, openProblemStats, setOpenProblemStats, openDevStats, setOpenDevStats, navigate, getPlatformUrl }) => (
+  <div className="col-span-12 lg:col-span-3">
+    <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+      <div className="flex flex-col items-center mb-6">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 p-1 mb-4">
+          <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#1a1a2e] flex items-center justify-center overflow-hidden transition-colors">
+            {displayUser?.avatar ? (
+              <img src={displayUser.avatar} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-4xl">{displayUser?.fullName?.[0] || displayUser?.username?.[0] || '👤'}</span>
+            )}
+          </div>
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{displayUser?.fullName || 'User'}</h2>
+        <p className="text-amber-500 text-sm flex items-center gap-1">
+          <span>@{displayUser?.username}</span> <Check className="w-4 h-4 text-green-500" />
+        </p>
+      </div>
+      {isOwnProfile && (
+        <button
+          onClick={() => navigate('/settings')}
+          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold py-2.5 rounded-lg mb-4 hover:from-amber-600 hover:to-orange-600 transition-all"
+        >
+          Edit Profile
+        </button>
+      )}
+      <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+      <div className="space-y-3 mb-4 text-sm">
+        {displayUser?.location && (
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <MapPin className="w-4 h-4" />
+            <span>{displayUser.location}</span>
+          </div>
+        )}
+        {displayUser?.institution && (
+          <div className="flex items-center gap-2 text-gray-400">
+            <Building className="w-4 h-4" />
+            <span className="truncate">{displayUser.institution}</span>
+          </div>
+        )}
+      </div>
+      <div className="border-t border-gray-700 my-4"></div>
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{displayUser?.bio || 'Passionate about competitive programming and software development.'}</p>
+      </div>
+      <div className="mb-4">
+        <button
+          onClick={() => setOpenProblemStats(prev => !prev)}
+          className="w-full flex items-center justify-between mb-2"
+        >
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Problem Solving Stats</h3>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${openProblemStats ? 'rotate-180' : ''}`} />
+        </button>
+        {openProblemStats && (
+          <div className="space-y-2">
+            {connectedPlatforms.filter(p => p.key !== 'github').map(platform => (
+              <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
+                <div className="flex items-center gap-2">
+                  <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
+                  <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a href={getPlatformUrl(platform.key, platform.username)} target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="mb-4">
+        <button
+          onClick={() => setOpenDevStats(prev => !prev)}
+          className="w-full flex items-center justify-between mb-2"
+        >
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Development Stats</h3>
+          <ChevronDown className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${openDevStats ? 'rotate-180' : ''}`} />
+        </button>
+        {openDevStats && (
+          <div className="space-y-2">
+            {connectedPlatforms.filter(p => p.key === 'github').map(platform => (
+              <div key={platform.key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1a1a2e] rounded-lg border border-gray-200 dark:border-transparent transition-colors">
+                <div className="flex items-center gap-2">
+                  <PlatformIcon platform={platform.key} className="w-5 h-5" color={PLATFORM_CONFIG[platform.key]?.color} />
+                  <span className="text-sm text-gray-900 dark:text-white">{platform.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a href={getPlatformUrl(platform.key, platform.username)} target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <button onClick={() => navigate('/settings')} className="w-full text-center text-amber-500 text-sm py-2 hover:text-amber-400 transition-colors">
+        + Add Platform
+      </button>
+    </div>
+  </div>
+));
+
+const StatsRow = React.memo(({ totalProblems, activeDays }) => (
+  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+    <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+      <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Questions</p>
+      <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">{totalProblems}</p>
+    </div>
+    <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+      <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Active Days</p>
+      <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">{activeDays}</p>
+    </div>
+  </div>
+));
+
+const ContestsSection = React.memo(({ totalContests, contestsByPlatform, PlatformIcon, getPlatformColor }) => (
+  <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+    <div className="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Total Contests</p>
+        <p className="text-3xl sm:text-5xl font-bold text-gray-900 dark:text-white">{totalContests}</p>
+      </div>
+      <div className="space-y-3">
+        {contestsByPlatform.length > 0 ? (
+          contestsByPlatform.map(item => (
+            <div key={item.platform} className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <PlatformIcon platform={item.platform} className="w-4 h-4" color={getPlatformColor(item.platform)} />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{item.count}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-gray-400">Participate in contests to see breakdown</p>
+        )}
+      </div>
+    </div>
+  </div>
+));
+
+const TopicAnalysisSection = React.memo(({ topicAnalysis, navigate, PLATFORM_CONFIG, PlatformIcon }) => (
+  topicAnalysis.length > 0 ? (
+    <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <Code className="w-5 h-5 text-amber-500" /> DSA Topic Analysis
+        </h3>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">{topicAnalysis.length} topics</span>
+        </div>
+      </div>
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar-thin">
+        {topicAnalysis.slice(0, 15).map((topic, idx) => {
+          const maxCount = topicAnalysis[0]?.total || 1;
+          const percentage = (topic.total / maxCount) * 100;
+          const barColors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+          const barColor = barColors[idx % barColors.length];
+          return (
+            <div key={idx} className="group">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  {idx < 3 && <span className="mr-1">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>}
+                  {topic.name}
+                </span>
+                <span className="text-sm font-semibold" style={{ color: barColor }}>{topic.total}</span>
+              </div>
+              <div className="h-2.5 bg-gray-200 dark:bg-[#1a1a2e] rounded-full overflow-hidden transition-colors">
+                <div className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${percentage}%`, backgroundColor: barColor, boxShadow: `0 0 8px ${barColor}40` }}
+                />
+              </div>
+              {Object.keys(topic.platforms || {}).length > 0 && (
+                <div className="flex gap-3 mt-1 items-center">
+                  {Object.entries(topic.platforms || {}).map(([p, v]) => (
+                    <span key={p} className="text-xs flex items-center gap-1" style={{ color: PLATFORM_CONFIG[p]?.color || '#999' }}>
+                      <PlatformIcon platform={p} className="w-3 h-3" color={PLATFORM_CONFIG[p]?.color} /> {v}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+        <Code className="w-5 h-5 text-amber-500" /> DSA Topic Analysis
+      </h3>
+      <div className="text-center py-6">
+        <div className="flex justify-center mb-3"><BookOpen className="w-10 h-10 text-gray-400 dark:text-gray-600" /></div>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">No topic data available</p>
+        <p className="text-gray-500 text-xs">Connect LeetCode or Codeforces and sync to see your topic-wise progress</p>
+      </div>
+    </div>
+  )
+));
+
+const ProblemsBreakdown = React.memo(({ platformStats, dsaProblems, cpProblems, PLATFORM_CONFIG, PlatformIcon }) => (
+  <div className="bg-white dark:bg-[#16161f] rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Problems Solved</h3>
+    <div className="mb-6">
+      <p className="text-sm text-gray-400 mb-3">Fundamentals</p>
+      <div className="flex items-center gap-4">
+        <CircularProgress value={platformStats.hackerrank?.problemsSolved || 0} max={100} size={80} strokeWidth={8} color="#00EA64" />
+        <div>
+          <div className="flex items-center gap-2">
+            <PlatformIcon platform="hackerrank" className="w-5 h-5 text-green-500" color={PLATFORM_CONFIG['hackerrank']?.color} />
+            <span className="text-sm text-gray-300">HackerRank</span>
+            <span className="text-sm font-semibold text-white">{platformStats.hackerrank?.problemsSolved || 0}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div className="mb-6">
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">DSA</p>
+      <div className="flex items-center gap-4">
+        <CircularProgress value={dsaProblems.total} max={Math.max(dsaProblems.total + 50, 500)} size={80} strokeWidth={8} color="#f59e0b" />
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-green-500">Easy</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.easy}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-amber-500">Medium</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.medium}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-red-500">Hard</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{dsaProblems.hard}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Competitive Programming</p>
+      <div className="flex items-center gap-4">
+        <CircularProgress value={cpProblems.total} max={500} size={80} strokeWidth={8} color="#f59e0b" />
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <PlatformIcon platform="codechef" className="w-5 h-5" color={PLATFORM_CONFIG['codechef']?.color} />
+            <span className="text-sm text-gray-600 dark:text-gray-300">Codechef</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{cpProblems.codechef}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <PlatformIcon platform="codeforces" className="w-5 h-5" color={PLATFORM_CONFIG['codeforces']?.color} />
+            <span className="text-sm text-gray-600 dark:text-gray-300">Codeforces</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{cpProblems.codeforces}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+));
+
+const SyncButtonSection = React.memo(({ isOwnProfile, syncing, cooldownRemaining, handleSync, formatCooldown, SYNC_COOLDOWN_MS, getSyncKey }) => (
+  isOwnProfile && (
+    <div className="space-y-2">
+      <button
+        onClick={handleSync}
+        disabled={syncing || cooldownRemaining > 0}
+        className={`w-full font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors ${
+          cooldownRemaining > 0
+            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+            : 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black'
+        }`}
+      >
+        <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+        {syncing
+          ? 'Syncing all platforms...'
+          : cooldownRemaining > 0
+            ? `Sync available in ${formatCooldown(cooldownRemaining)}`
+            : 'Sync All Platforms'}
+      </button>
+      {cooldownRemaining > 0 && (
+        <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+          <div className="h-full bg-amber-500/60 rounded-full transition-all duration-1000"
+            style={{ width: `${((SYNC_COOLDOWN_MS / 1000 - cooldownRemaining) / (SYNC_COOLDOWN_MS / 1000)) * 100}%` }}
+          />
+        </div>
+      )}
+      {(() => {
+        const stored = localStorage.getItem(getSyncKey());
+        if (!stored) return <p className="text-xs text-gray-500 text-center">Never synced — syncing automatically...</p>;
+        const mins = Math.floor((Date.now() - Number(stored)) / 60000);
+        const label = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+        return <p className="text-xs text-gray-500 text-center">Last synced: {label}</p>;
+      })()}
+      <p className="text-[10px] text-gray-600 text-center">Refreshes problem counts, ratings, and contest data from all platforms</p>
+    </div>
+  )
+));
+
+const QuickLinksSection = React.memo(({ navigate }) => (
+  <div className="bg-white dark:bg-[#16161f] rounded-xl p-6 border border-gray-200 dark:border-gray-800 transition-colors">
+    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Links</h3>
+    <div className="space-y-2">
+      <button onClick={() => navigate('/platforms')} className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between">
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Code className="w-4 h-4" /> Platforms</span>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+      </button>
+      <button onClick={() => navigate('/societies')} className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between">
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Users className="w-4 h-4" /> Societies</span>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+      </button>
+      <button onClick={() => navigate('/daily-challenge')} className="w-full text-left p-3 bg-gray-100 dark:bg-[#1a1a2e] rounded-lg hover:bg-gray-200 dark:hover:bg-[#252538] transition-colors flex items-center justify-between">
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Zap className="w-4 h-4" /> Daily Challenge</span>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+      </button>
+    </div>
+  </div>
+));
 
 // Helper function to get platform URLs
 const getPlatformUrl = (platform, username) => {

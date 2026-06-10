@@ -78,7 +78,7 @@ const setReminder = async (req, res, next) => {
     }
 
     // Get contest details
-    const contest = await Contest.findById(contestId);
+    const contest = await Contest.findById(contestId).lean()
     if (!contest) {
       return res.status(404).json({
         success: false,
@@ -95,7 +95,7 @@ const setReminder = async (req, res, next) => {
     }
 
     // Get user email
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean()
     if (!user || !user.email) {
       return res.status(400).json({
         success: false,
@@ -124,7 +124,7 @@ const setReminder = async (req, res, next) => {
     const existingReminder = await ContestReminder.findOne({
       userId,
       contestId: contest._id
-    });
+    }).lean()
 
     if (existingReminder) {
       return res.status(400).json({
@@ -184,7 +184,7 @@ const removeReminder = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid contest ID format' });
     }
 
-    const reminder = await ContestReminder.findOne({ userId, contestId });
+    const reminder = await ContestReminder.findOne({ userId, contestId }).lean()
 
     if (!reminder) {
       return res.status(404).json({
@@ -239,7 +239,7 @@ const getUserReminders = async (req, res, next) => {
 
     // Return reminders for upcoming contests, even if the reminder email was already sent.
     // This enables the UI to show Scheduled vs Sent states per contest.
-    const remindersRaw = await ContestReminder.find({ userId }).populate('contestId');
+    const remindersRaw = await ContestReminder.find({ userId }).populate('contestId').lean()
 
     const reminders = remindersRaw
       .filter(r => {
@@ -286,7 +286,7 @@ const getContestsCalendar = async (req, res, next) => {
 
     const contests = await Contest.find({
       startTime: { $gte: startDate, $lte: endDate }
-    }).sort({ startTime: 1 });
+    }).sort({ startTime: 1 }).lean();
 
     // Group by date
     const calendarData = {};

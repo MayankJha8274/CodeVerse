@@ -37,7 +37,7 @@ router.post('/join', joinRoom);
 // @route   GET /api/rooms/:id
 // @desc    Get room by ID
 // @access  Private (member only)
-router.get('/:id', getRoomById);
+router.get('/:id', cacheResponse(60), getRoomById);
 
 // @route   PUT /api/rooms/:id
 // @desc    Update room details

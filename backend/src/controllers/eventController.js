@@ -63,7 +63,8 @@ const getEventById = async (req, res, next) => {
       .populate('createdBy', 'username fullName avatar')
       .populate('rsvps.user', 'username fullName avatar')
       .populate('attendees.user', 'username fullName avatar')
-      .populate('feedback.user', 'username fullName avatar');
+      .populate('feedback.user', 'username fullName avatar')
+      .lean();
 
     if (!event) {
       return res.status(404).json({ success: false, message: 'Event not found' });
@@ -149,7 +150,7 @@ const updateEvent = async (req, res, next) => {
       { _id: req.params.eventId, society: req.params.societyId },
       { $set: update },
       { new: true, runValidators: true }
-    );
+    ).lean();
 
     if (!event) {
       return res.status(404).json({ success: false, message: 'Event not found' });
@@ -178,7 +179,7 @@ const cancelEvent = async (req, res, next) => {
       { _id: req.params.eventId, society: req.params.societyId },
       { status: 'cancelled' },
       { new: true }
-    );
+    ).lean();
 
     if (!event) {
       return res.status(404).json({ success: false, message: 'Event not found' });
