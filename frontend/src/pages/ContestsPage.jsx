@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, 
   Search, 
@@ -420,25 +420,30 @@ const ContestsPage = () => {
   };
 
   // Filter contests
-  const filteredContests = contests.filter(contest => {
-    const matchesSearch = contest.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPlatform = selectedPlatform === 'all' || contest.platform === selectedPlatform;
-    return matchesSearch && matchesPlatform;
-  });
+  const filteredContests = useMemo(() => {
+    return contests.filter(contest => {
+      const matchesSearch = contest.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPlatform = selectedPlatform === 'all' || contest.platform === selectedPlatform;
+      return matchesSearch && matchesPlatform;
+    });
+  }, [contests, searchQuery, selectedPlatform]);
 
   // Group contests by date
-  const groupedContests = {};
-  filteredContests.forEach(contest => {
-    const dateKey = new Date(contest.startTime).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+  const groupedContests = useMemo(() => {
+    const groups = {};
+    filteredContests.forEach(contest => {
+      const dateKey = new Date(contest.startTime).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(contest);
     });
-    if (!groupedContests[dateKey]) {
-      groupedContests[dateKey] = [];
-    }
-    groupedContests[dateKey].push(contest);
-  });
+    return groups;
+  }, [filteredContests]);
 
   return (
     <div className="min-h-full bg-white dark:bg-[#0d0d14] transition-colors">

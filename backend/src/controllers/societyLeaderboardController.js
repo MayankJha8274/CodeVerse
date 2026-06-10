@@ -26,7 +26,11 @@ const getLeaderboard = async (req, res, next) => {
     };
 
     // Get all active members
+    // Get active members for current page
+    const totalMembers = await SocietyMember.countDocuments({ society: societyId, isBanned: false, isActive: true });
     const membersRaw = await SocietyMember.find({ society: societyId, isBanned: false, isActive: true })
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .limit(parseInt(limit))
       .populate('user', 'username fullName avatar platforms')
       .lean();
 
@@ -223,14 +227,10 @@ const getLeaderboard = async (req, res, next) => {
       (r.user._id || r.user).toString() === req.user.id
     );
 
-    // Paginate
-    const total = rankings.length;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    rankings = rankings.slice(skip, skip + parseInt(limit));
 
     // Calculate percentile
     rankings.forEach(r => {
-      r.percentile = total > 1 ? Math.round(((total - r.rank) / (total - 1)) * 100) : 100;
+      r.percentile = totalMembers > 1 ? Math.round(((totalMembers - r.rank) / (totalMembers - 1)) * 100) : 100;
     });
 
     res.status(200).json({
@@ -243,12 +243,12 @@ const getLeaderboard = async (req, res, next) => {
           codingScore: currentUserRank.codingScore,
           codingProfile: currentUserRank.codingProfile,
           totalProblems: currentUserRank.codingProfile?.totalSolved || 0,
-          percentile: total > 1 ? Math.round(((total - currentUserRank.rank) / (total - 1)) * 100) : 100
+          percentile: totalMembers > 1 ? Math.round(((totalMembers - currentUserRank.rank) / (totalMembers - 1)) * 100) : 100
         } : null,
-        totalParticipants: total,
+        totalParticipants: totalMembers,
         weights: WEIGHTS
       },
-      pagination: { page: parseInt(page), limit: parseInt(limit), total }
+      pagination: { page: parseInt(page), limit: parseInt(limit), total: totalMembers }
     });
   } catch (error) {
     next(error);

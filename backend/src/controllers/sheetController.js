@@ -7,7 +7,7 @@ exports.getSheetProgress = async (req, res, next) => {
     const { sheetId } = req.params;
     const userId = req.user.id;
 
-    const progress = await SheetProgress.find({ user: userId, sheetId });
+    const progress = await SheetProgress.find({ user: userId, sheetId }).lean();
     
     // Convert to a map for easier frontend access
     const progressMap = {};
@@ -30,7 +30,7 @@ exports.getSheetProgress = async (req, res, next) => {
 exports.getAllProgress = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const progress = await SheetProgress.find({ user: userId });
+    const progress = await SheetProgress.find({ user: userId }).lean();
     
     // Group by sheetId
     const progressBySheet = {};
@@ -72,7 +72,7 @@ exports.updateProblemStatus = async (req, res, next) => {
         $setOnInsert: { topicIndex, problemIndex }
       },
       { upsert: true, new: true }
-    );
+    ).lean();
 
     res.json({ success: true, progress });
   } catch (error) {
@@ -93,7 +93,7 @@ exports.updateProblemNotes = async (req, res, next) => {
         $setOnInsert: { topicIndex, problemIndex, status: 'unsolved' }
       },
       { upsert: true, new: true }
-    );
+    ).lean();
 
     res.json({ success: true, progress });
   } catch (error) {
@@ -108,7 +108,7 @@ exports.toggleRevision = async (req, res, next) => {
     const userId = req.user.id;
 
     // First, check if document exists
-    const existing = await SheetProgress.findOne({ user: userId, sheetId, problemId });
+    const existing = await SheetProgress.findOne({ user: userId, sheetId, problemId }).lean();
     
     let progress;
     if (existing) {
@@ -116,7 +116,7 @@ exports.toggleRevision = async (req, res, next) => {
         { user: userId, sheetId, problemId },
         { $set: { revision: !existing.revision } },
         { new: true }
-      );
+      ).lean();
     } else {
       progress = await SheetProgress.create({
         user: userId,
@@ -142,7 +142,7 @@ exports.getRevisionProblems = async (req, res, next) => {
     const revisionProblems = await SheetProgress.find({ 
       user: userId, 
       revision: true 
-    });
+    }).lean();
 
     res.json({ success: true, problems: revisionProblems });
   } catch (error) {

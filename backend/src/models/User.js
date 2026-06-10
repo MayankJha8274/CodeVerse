@@ -199,5 +199,7 @@ userSchema.index({ createdAt: -1 });
 userSchema.index({ lastActivityAt: -1 });
 userSchema.index({ lastSynced: 1 });
 userSchema.index({ syncStatus: 1 });
+userSchema.index({ platform: 1, rating: -1 });
+userSchema.index({ totalSolved: -1 });
 
 module.exports = mongoose.model('User', userSchema);

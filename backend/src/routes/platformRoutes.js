@@ -41,21 +41,21 @@ router.delete('/disconnect/:platform', disconnectPlatform);
 
 // Sync endpoints (with stricter rate limiting)
 router.post('/sync', syncRateLimiter, syncAllPlatforms);
-router.get('/sync/status', getSyncStatus);
+router.get('/sync/status', cacheResponse(30), getSyncStatus);
 
 // Stats fetching
 router.get('/stats', cacheResponse(1800), getAggregatedStats);
 router.get('/stats/:platform', cacheResponse(1800), getPlatformStats);
 
 // Progress tracking
-router.get('/progress', getProgress);
+router.get('/progress', cacheResponse(300), getProgress);
 
 // Topic analysis, badges, and achievements
-router.get('/topics', getTopicAnalysis);
-router.get('/badges', getBadges);
-router.get('/achievements', getAchievements);
+router.get('/topics', cacheResponse(1800), getTopicAnalysis);
+router.get('/badges', cacheResponse(600), getBadges);
+router.get('/achievements', cacheResponse(600), getAchievements);
 
 // Queue statistics (for monitoring)
-router.get('/queue/stats', getQueueStatistics);
+router.get('/queue/stats', cacheResponse(60), getQueueStatistics);
 
 module.exports = router;

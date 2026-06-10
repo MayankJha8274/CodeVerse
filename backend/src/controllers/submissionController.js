@@ -64,7 +64,7 @@ exports.submitSolution = async (req, res) => {
         { slug: req.params.problemSlug },
         { problemCode: req.params.problemSlug.toUpperCase() }
       ]
-    });
+    }).lean();
 
     if (!problem) {
       return res.status(404).json({
@@ -190,7 +190,7 @@ async function executeSubmission(submission, problem, contest) {
         user: submission.user,
         status: 'accepted',
         _id: { $ne: submission._id }
-      });
+      }).lean();
       
       submission.isFirstAccepted = !existingAccepted;
     }
@@ -212,7 +212,8 @@ exports.getSubmission = async (req, res) => {
   try {
     const submission = await ContestSubmission.findById(req.params.submissionId)
       .populate('problem', 'title problemCode maxScore')
-      .populate('user', 'name username');
+      .populate('user', 'name username')
+      .lean();
 
     if (!submission) {
       return res.status(404).json({
@@ -283,7 +284,7 @@ exports.getProblemSubmissions = async (req, res) => {
         { slug: req.params.problemSlug },
         { problemCode: req.params.problemSlug.toUpperCase() }
       ]
-    });
+    }).lean();
 
     if (!problem) {
       return res.status(404).json({
@@ -306,7 +307,8 @@ exports.getProblemSubmissions = async (req, res) => {
       .populate('user', 'name username')
       .select('-code -testCaseResults -compilationError')
       .sort({ submittedAt: -1 })
-      .limit(100);
+      .limit(100)
+      .lean();
 
     res.json({
       success: true,
@@ -327,7 +329,7 @@ exports.getProblemSubmissions = async (req, res) => {
 // @access  Private
 exports.getMySubmissions = async (req, res) => {
   try {
-    const contest = await HostedContest.findOne({ slug: req.params.slug });
+    const contest = await HostedContest.findOne({ slug: req.params.slug }).lean();
     
     if (!contest) {
       return res.status(404).json({
@@ -342,7 +344,8 @@ exports.getMySubmissions = async (req, res) => {
     })
     .populate('problem', 'title problemCode maxScore')
     .select('-testCaseResults')
-    .sort({ submittedAt: -1 });
+    .sort({ submittedAt: -1 })
+    .lean();
 
     res.json({
       success: true,
@@ -421,7 +424,8 @@ exports.getLeaderboard = async (req, res) => {
     // Get all problems
     const problems = await ContestProblem.find({ contest: contest._id })
       .select('_id problemCode maxScore')
-      .sort({ order: 1 });
+      .sort({ order: 1 })
+      .lean();
 
     // Aggregate submissions to build leaderboard
     const leaderboardData = await ContestSubmission.aggregate([

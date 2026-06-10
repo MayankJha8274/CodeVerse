@@ -344,7 +344,7 @@ exports.verifyAndComplete = async (req, res) => {
     
     const today = getTodayDate();
     
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     const challenge = await DailyChallenge.findOne({ user: userId, date: today });
 
     if (!challenge) {
@@ -406,17 +406,17 @@ exports.completeChallenge = async (req, res) => {
     
     const today = getTodayDate();
     
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     const challenge = await DailyChallenge.findOne({ user: userId, date: today });
-    
+
     if (!challenge) {
       return res.status(404).json({ success: false, message: 'No challenge found for today' });
     }
-    
+
     if (challenge.isCompleted) {
       return res.status(400).json({ success: false, message: 'Challenge already completed' });
     }
-    
+
     // Try to verify first
     const todaySubmissions = await fetchTodaySubmissions(user);
     const verified = wasChallengeSolvedToday(challenge, todaySubmissions);
@@ -464,17 +464,17 @@ exports.skipChallenge = async (req, res) => {
     
     const today = getTodayDate();
     
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     const challenge = await DailyChallenge.findOne({ user: userId, date: today });
-    
+
     if (!challenge) {
       return res.status(404).json({ success: false, message: 'No challenge found for today' });
     }
-    
+
     if (challenge.isCompleted) {
       return res.status(400).json({ success: false, message: 'Cannot skip completed challenge' });
     }
-    
+
     // Use DB-only solved set for problem selection — no live external API calls
     const solvedProblems = await fetchSolvedFromDB(userId);
     
@@ -561,8 +561,9 @@ exports.getChallengeHistory = async (req, res) => {
     
     const challenges = await DailyChallenge.find({ user: userId })
       .sort({ date: -1 })
-      .limit(parsedLimit);
-    
+      .limit(parsedLimit)
+      .lean();
+
     res.json({
       success: true,
       challenges: challenges.map(c => ({
@@ -590,8 +591,8 @@ exports.getTopicStats = async (req, res) => {
     const completedChallenges = await DailyChallenge.find({ 
       user: userId, 
       isCompleted: true 
-    });
-    
+    }).lean();
+
     const topicStats = {};
     Object.keys(dsaProblems).forEach(topic => {
       topicStats[topic] = {

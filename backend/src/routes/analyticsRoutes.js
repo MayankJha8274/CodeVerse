@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { cacheResponse } = require('../middleware/redisCache');
+const { cacheMiddleware } = require('../middleware/cache');
 const { protect } = require('../middleware/auth');
 const analyticsController = require('../controllers/analyticsController');
 const userAnalyticsController = require('../controllers/userAnalyticsController');
@@ -37,6 +38,6 @@ router.get('/achievements', protect, cacheResponse(1800), analyticsController.ge
 router.get('/insights', protect, cacheResponse(1800), analyticsController.getInsightsSummary);
 
 // Public Global Stats
-router.get('/global', cacheResponse(300), analyticsController.getGlobalStats);
+router.get('/global', cacheMiddleware(60), cacheResponse(300), analyticsController.getGlobalStats);
 
 module.exports = router;

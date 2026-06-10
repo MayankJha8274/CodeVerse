@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   BookOpen, 
   ChevronRight, 
@@ -22,17 +22,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { 
-  striverA2ZProblems, 
-  neetcode150Problems, 
-  blind75Problems, 
-  striverSDEProblems, 
-  loveBabbarProblems, 
-  frazSdeProblems 
-} from '../data/sheetsData';
 
-// Popular DSA Sheets Data
-const dsaSheets = [
+// Popular DSA Sheets Metadata (lightweight, no problem data)
+const dsaSheetsMeta = [
   {
     id: 'striver-a2z',
     name: "Striver's A to Z DSA Sheet",
@@ -65,7 +57,6 @@ const dsaSheets = [
       { name: 'Strings Advanced', problems: 8 }
     ],
     link: 'https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2',
-    problemsData: striverA2ZProblems
   },
   {
     id: 'striver-sde',
@@ -108,7 +99,6 @@ const dsaSheets = [
       { name: 'Trie', problems: 4 }
     ],
     link: 'https://takeuforward.org/interviews/strivers-sde-sheet-top-coding-interview-problems',
-    problemsData: striverSDEProblems
   },
   {
     id: 'neetcode-150',
@@ -142,7 +132,6 @@ const dsaSheets = [
       { name: 'Bit Manipulation', problems: 7 }
     ],
     link: 'https://neetcode.io/practice',
-    problemsData: neetcode150Problems
   },
   {
     id: 'blind-75',
@@ -168,7 +157,6 @@ const dsaSheets = [
       { name: 'Heap', problems: 1 }
     ],
     link: 'https://leetcode.com/discuss/general-discussion/460599/blind-75-leetcode-questions',
-    problemsData: blind75Problems
   },
   {
     id: 'love-babbar',
@@ -200,7 +188,6 @@ const dsaSheets = [
       { name: 'Segment Trees', problems: 4 }
     ],
     link: 'https://450dsa.com/',
-    problemsData: loveBabbarProblems
   },
   {
     id: 'fraz-sde',
@@ -227,7 +214,6 @@ const dsaSheets = [
       { name: 'Recursion & Backtracking', problems: 18 }
     ],
     link: 'https://docs.google.com/spreadsheets/d/1-wKcV99KtO91dXdPkwmXGTdtyxAfk1mbPXQg81R9sFE',
-    problemsData: frazSdeProblems
   }
 ];
 
@@ -383,6 +369,38 @@ const SheetsPage = () => {
   const [notesModal, setNotesModal] = useState({ isOpen: false, problem: null, sheetId: '', topicIndex: 0, problemIndex: 0, problemId: '' });
   const [stats, setStats] = useState({ totalSolved: 0, totalRevision: 0 });
   const [activeTab, setActiveTab] = useState('all');
+  const [problemsData, setProblemsData] = useState(null);
+  const [sheetsLoading, setSheetsLoading] = useState(true);
+
+  // Lazy-load the heavy problem data
+  useEffect(() => {
+    let cancelled = false;
+    import('../data/sheetsData').then(mod => {
+      if (!cancelled) {
+        setProblemsData(mod);
+        setSheetsLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const dsaSheets = useMemo(() => {
+    if (!problemsData) return dsaSheetsMeta;
+    return dsaSheetsMeta.map(sheet => {
+      const keyMap = {
+        'striver-a2z': 'striverA2ZProblems',
+        'striver-sde': 'striverSDEProblems',
+        'neetcode-150': 'neetcode150Problems',
+        'blind-75': 'blind75Problems',
+        'love-babbar': 'loveBabbarProblems',
+        'fraz-sde': 'frazSdeProblems'
+      };
+      return {
+        ...sheet,
+        problemsData: problemsData[keyMap[sheet.id]] || {}
+      };
+    });
+  }, [problemsData]);
 
   // Fetch progress from API
   useEffect(() => {
@@ -549,13 +567,15 @@ const SheetsPage = () => {
   };
 
   // Filter sheets
-  const filteredSheets = dsaSheets.filter(sheet => {
-    const matchesSearch = sheet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         sheet.author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDifficulty = filterDifficulty === 'all' || 
-                             sheet.difficulty.toLowerCase().includes(filterDifficulty.toLowerCase());
-    return matchesSearch && matchesDifficulty;
-  });
+  const filteredSheets = useMemo(() => {
+    return dsaSheets.filter(sheet => {
+      const matchesSearch = sheet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           sheet.author.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDifficulty = filterDifficulty === 'all' || 
+                               sheet.difficulty.toLowerCase().includes(filterDifficulty.toLowerCase());
+      return matchesSearch && matchesDifficulty;
+    });
+  }, [dsaSheets, searchQuery, filterDifficulty]);
 
   // Filter problems based on active tab
   const shouldShowProblem = (sheetId, problemId) => {
@@ -568,7 +588,7 @@ const SheetsPage = () => {
     return true;
   };
 
-  if (loading) {
+  if (loading || sheetsLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0d0d14] flex items-center justify-center transition-colors">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>

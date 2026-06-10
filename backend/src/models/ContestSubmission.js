@@ -172,5 +172,7 @@ contestSubmissionSchema.index({ user: 1, contest: 1, problem: 1 });
 contestSubmissionSchema.index({ contest: 1, problem: 1, status: 1 });
 contestSubmissionSchema.index({ contest: 1, submittedAt: -1 });
 contestSubmissionSchema.index({ user: 1, problem: 1, status: 1 });
+contestSubmissionSchema.index({ user: 1, contest: 1 });
+contestSubmissionSchema.index({ problem: 1, status: 1 });
 
 module.exports = mongoose.model('ContestSubmission', contestSubmissionSchema);

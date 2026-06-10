@@ -5,7 +5,7 @@ import UserAvatar from '../components/UserAvatar';
 import { useTheme } from '../hooks/useCustomHooks';
 import NotificationBell from '../components/common/NotificationBell';
 
-const Navbar = ({ user, onMenuClick, onLogout }) => {
+const Navbar = React.memo(({ user, onMenuClick, onLogout }) => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   
@@ -110,6 +110,6 @@ const Navbar = ({ user, onMenuClick, onLogout }) => {
       </div>
     </nav>
   );
-};
+});
 
 export default Navbar;

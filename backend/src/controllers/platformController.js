@@ -117,7 +117,7 @@ const connectPlatform = async (req, res, next) => {
         lastActivityAt: new Date()
       },
       { new: true }
-    );
+    ).lean();
 
     // Queue a sync job if queue is available
     if (isQueueActive() && addSyncJob) {
@@ -161,7 +161,7 @@ const disconnectPlatform = async (req, res, next) => {
         [`platformSyncTimes.${platform}`]: null
       },
       { new: true }
-    );
+    ).lean();
 
     // Optionally delete stored stats
     await PlatformStats.deleteMany({
@@ -201,7 +201,7 @@ const disconnectPlatform = async (req, res, next) => {
  */
 const syncAllPlatforms = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
     const { platform, hardReset, forceSync } = req.body;
 
     // Check if already syncing, with 5-minute self-healing timeout
@@ -397,7 +397,7 @@ const syncAllPlatforms = async (req, res, next) => {
  */
 const getSyncStatus = async (req, res, next) => {
   try {
-    let user = await User.findById(req.user.id);
+    let user = await User.findById(req.user.id).lean();
 
     // Self-healing stuck status: if stuck syncing for > 5 minutes, auto-reset
     const SYNC_TIMEOUT_MS = 5 * 60 * 1000;
@@ -464,7 +464,7 @@ const getSyncStatus = async (req, res, next) => {
  */
 const getAggregatedStats = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
 
     // Return cached data if fresh, otherwise calculate
     const aggregated = await calculateAggregatedStats(req.user.id);
@@ -473,7 +473,7 @@ const getAggregatedStats = async (req, res, next) => {
     const platformStatsData = await PlatformStats.find({
       userId: req.user.id,
       stats: { $exists: true, $ne: null }
-    });
+    }).lean();
 
     // Convert array to object keyed by platform name
     const platformsObject = {};
@@ -504,12 +504,12 @@ const getAggregatedStats = async (req, res, next) => {
 const getPlatformStats = async (req, res, next) => {
   try {
     const { platform } = req.params;
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
 
     const stats = await PlatformStats.findOne({
       userId: req.user.id,
       platform
-    });
+    }).lean();
 
     if (!stats) {
       const username = user.platforms?.[platform];
@@ -539,7 +539,7 @@ const getPlatformStats = async (req, res, next) => {
           fetchStatus: 'success'
         },
         { upsert: true, new: true }
-      );
+      ).lean();
 
       return res.status(200).json({
         success: true,
@@ -612,7 +612,7 @@ const getTopicAnalysis = async (req, res, next) => {
     const platformStats = await PlatformStats.find({
       userId: req.user.id,
       'stats.topics': { $exists: true, $ne: [] }
-    });
+    }).lean();
 
     const topicMap = {};
 
@@ -659,7 +659,7 @@ const getBadges = async (req, res, next) => {
     // Return cached badges from database instead of fetching from external APIs
     const platformStats = await PlatformStats.find({
       userId: req.user.id
-    });
+    }).lean();
 
     const allBadges = [];
 
@@ -775,7 +775,7 @@ const getBadges = async (req, res, next) => {
     const cnStats = await PlatformStats.findOne({
       userId: req.user.id,
       platform: 'codingninjas'
-    });
+    }).lean();
 
     if (cnStats?.stats?.rating && cnStats.stats.rating > 0) {
       const rating = cnStats.stats.rating;
@@ -813,7 +813,7 @@ const getBadges = async (req, res, next) => {
     const gfgStats = await PlatformStats.findOne({
       userId: req.user.id,
       platform: 'geeksforgeeks'
-    });
+    }).lean();
 
     if (gfgStats?.stats?.rating && gfgStats.stats.rating > 0) {
       const rating = gfgStats.stats.rating;
@@ -851,7 +851,7 @@ const getBadges = async (req, res, next) => {
     const hrStats = await PlatformStats.findOne({
       userId: req.user.id,
       platform: 'hackerrank'
-    });
+    }).lean();
 
     if (hrStats?.stats?.rating && hrStats.stats.rating > 0) {
       const rating = hrStats.stats.rating;
@@ -901,13 +901,13 @@ const getBadges = async (req, res, next) => {
  */
 const getAchievements = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
     const achievements = [];
 
     // Fetch ALL platform stats for this user
     const allStats = await PlatformStats.find({
       userId: req.user.id
-    });
+    }).lean();
 
     // Define platform color mapping
     const platformColors = {

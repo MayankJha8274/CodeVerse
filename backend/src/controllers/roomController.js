@@ -64,7 +64,8 @@ const getUserRooms = async (req, res, next) => {
     })
       .populate('owner', 'username fullName avatar')
       .populate('members.user', 'username fullName avatar')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -436,13 +437,13 @@ const getRoomLeaderboard = async (req, res, next) => {
     // Batch fetch all platform stats for all members
     const allPlatformStats = await PlatformStats.find({
       userId: { $in: memberIds }
-    });
+    }).lean();
 
     // Batch fetch all daily progress for all members in date range
     const allDailyProgress = isAllTime ? [] : await DailyProgress.find({
       userId: { $in: memberIds },
       date: { $gte: startDate }
-    });
+    }).lean();
 
     // Create maps for O(1) lookups
     const platformStatsMap = {};
@@ -601,7 +602,7 @@ const getRoomAnalytics = async (req, res, next) => {
     // Get all platform stats
     const allPlatformStats = await PlatformStats.find({
       userId: { $in: memberIds }
-    });
+    }).lean();
 
     // Get last 30 days of progress
     const thirtyDaysAgo = new Date();
@@ -610,7 +611,7 @@ const getRoomAnalytics = async (req, res, next) => {
     const recentProgress = await DailyProgress.find({
       userId: { $in: memberIds },
       date: { $gte: thirtyDaysAgo }
-    }).sort({ date: 1 });
+    }).sort({ date: 1 }).lean();
 
     // Calculate aggregated stats
     const analytics = {

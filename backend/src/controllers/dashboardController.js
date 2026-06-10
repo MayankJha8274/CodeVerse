@@ -18,7 +18,7 @@ exports.getUserProfile = async (req, res) => {
     const { userId } = req.params;
 
     // Get user info
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userId).select('-password').lean();
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -30,7 +30,7 @@ exports.getUserProfile = async (req, res) => {
     const platformStats = await PlatformStats.find({
       userId,
       stats: { $exists: true, $ne: null }
-    });
+    }).lean();
 
     // Get last 30 days activity
     const thirtyDaysAgo = new Date();
@@ -39,7 +39,7 @@ exports.getUserProfile = async (req, res) => {
     const recentActivity = await DailyProgress.find({
       userId,
       date: { $gte: thirtyDaysAgo }
-    }).sort({ date: -1 });
+    }).sort({ date: -1 }).lean();
 
     // Calculate totals
     let totalProblems = 0;
@@ -112,7 +112,7 @@ exports.getUserSummary = async (req, res) => {
     const userId = req.user.id;
 
     // Get user
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userId).select('-password').lean();
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -124,7 +124,7 @@ exports.getUserSummary = async (req, res) => {
     const platformStats = await PlatformStats.find({
       userId,
       stats: { $exists: true, $ne: null }
-    });
+    }).lean();
 
     // Calculate totals
     let totalProblems = 0;
@@ -181,7 +181,7 @@ exports.getUserSummary = async (req, res) => {
     const todayProgress = await DailyProgress.findOne({
       userId,
       date: today
-    });
+    }).lean();
 
     const todayActivity = todayProgress ? {
       problemsSolved: todayProgress.changes?.problemsDelta || 0,
@@ -239,7 +239,7 @@ exports.getUserTimeline = async (req, res) => {
     const timeline = await DailyProgress.find({
       userId,
       date: { $gte: startDate }
-    }).sort({ date: 1 });
+    }).sort({ date: 1 }).lean();
 
     const formattedTimeline = timeline.map(day => ({
       date: day.date,
@@ -283,7 +283,7 @@ exports.getUserRooms = async (req, res) => {
 
     const rooms = await Room.find({
       'members.user': userId
-    }).populate('members.user', 'username email fullName avatar');
+    }).populate('members.user', 'username email fullName avatar').lean();
 
     const formattedRooms = rooms.map(room => {
       const member = room.members.find(m => {

@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const comparisonController = require('../controllers/comparisonController');
 const { cacheResponse } = require('../middleware/redisCache');
+const { cacheMiddleware } = require('../middleware/cache');
 
 /**
  * Comparison Routes
@@ -19,6 +20,6 @@ router.get('/users', protect, cacheResponse(60), comparisonController.compareUse
 router.get('/room/:roomId', protect, cacheResponse(60), comparisonController.compareWithRoom);
 
 // Get top performers (global or room-specific)
-router.get('/top', protect, cacheResponse(60), comparisonController.getTopPerformers);
+router.get('/top', protect, cacheMiddleware(120), cacheResponse(60), comparisonController.getTopPerformers);
 
 module.exports = router;

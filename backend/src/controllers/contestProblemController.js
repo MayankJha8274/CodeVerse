@@ -125,7 +125,8 @@ exports.getProblems = async (req, res) => {
 
     const problems = await ContestProblem.find({ contest: contest._id, isActive: true })
       .select(selectFields)
-      .sort({ order: 1 });
+      .sort({ order: 1 })
+      .lean();
 
     res.json({
       success: true,
@@ -174,7 +175,7 @@ exports.getProblem = async (req, res) => {
         { slug: req.params.problemSlug },
         { problemCode: req.params.problemSlug.toUpperCase() }
       ]
-    });
+    }).lean();
 
     if (!problem) {
       return res.status(404).json({
@@ -184,7 +185,7 @@ exports.getProblem = async (req, res) => {
     }
 
     // Prepare response
-    const responseData = problem.toObject();
+    const responseData = { ...problem };
     
     // Filter test cases for non-moderators
     if (!isModerator) {
@@ -199,7 +200,7 @@ exports.getProblem = async (req, res) => {
         user: req.user._id,
         problem: problem._id,
         status: 'accepted'
-      }).select('score submittedAt');
+      }).select('score submittedAt').lean();
 
       responseData.userStatus = {
         solved: !!bestSubmission,

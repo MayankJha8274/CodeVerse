@@ -304,7 +304,7 @@ exports.getInsightsSummary = async (req, res) => {
 exports.getAllRatingHistory = async (req, res) => {
   try {
     // Get user's linked platform usernames
-    const user = await User.findById((req.query.userId || req.user.id)).select('platforms');
+    const user = await User.findById((req.query.userId || req.user.id)).select('platforms').lean();
     if (!user || !user.platforms) {
       return res.json({
         success: true,

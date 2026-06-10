@@ -201,7 +201,7 @@ const getSocietyById = async (req, res, next) => {
     const society = await Society.findById(req.params.societyId).populate(
       "owner",
       "username fullName avatar",
-    );
+    ).lean();
 
     if (!society || !society.isActive) {
       return res
@@ -229,7 +229,7 @@ const getSocietyById = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        ...society.toObject(),
+        ...society,
         userRole: membership?.role || null,
         isMember: !!membership,
         isBanned: membership?.isBanned || false,
@@ -267,7 +267,7 @@ const updateSociety = async (req, res, next) => {
       req.params.societyId,
       { $set: update },
       { new: true, runValidators: true },
-    ).populate("owner", "username fullName avatar");
+    ).populate("owner", "username fullName avatar").lean();
 
     await ActivityLog.create({
       society: society._id,
@@ -332,7 +332,7 @@ const joinSociety = async (req, res, next) => {
     const existing = await SocietyMember.findOne({
       society: society._id,
       user: req.user.id,
-    });
+    }).lean();
     if (existing) {
       if (existing.isBanned) {
         return res
@@ -536,7 +536,7 @@ const kickMember = async (req, res, next) => {
     const targetMember = await SocietyMember.findOne({
       society: societyId,
       user: userId,
-    });
+    }).lean();
     if (!targetMember) {
       return res
         .status(404)
@@ -790,11 +790,11 @@ const addMemberManually = async (req, res, next) => {
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ success: false, message: 'Invalid user ID' });
       }
-      targetUser = await User.findById(userId);
+      targetUser = await User.findById(userId).lean();
     } else if (username) {
-      targetUser = await User.findOne({ username: username.trim().toLowerCase() });
+      targetUser = await User.findOne({ username: username.trim().toLowerCase() }).lean();
     } else if (email) {
-      targetUser = await User.findOne({ email: email.trim().toLowerCase() });
+      targetUser = await User.findOne({ email: email.trim().toLowerCase() }).lean();
     } else {
       return res
         .status(400)
@@ -814,7 +814,7 @@ const addMemberManually = async (req, res, next) => {
     const existing = await SocietyMember.findOne({
       society: societyId,
       user: targetUser._id,
-    });
+    }).lean();
     if (existing) {
       if (existing.isBanned) {
         return res

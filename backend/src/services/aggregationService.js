@@ -76,7 +76,7 @@ const fetchAllPlatformStats = async (user) => {
               // Guard: don't overwrite good stored data with an empty/zero API response.
               // Some platforms return success=true but with 0 problems on rate-limit or partial
               // responses; accepting that would wipe valid historical data.
-              const existingRecord = await PlatformStats.findOne({ userId: user._id, platform });
+              const existingRecord = await PlatformStats.findOne({ userId: user._id, platform }).lean();
               const newProblems = result.stats?.totalSolved || result.stats?.problemsSolved || 0;
               const oldProblems = existingRecord?.stats?.totalSolved || existingRecord?.stats?.problemsSolved || 0;
               const isSuspiciousZero = newProblems === 0 && oldProblems > 0;
@@ -106,7 +106,7 @@ const fetchAllPlatformStats = async (user) => {
               }
             } else {
               // When sync fails, update only the status and error, preserve existing stats
-              const existingStats = await PlatformStats.findOne({ userId: user._id, platform });
+              const existingStats = await PlatformStats.findOne({ userId: user._id, platform }).lean();
               await PlatformStats.findOneAndUpdate(
                 { userId: user._id, platform },
                 {
@@ -129,7 +129,7 @@ const fetchAllPlatformStats = async (user) => {
           .catch(async error => {
             console.error(`❌ ${platform}: Exception during sync for user ${user.username} - ${error.message}`);
             // Preserve existing stats on exception too
-            const existingStats = await PlatformStats.findOne({ userId: user._id, platform });
+            const existingStats = await PlatformStats.findOne({ userId: user._id, platform }).lean();
             await PlatformStats.findOneAndUpdate(
               { userId: user._id, platform },
               {
@@ -165,7 +165,7 @@ const calculateAggregatedStats = async (userId) => {
   // Get all platform stats, including failed ones to preserve old data
   const platformStats = await PlatformStats.find({
     userId
-  });
+  }).lean();
 
   const aggregated = {
     totalProblemsSolved: 0,
@@ -336,7 +336,7 @@ const getProgressHistory = async (userId, period = 'daily', limit = 30) => {
 
   return await DailyProgress.find(query)
     .sort({ date: -1 })
-    .limit(limit);
+    .limit(limit).lean();
 };
 
 /**
@@ -347,7 +347,7 @@ const getProgressHistory = async (userId, period = 'daily', limit = 30) => {
 const calculateStreaks = async (userId) => {
   const allProgress = await DailyProgress.find({ userId })
     .sort({ date: -1 })
-    .limit(365); // Last year
+    .limit(365).lean(); // Last year
 
   if (allProgress.length === 0) {
     return {
@@ -429,7 +429,7 @@ const calculateLanguageBreakdown = async (userId) => {
     userId,
     platform: 'github',
     fetchStatus: 'success'
-  });
+  }).lean();
 
   if (!githubStats || !githubStats.stats.languages) {
     return {};
@@ -459,12 +459,12 @@ const calculateWeeklyProgress = async (userId) => {
   const thisWeekProgress = await DailyProgress.find({
     userId,
     date: { $gte: weekStart, $lte: today }
-  });
+  }).lean();
 
   const prevWeekProgress = await DailyProgress.find({
     userId,
     date: { $gte: prevWeekStart, $lt: prevWeekEnd }
-  });
+  }).lean();
 
   const calculateWeekTotals = (progressArray) => {
     return progressArray.reduce((acc, day) => {
@@ -554,8 +554,8 @@ const getContributionCalendar = async (userId) => {
   };
 
   // Look up user to get platform usernames
-  const user = await User.findById(userId);
-  const allPlatformStats = await PlatformStats.find({ userId, fetchStatus: 'success' });
+  const user = await User.findById(userId).lean();
+  const allPlatformStats = await PlatformStats.find({ userId, fetchStatus: 'success' }).lean();
 
   // ═══════════════════════════════════════════════════════
   // 1. LEETCODE — Use stored data PLUS live fetch for fresh today data
@@ -700,7 +700,7 @@ const getContributionCalendar = async (userId) => {
   const progressData = await DailyProgress.find({
     userId,
     date: { $gte: startDate, $lte: endDate }
-  }).sort({ date: 1 });
+  }).sort({ date: 1 }).lean();
 
   progressData.forEach(day => {
     const dateKey = toLocalDateStr(new Date(day.date));

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Trophy, 
   Medal, 
@@ -104,11 +104,13 @@ const LeaderboardPage = () => {
     return 'from-transparent to-transparent border-gray-700';
   };
 
-  const filteredLeaderboard = leaderboardData?.leaderboard?.filter(entry =>
-    entry.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.institution?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredLeaderboard = useMemo(() => {
+    return leaderboardData?.leaderboard?.filter(entry =>
+      entry.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.institution?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+  }, [leaderboardData, searchQuery]);
 
   if (loading && !leaderboardData) {
     return (

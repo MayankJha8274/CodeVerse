@@ -202,7 +202,7 @@ const startServer = async () => {
         ].filter(Boolean),
         credentials: true
       },
-      transports: ['websocket', 'polling']
+      transports: ['polling', 'websocket']
     });
 
     // Setup Socket.io handlers
@@ -247,13 +247,6 @@ const startServer = async () => {
         console.log('✅ Server closed for restart');
         process.kill(process.pid, 'SIGUSR2');
       });
-    });
-
-    // Handle unhandled promise rejections
-    process.on('unhandledRejection', (err) => {
-      console.error('❌ Unhandled Rejection:', err);
-      if (server) server.close(() => process.exit(1));
-      else process.exit(1);
     });
 
     // Handle SIGTERM
