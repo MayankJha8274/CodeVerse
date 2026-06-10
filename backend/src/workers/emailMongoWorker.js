@@ -3,7 +3,7 @@
  * Runs the Mongo-backed email queue worker as a standalone process.
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env'), override: true });
 const mongoose = require('mongoose');
 const emailQueueMongo = require('../queues/emailQueueMongo');
 

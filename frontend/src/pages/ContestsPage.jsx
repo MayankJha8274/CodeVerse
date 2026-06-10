@@ -112,12 +112,12 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, reminderStatus,
         <div className="flex flex-col gap-2">
           <button
             onClick={() => {
-              if (reminderStatus === 'sent' || reminderStatus === 'queued') return;
-              return reminderStatus === 'scheduled' || reminderStatus === 'failed'
+              if (reminderStatus === 'sent') return;
+              return reminderStatus === 'scheduled' || reminderStatus === 'queued' || reminderStatus === 'failed'
                 ? onRemoveReminder(contest._id)
                 : onSetReminder(contest._id);
             }}
-            disabled={isSettingReminder || reminderStatus === 'sent' || reminderStatus === 'queued'}
+            disabled={isSettingReminder || reminderStatus === 'sent'}
             className={`p-2 rounded-lg transition-all ${
               reminderStatus === 'scheduled' || reminderStatus === 'failed' || reminderStatus === 'queued' || reminderStatus === 'sent'
                 ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
@@ -127,11 +127,11 @@ const ContestCard = ({ contest, onSetReminder, onRemoveReminder, reminderStatus,
               reminderStatus === 'sent'
                 ? 'Reminder sent'
                 : reminderStatus === 'queued'
-                  ? 'Reminder queued for sending'
+                  ? 'Cancel queued reminder'
                   : reminderStatus === 'scheduled'
                   ? 'Remove reminder'
                   : reminderStatus === 'failed'
-                    ? 'Reminder failed (remove and set again)'
+                    ? 'Remove failed reminder'
                   : 'Set reminder (1h before)'
             }
           >
@@ -374,12 +374,17 @@ const ContestsPage = () => {
   };
 
   const handleRemoveReminder = async (contestId) => {
+    if (!user) {
+      alert('Please log in to manage reminders');
+      return;
+    }
     try {
       setSettingReminder(contestId);
       await api.removeContestReminder(contestId);
       await fetchUserReminders();
     } catch (error) {
       console.error('Error removing reminder:', error);
+      alert(error.message || 'Failed to remove reminder');
     } finally {
       setSettingReminder(null);
     }
@@ -580,15 +585,14 @@ const ContestsPage = () => {
                         disabled={
                           !!reminder.reminderSent ||
                           reminder.status === 'done' ||
-                          reminder.status === 'queued' ||
                           reminder.status === 'processing'
                         }
                         className="text-gray-400 hover:text-red-400 transition-colors"
                         title={
                           (reminder.reminderSent || reminder.status === 'done')
                             ? 'Reminder already sent'
-                            : (reminder.status === 'queued' || reminder.status === 'processing')
-                              ? 'Reminder queued for sending'
+                            : (reminder.status === 'processing')
+                              ? 'Reminder is being sent'
                               : 'Remove reminder'
                         }
                       >
