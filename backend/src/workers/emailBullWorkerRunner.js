@@ -3,7 +3,7 @@
  * Standalone process that runs the BullMQ email worker.
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env'), override: true });
 
 const mongoose = require('mongoose');
 const connectDB = require('../config/database');

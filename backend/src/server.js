@@ -1,4 +1,14 @@
-require('dotenv').config();
+const path = require('path');
+// Load backend .env explicitly (not CWD .env) to avoid root .env overriding with REDIS_ENABLED=true / Upstash URL
+require('dotenv').config({ path: path.join(__dirname, '..', '.env'), override: true });
+
+// Prevent crash on unhandled rejections/exceptions — log and keep running
+process.on('unhandledRejection', (err) => {
+  console.error('⚠️ Unhandled Rejection (non-fatal):', err?.message || err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught Exception (non-fatal):', err?.message || err);
+});
 const http = require('http');
 const { Server: SocketIOServer } = require('socket.io');
 const app = require('./app');
@@ -201,7 +211,7 @@ const startServer = async () => {
     console.log('✅ Socket.io initialized for real-time chat');
 
     // Start server
-    server = httpServer.listen(PORT, '0.0.0.0', () => {
+    server = httpServer.listen(PORT, '::', () => {
       console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       console.log(`📍 Health check: http://localhost:${PORT}/health`);
       console.log(`⏰ Server started at: ${new Date().toISOString()}`);

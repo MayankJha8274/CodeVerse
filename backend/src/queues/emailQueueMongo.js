@@ -81,6 +81,18 @@ async function processOneJob() {
       const delay = Math.min(5000 * Math.pow(2, job.attempts - 1), 60 * 1000);
       job.status = 'pending';
       job.nextAttemptAt = new Date(Date.now() + delay);
+
+      // Reset reminder status to pending so cron can re-process if needed
+      if (reminderId) {
+        try {
+          await ContestReminder.updateOne(
+            { _id: reminderId },
+            { $set: { status: 'pending', lockedUntil: null, lastError: err?.message || String(err) } }
+          );
+        } catch (_) {
+          // ignore
+        }
+      }
     } else {
       job.status = 'failed';
 
@@ -100,10 +112,25 @@ async function processOneJob() {
   }
 }
 
+async function recoverStuckJobs() {
+  try {
+    const result = await EmailJob.updateMany(
+      { status: 'processing' },
+      { $set: { status: 'pending', nextAttemptAt: new Date() } }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`🔄 Recovered ${result.modifiedCount} stuck EmailJob(s) from 'processing' to 'pending'`);
+    }
+  } catch (err) {
+    console.warn('⚠️ Failed to recover stuck jobs:', err.message);
+  }
+}
+
 async function startWorker() {
   if (workerRunning) return;
   workerRunning = true;
   lastRefill = Date.now();
+  await recoverStuckJobs();
   console.log('✅ EmailQueue(Mongo): Worker started (rate:', DEFAULT_RATE_MAX, 'per', DEFAULT_RATE_DURATION, 'ms)');
 
   const loop = async () => {

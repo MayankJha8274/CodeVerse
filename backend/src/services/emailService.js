@@ -61,6 +61,7 @@ async function createNodemailerTransporter() {
         host: process.env.EMAIL_HOST,
         port: parseInt(process.env.EMAIL_PORT, 10) || 587,
         secure: parseInt(process.env.EMAIL_PORT, 10) === 465,
+        family: 4,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD
@@ -75,6 +76,7 @@ async function createNodemailerTransporter() {
       transporter: nodemailer.createTransport({
         ...getPoolConfig(),
         service: process.env.EMAIL_SERVICE || 'gmail',
+        family: 4,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD
@@ -91,19 +93,20 @@ async function createNodemailerTransporter() {
 
   console.log('⚠️ No email credentials found in .env, generating test Ethereal account (dev only)...');
   const testAccount = await nodemailer.createTestAccount();
-  return {
-    transporter: nodemailer.createTransport({
-      ...getPoolConfig(),
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    }),
-    isEthereal: true,
-  };
+    return {
+      transporter: nodemailer.createTransport({
+        ...getPoolConfig(),
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        family: 4,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      }),
+      isEthereal: true,
+    };
 }
 
 async function getCachedNodemailerTransporter() {

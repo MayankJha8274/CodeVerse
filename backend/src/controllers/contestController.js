@@ -193,22 +193,29 @@ const removeReminder = async (req, res, next) => {
       });
     }
 
-    // Prevent users from "cancelling" a reminder that is already queued/sending/sent.
-    // This avoids incorrect expectations where a reminder is removed but the email still sends.
+    // Prevent users from cancelling a reminder that has already been sent or is being sent.
+    // Queued reminders can still be cancelled (email not yet delivered).
     const status = reminder.status;
     if (
       reminder.reminderSent ||
       status === 'done' ||
-      status === 'queued' ||
       status === 'processing'
     ) {
       return res.status(409).json({
         success: false,
-        message: 'Reminder is already queued/sending or has been sent and cannot be cancelled.'
+        message: 'Reminder is already being sent or has been sent and cannot be cancelled.'
       });
     }
 
     await ContestReminder.deleteOne({ _id: reminder._id });
+
+    // Also clean up any pending EmailJob for this reminder
+    try {
+      const EmailJob = require('../models/EmailJob');
+      await EmailJob.deleteOne({ jobKey: `contest-reminder:${reminder._id}` });
+    } catch (_) {
+      // ignore if EmailJob model is not available
+    }
 
     res.status(200).json({
       success: true,

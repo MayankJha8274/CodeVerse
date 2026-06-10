@@ -3,7 +3,7 @@
  * BullMQ worker that processes mass email jobs (24h/6h contest reminders)
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env'), override: true });
 const { Worker } = require('bullmq');
 const { createWorkerConnection } = require('../config/redis');
 const { sendEmail } = require('../services/emailService');

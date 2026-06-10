@@ -3,7 +3,7 @@
  * BullMQ worker that processes platform sync jobs
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env'), override: true });
 
 const { Worker } = require('bullmq');
 const mongoose = require('mongoose');
