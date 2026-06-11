@@ -525,7 +525,7 @@ const getPlatformStats = async (req, res, next) => {
       if (!result.success) {
         return res.status(400).json({
           success: false,
-          message: result.message || `No stats found for ${platform} and inline fetch failed.`
+          message: result.error || result.message || `No stats found for ${platform} and inline fetch failed.`
         });
       }
 
