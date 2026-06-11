@@ -35,12 +35,17 @@
       </div>
       <script>
         (function(){
-          var dots = '';
-          setInterval(function(){ dots = dots.length >= 3 ? '' : dots + '.'; document.getElementById('splash-dots').textContent = dots; }, 400);
-          var bar = document.getElementById('splash-bar');
-          var w = 0;
-          var intv = setInterval(function(){ w = Math.min(w + Math.random() * 8, 92); bar.style.width = w + '%'; }, 600);
-          window.addEventListener('load', function(){ setTimeout(function(){ clearInterval(intv); bar.style.width = '100%'; setTimeout(function(){ var el = document.getElementById('initial-splash'); if(el) el.style.opacity = '0'; }, 300); }, 1500); });
+          var dotsEl = document.getElementById('splash-dots');
+          var barEl = document.getElementById('splash-bar');
+          if (dotsEl) {
+            var dots = '';
+            setInterval(function(){ dots = dots.length >= 3 ? '' : dots + '.'; if (dotsEl) dotsEl.textContent = dots; }, 400);
+          }
+          if (barEl) {
+            var w = 0;
+            var intv = setInterval(function(){ w = Math.min(w + Math.random() * 8, 92); if (barEl) barEl.style.width = w + '%'; }, 600);
+            window.addEventListener('load', function(){ setTimeout(function(){ clearInterval(intv); if (barEl) barEl.style.width = '100%'; setTimeout(function(){ var el = document.getElementById('initial-splash'); if(el) el.style.opacity = '0'; }, 300); }, 1500); });
+          }
         })();
       </script>
     </div>
