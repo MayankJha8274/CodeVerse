@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an improvement for CodeVerse.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to change?
+      description: Describe the proposed behavior and any alternatives considered.
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add mockups, examples, or related issues if useful.
