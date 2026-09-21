@@ -13,7 +13,7 @@
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@vercel/analytics": "^2.0.1",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
