@@ -1,31 +1,66 @@
-# Node modules
+# ============================================================
+# CodeVerse – Root .gitignore
+# ============================================================
+
+# ── Environment / Secrets ───────────────────────────────────
+# NEVER commit actual .env files – use .env.example instead
+.env
+.env.local
+.env.*.local
+**/.env
+!**/.env.example
+
+# ── Dependencies ─────────────────────────────────────────────
 node_modules/
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Build outputs
+# ── Build Output ─────────────────────────────────────────────
 dist/
 dist-ssr/
 build/
+**/dist/
+**/build/
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+backend/backend.log
+
+# ── OS / Editor ──────────────────────────────────────────────
+# macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# ── Runtime / Cache ──────────────────────────────────────────
+.cache/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+.vite/
 coverage/
 
-# Logs
-logs/
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# Temporary files
+# ── Misc ─────────────────────────────────────────────────────
 *.tmp
 *.swp
 *~
+*.pem
+*.key
+*.cert
